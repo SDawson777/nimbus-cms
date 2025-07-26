@@ -28,6 +28,10 @@ export const deskStructure: StructureResolver = (S) =>
                 .child(S.documentTypeList('banner')),
               S.listItem().title('Drops').schemaType('drop').child(S.documentTypeList('drop')),
               S.listItem().title('Stores').schemaType('store').child(S.documentTypeList('store')),
+              S.listItem()
+                .title('Inventory')
+                .schemaType('variantInventory')
+                .child(S.documentTypeList('variantInventory')),
             ]),
         ),
     ])

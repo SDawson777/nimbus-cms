@@ -6,6 +6,7 @@ import productType from './__admin/productType'
 import banner from './__admin/banner'
 import drop from './__admin/drop'
 import store from './__admin/store'
+import variantInventory from './__admin/variantInventory'
 
 export const schemaTypes = [
   article,
@@ -16,4 +17,5 @@ export const schemaTypes = [
   banner,
   drop,
   store,
+  variantInventory,
 ]
