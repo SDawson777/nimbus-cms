@@ -13,3 +13,16 @@ export const FALLBACK_FILTERS = {
   categories: [] as Array<{title: string; slug: string}>,
   effects: [] as string[],
 }
+
+export const FALLBACK_PRODUCTS = [
+  {
+    _id: 'sample-product',
+    name: 'Sample Product',
+    slug: 'sample-product',
+    price: 0,
+    effects: [] as string[],
+    availability: 'unavailable',
+    productType: {title: 'Sample Type'},
+    image: null,
+  },
+]
