@@ -1,0 +1,4 @@
+{
+  "categories": *[_type == "category"]{title, "slug": slug.current},
+  "effects": array::unique(*[_type == "product"].effects[])
+}

@@ -1,0 +1,5 @@
+*[_type == "legal"]{
+  title,
+  "slug": slug.current,
+  body
+} | order(_createdAt asc)

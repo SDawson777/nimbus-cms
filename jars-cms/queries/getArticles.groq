@@ -1,0 +1,6 @@
+*[_type == "article" && published == true] | order(publishedAt desc){
+  title,
+  "slug": slug.current,
+  excerpt,
+  mainImage
+}

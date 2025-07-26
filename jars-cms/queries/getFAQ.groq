@@ -1,0 +1,4 @@
+*[_type == "faq"]{
+  question,
+  answer
+} | order(_createdAt asc)
