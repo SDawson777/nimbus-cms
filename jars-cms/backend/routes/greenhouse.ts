@@ -1,30 +1,34 @@
 // jars-cms/backend/routes/greenhouse.ts
-import express from 'express';
-import { client } from '../../sanity/sanityClient';
+import express from 'express'
+import {client} from '../../sanity/sanityClient'
 
-const router = express.Router();
+const router = express.Router()
 
-router.get('/greenhouse/articles', async (_req, res) => {
+router.get('/articles', async (_req, res) => {
   try {
-    const data = await client.fetch(`*[_type == "article" && published == true] | order(publishedAt desc){
+    const data =
+      await client.fetch(`*[_type == "article" && published == true] | order(publishedAt desc){
       _id, title, slug, excerpt, mainImage, publishedAt
-    }`);
-    res.json(data);
+    }`)
+    res.json(data)
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch articles' });
+    res.status(500).json({error: 'Failed to fetch articles'})
   }
-});
+})
 
-router.get('/greenhouse/articles/:slug', async (req, res) => {
+router.get('/articles/:slug', async (req, res) => {
   try {
-    const { slug } = req.params;
-    const data = await client.fetch(`*[_type == "article" && slug.current == $slug][0]{
+    const {slug} = req.params
+    const data = await client.fetch(
+      `*[_type == "article" && slug.current == $slug][0]{
       _id, title, slug, body, publishedAt, categories[]-> { title }, mainImage
-    }`, { slug });
-    res.json(data);
+    }`,
+      {slug},
+    )
+    res.json(data)
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch article' });
+    res.status(500).json({error: 'Failed to fetch article'})
   }
-});
+})
 
-export default router;
+export default router
