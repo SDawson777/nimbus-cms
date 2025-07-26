@@ -1,0 +1,10 @@
+*[_type == "product"]{
+  _id,
+  name,
+  "slug": slug.current,
+  price,
+  effects,
+  availability,
+  productType->{title},
+  image
+} | order(name asc)
