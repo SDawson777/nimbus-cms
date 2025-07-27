@@ -46,7 +46,7 @@ router.get('/cart', (req, res) => {
   res.json({items, promo: cart.promo, subtotal})
 })
 
-function applyAction(cart: any, action: any) {
+export function applyAction(cart: any, action: any) {
   const {variantId, storeId, quantity} = action
   const idx = cart.items.findIndex((i: any) => i.variantId === variantId && i.storeId === storeId)
   switch (action.type) {
