@@ -49,6 +49,17 @@ export default defineType({
       title: 'Category',
     }),
     defineField({
+      name: 'author',
+      type: 'reference',
+      to: [{type: 'author'}],
+      title: 'Author',
+    }),
+    defineField({
+      name: 'readingTime',
+      type: 'string',
+      title: 'Reading Time',
+    }),
+    defineField({
       name: 'tags',
       type: 'array',
       title: 'Tags',
