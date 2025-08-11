@@ -1,0 +1,1 @@
+export const PREVIEW_TOKEN_ENV = "SANITY_PREVIEW_TOKEN";
