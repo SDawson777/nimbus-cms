@@ -6,7 +6,8 @@ import { stores } from "./routes/stores";
 import { products } from "./routes/products";
 
 const app = express();
-app.use(cors());
+app.disable('x-powered-by');
+app.use(cors({ origin:(process.env.CORE_CORS_ORIGINS?.split(",")||["*"]).map(s=>s.trim()) }));
 app.use(compression());
 app.use(express.json());
 app.use(morgan("tiny"));
