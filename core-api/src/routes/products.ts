@@ -1,8 +1,38 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export const products = Router();
+
+const CATEGORY_VALUES = [
+  "flower",
+  "pre-roll",
+  "vape",
+  "edible",
+  "tincture",
+  "topical",
+  "gear",
+  "concentrate"
+] as const;
+type Category = typeof CATEGORY_VALUES[number];
+const isCategory = (value: string): value is Category =>
+  (CATEGORY_VALUES as readonly string[]).includes(value);
+
+const STRAIN_VALUES = ["indica", "sativa", "hybrid"] as const;
+type StrainType = typeof STRAIN_VALUES[number];
+const isStrainType = (value: string): value is StrainType =>
+  (STRAIN_VALUES as readonly string[]).includes(value);
+
+interface Variant {
+  id: string;
+  name: string | null;
+  price: number | null;
+  thcPercent: number | null;
+  cbdPercent: number | null;
+  sku: string | null;
+}
+const hasVariant = (v: Variant | null): v is Variant => v !== null;
 
 const listSchema = z.object({
   storeId: z.string(),
@@ -27,19 +57,22 @@ products.get("/", async (req,res)=>{
   const skip = (p.page-1)*p.limit;
 
   // Base filters
-  const spWhere:any = {
+  const spWhere: Prisma.StoreProductWhereInput = {
     storeId: p.storeId,
     active: true,
-    store: { isActive:true },
-    product: { isActive:true }
+    store: { isActive: true },
+    product: { isActive: true }
   };
   if (p.inStock) spWhere.stock = { gt: 0 };
   if (p.priceMin != null || p.priceMax != null) {
-    spWhere.price = { ...(p.priceMin!=null?{ gte:p.priceMin }:{}), ...(p.priceMax!=null?{ lte:p.priceMax }:{}) };
+    spWhere.price = {
+      ...(p.priceMin != null ? { gte: p.priceMin } : {}),
+      ...(p.priceMax != null ? { lte: p.priceMax } : {})
+    };
   }
 
   // Product filters
-  const productWhere:any = {};
+  const productWhere: Prisma.ProductWhereInput = {};
   if (p.q) productWhere.OR = [
     { name:  { contains: p.q, mode:"insensitive" } },
     { brand: { contains: p.q, mode:"insensitive" } },
@@ -50,15 +83,17 @@ products.get("/", async (req,res)=>{
   }
   if (p.category) {
     const arr = Array.isArray(p.category) ? p.category : [p.category];
-    productWhere.category = { in: arr as any };
+    const categories = arr.filter(isCategory);
+    if (categories.length) productWhere.category = { in: categories };
   }
   if (p.strain) {
     const arr = Array.isArray(p.strain) ? p.strain : [p.strain];
-    productWhere.strainType = { in: arr as any };
+    const strains = arr.filter(isStrainType);
+    if (strains.length) productWhere.strainType = { in: strains };
   }
 
   // Sort
-  const orderBy:any[] = [];
+  const orderBy: Prisma.StoreProductOrderByWithRelationInput[] = [];
   switch (p.sort) {
     case "price_asc":  orderBy.push({ price:"asc" }); break;
     case "price_desc": orderBy.push({ price:"desc" }); break;
@@ -117,12 +152,15 @@ products.get("/:id", async (req,res)=>{
   if(!product) return res.status(404).json({ error:"NOT_FOUND" });
 
   const sps = await prisma.storeProduct.findMany({
-    where:{ storeId:p.storeId, productId:p.id, active:true },
-    include:{ variant:true }
+    where: { storeId: p.storeId, productId: p.id, active: true },
+    include: { variant: true }
   });
 
-  const variants = (product.variants.length? product.variants : [null as any]).map(v=>{
-    const sp = sps.find(x => (v ? x.variantId===v.id : x.variantId==null));
+  const existingVariants = product.variants as Variant[];
+  const variantList: (Variant | null)[] =
+    existingVariants.length > 0 ? existingVariants : [null];
+  const variants = variantList.map(v => {
+    const sp = sps.find(x => (hasVariant(v) ? x.variantId === v.id : x.variantId == null));
     return {
       variantId: v?.id ?? null,
       name: v?.name ?? null,
