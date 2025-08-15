@@ -21,7 +21,9 @@ export async function fetchCMS<T>(
     return (await client.fetch(query, params)) as T
   } catch (err) {
     if (fallbackPath) {
-      const fallback = await import(fallbackPath)
+      const fallback = await import(fallbackPath, {
+        assert: { type: 'json' }
+      })
       return (fallback.default || fallback) as T
     }
     throw err
