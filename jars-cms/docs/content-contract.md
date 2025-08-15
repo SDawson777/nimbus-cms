@@ -31,7 +31,7 @@ This document defines the CMS data types, GROQ queries, and API proxy endpoints 
 The mobile app consumes these via the backend proxy:
 
 - `/content/legal`
-- `/content/faq`
+- `/content/faqs`
 - `/content/deals`
 - `/content/greenhouse`
 - `/content/transparency`
