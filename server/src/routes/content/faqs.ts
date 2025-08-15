@@ -11,4 +11,3 @@ faqsRouter.get('/', async (req, res) => {
   res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=300')
   res.json(items)
 })
-

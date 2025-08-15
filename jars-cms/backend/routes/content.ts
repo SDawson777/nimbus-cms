@@ -30,7 +30,7 @@ function usePreview(req: express.Request) {
   )
 }
 
-router.get('/faq', async (req, res) => {
+router.get('/faqs', async (req, res) => {
   try {
     const client = getClient(usePreview(req))
     const data = await client.fetch(faqQuery)
