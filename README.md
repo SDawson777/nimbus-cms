@@ -10,7 +10,8 @@ Now you can do the following things:
 
 ## Testing
 
-Run `npm test` to execute the vitest suite. For a coverage report, run:
+Run `npm test` to execute the vitest suite, including the Content API tests that mock Sanity
+responses. For a coverage report, run:
 
 ```bash
 npm run test:coverage
