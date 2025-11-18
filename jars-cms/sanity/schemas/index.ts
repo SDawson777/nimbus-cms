@@ -13,6 +13,8 @@ import productType from './__admin/productType'
 import banner from './__admin/banner'
 import drop from './__admin/drop'
 import store from './__admin/store'
+import organization from './__admin/organization'
+import brand from './__admin/brand'
 import variantInventory from './__admin/variantInventory'
 
 export const schemaTypes = [
@@ -31,5 +33,7 @@ export const schemaTypes = [
   banner,
   drop,
   store,
+  organization,
+  brand,
   variantInventory,
 ]

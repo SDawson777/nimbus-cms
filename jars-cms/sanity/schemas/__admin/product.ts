@@ -20,6 +20,9 @@ export default defineType({
       title: 'Product Type',
       to: [{type: 'productType'}],
     }),
+    // Multi-tenant fields (optional)
+  defineField({name: 'brand', type: 'reference', title: 'Brand', to: [{type: 'brand'}]}),
+    defineField({name: 'stores', type: 'array', title: 'Store overrides', of: [{type: 'reference', to: [{type: 'store'}]}]}),
     defineField({name: 'availability', type: 'string', title: 'Availability'}),
     defineField({name: 'image', type: 'image', title: 'Image', options: {hotspot: true}}),
   ],

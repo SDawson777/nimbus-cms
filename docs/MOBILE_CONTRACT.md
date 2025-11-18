@@ -52,3 +52,14 @@ Both the legacy and mobile endpoints are wired to the same route handlers to avo
 
 - The mobile app reads CMS base URL from `EXPO_PUBLIC_CMS_API_URL` and calls the `/content/*` paths. Ensure your deployed API exposes those paths (the server mounts both `/api/v1/content` and `/content`).
 - For previewing draft content set `X-Preview: true` on requests.
+
+## Multi-tenant extensions
+
+This CMS supports optional multi-tenant scoping via query parameters. These are optional and backward-compatible with the mobile app.
+
+- Query params: `org`, `brand`, `store` (provide slug values)
+- Example: GET /content/articles?brand=jars&store=jars-detroit
+
+When provided, endpoints will attempt to filter content to documents referencing the given brand/store/organization. If omitted, global content is returned as before.
+
+Note: These params are optional — existing mobile clients that don't send them will continue to receive the same responses.

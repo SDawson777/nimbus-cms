@@ -6,25 +6,43 @@ export const articlesRouter = Router()
 
 // list articles
 articlesRouter.get('/', async (req, res) => {
-  const {page, limit, tag} = z
+  const {page, limit, tag, org, brand, store} = z
     .object({
       page: z.coerce.number().min(1).default(1),
       limit: z.coerce.number().min(1).max(50).default(20),
       tag: z.string().optional(),
+      org: z.string().optional(),
+      brand: z.string().optional(),
+      store: z.string().optional(),
     })
     .parse(req.query)
   const preview = (req as any).preview ?? false
   const from = (page - 1) * limit
   const filter = tag ? '&& $tag in tags' : ''
-  const base = `*[_type=="greenhouseArticle" && status=="published" ${filter}]`
-  const total = await fetchCMS<number>(`count(${base})`, {tag}, {preview})
+
+  // Tenant filters: optional brand/store/org scoping (accept slugs)
+  let tenantFilter = ''
+  if (brand) {
+    // filter documents that reference a brand with the provided slug
+    tenantFilter += ' && references(*[_type=="brand" && slug.current==$brand]._id)'
+  }
+  if (store) {
+    // filter documents that reference a store with the provided slug
+    tenantFilter += ' && references(*[_type=="store" && slug.current==$store]._id)'
+  }
+  if (org) {
+    tenantFilter += ' && references(*[_type=="organization" && slug.current==$org]._id)'
+  }
+
+  const base = `*[_type=="greenhouseArticle" && status=="published" ${filter} ${tenantFilter}]`
+  const total = await fetchCMS<number>(`count(${base})`, {tag, brand, store, org}, {preview})
   const items = await fetchCMS(
     `${base} | order(publishedAt desc)[${from}...${from + limit}]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
     tags, author, publishedAt, featured
   }`,
-    {tag},
+    {tag, brand, store, org},
     {preview},
   )
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')

@@ -6,10 +6,19 @@ export default defineType({
   title: 'Store',
   fields: [
     defineField({name: 'name', type: 'string', title: 'Name'}),
-    defineField({name: 'location', type: 'geopoint', title: 'Location'}),
+    defineField({
+      name: 'slug',
+      type: 'slug',
+      title: 'Slug',
+      options: {source: 'name', maxLength: 96},
+    }),
+    defineField({name: 'brand', type: 'reference', to: [{type: 'brand'}], title: 'Brand'}),
     defineField({name: 'address', type: 'string', title: 'Address'}),
+    defineField({name: 'city', type: 'string', title: 'City'}),
+    defineField({name: 'stateCode', type: 'string', title: 'State code'}),
+    defineField({name: 'zip', type: 'string', title: 'ZIP'}),
     defineField({name: 'phone', type: 'string', title: 'Phone'}),
-    defineField({name: 'hours', type: 'string', title: 'Hours'}),
+    defineField({name: 'isActive', type: 'boolean', title: 'Is active', initialValue: true}),
   ],
   preview: {
     select: {title: 'name'},
