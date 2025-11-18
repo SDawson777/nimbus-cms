@@ -2,7 +2,7 @@ import {defineConfig} from 'sanity'
 import dotenv from 'dotenv'
 import {deskTool} from 'sanity/desk'
 import {visionTool} from '@sanity/vision'
-import {schemaTypes} from './sanity/schema'
+import {schemaTypes} from './jars-cms/sanity/schema'
 
 export default defineConfig({
   name: 'default',
