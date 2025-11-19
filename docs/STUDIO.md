@@ -16,6 +16,16 @@ The repository includes a Sanity Studio at `apps/studio/` used by editors. This 
 
 - Legal content: documents include `type` (e.g. `terms`, `privacy`), `stateCode` (optional), `version`, `effectiveFrom`, and optional `effectiveTo`. The API returns the most-recent effective version.
 
+## New schema types added
+
+- `organization`, `brand`, `store` — tenancy model documents used to scope content and themes.
+- `themeConfig` — brand/store theme documents (colors, typography, logo image reference).
+- `personalizationRule` — admin-authored rule documents that contain `conditions[]` and `actions[]` to boost content candidates; editable in Studio but also surfaced in the Admin SPA.
+- `contentMetric` — lightweight metric documents used by analytics/reporting jobs.
+- `recallAudit` — audit documents written when product recalls are toggled.
+
+Editors: when creating rules or theme configs prefer the Studio for schema-driven editing; the Admin SPA is provided for operational flows (theme editing, quick uploads, and simulation) and writes deterministic ids for theme configs.
+
 ## Running Studio locally
 
 ```bash

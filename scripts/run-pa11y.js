@@ -7,8 +7,8 @@ async function main() {
     const results = await pa11y(url, {
       // pass Chrome args to avoid sandbox issues in CI
       chromeLaunchConfig: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      }
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      },
     })
     console.log(JSON.stringify(results, null, 2))
     if (results.issues && results.issues.length > 0) {

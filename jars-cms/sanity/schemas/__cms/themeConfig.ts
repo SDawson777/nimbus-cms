@@ -26,9 +26,28 @@ export default defineType({
           if (!ref) return true
           if (!studioClient) return true // cannot validate here; allow server enforcement
           try {
-            const q = '*[_type=="themeConfig" && brand._ref == $ref && _id != $id][0]{_id}'
-            const existing = await studioClient.fetch(q, {ref, id: context.document._id})
-            return existing ? 'A theme for this brand already exists' : true
+            // Enforce uniqueness per brand+store pair. If store is set on this document,
+            // ensure no other themeConfig exists for the same brand and store. If store
+            // is not set, ensure no other brand-level themeConfig exists for the same brand.
+            const storeRef =
+              context.document &&
+              context.document.store &&
+              (context.document.store._ref || context.document.store)
+            if (storeRef) {
+              const q =
+                '*[_type=="themeConfig" && brand._ref == $ref && store._ref == $store && _id != $id][0]{_id}'
+              const existing = await studioClient.fetch(q, {
+                ref,
+                store: storeRef,
+                id: context.document._id,
+              })
+              return existing ? 'A theme for this brand+store already exists' : true
+            } else {
+              const q =
+                '*[_type=="themeConfig" && brand._ref == $ref && !defined(store) && _id != $id][0]{_id}'
+              const existing = await studioClient.fetch(q, {ref, id: context.document._id})
+              return existing ? 'A brand-level theme already exists for this brand' : true
+            }
           } catch {
             return true
           }
@@ -46,6 +65,20 @@ export default defineType({
       name: 'secondaryColor',
       type: 'string',
       title: 'Secondary Color',
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error('Must be a hex color like #RRGGBB'),
+    }),
+    defineField({
+      name: 'accentColor',
+      type: 'string',
+      title: 'Accent Color',
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error('Must be a hex color like #RRGGBB'),
+    }),
+    defineField({
+      name: 'surfaceColor',
+      type: 'string',
+      title: 'Surface Color',
       validation: (Rule) =>
         Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error('Must be a hex color like #RRGGBB'),
     }),
@@ -81,6 +114,32 @@ export default defineType({
         {name: 'fontFamily', type: 'string', title: 'Font Family'},
         {name: 'fontSize', type: 'string', title: 'Base Font Size'},
       ],
+    }),
+    defineField({
+      name: 'mutedTextColor',
+      type: 'string',
+      title: 'Muted Text Color',
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error('Must be a hex color like #RRGGBB'),
+    }),
+    defineField({
+      name: 'darkModeEnabled',
+      type: 'boolean',
+      title: 'Dark mode enabled',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'cornerRadius',
+      type: 'string',
+      title: 'Corner radius (e.g., 8px)',
+      initialValue: '8px',
+    }),
+    defineField({
+      name: 'elevationStyle',
+      type: 'string',
+      title: 'Elevation style',
+      options: {list: ['flat', 'medium', 'high']},
+      initialValue: 'flat',
     }),
   ],
   preview: {select: {title: 'brand'}},

@@ -13,9 +13,12 @@ async function fetchAndFlattenFaqs(req: any, res: any) {
   if (brand) tenantFilter += ' && references(*[_type=="brand" && slug.current==$brand]._id)'
   if (store) tenantFilter += ' && references(*[_type=="store" && slug.current==$store]._id)'
   if (org) tenantFilter += ' && references(*[_type=="organization" && slug.current==$org]._id)'
-
-  const channelFilter = channel ? ' && $channel in channels' : ''
-  const query = `*[_type=="faqGroup" ${tenantFilter}${channelFilter}] | order(weight asc){title,slug, "items":items(){"q":question,"a":answer}}`
+  // Channel semantics for FAQs: filter items() (referenced faq items) to include those that either
+  // do not define channels, have empty channels, or include the requested channel.
+  const itemChannelFilter = channel
+    ? `[ ( !defined(channels) || count(channels) == 0 || $channel in channels ) ]`
+    : ''
+  const query = `*[_type=="faqGroup" ${tenantFilter}] | order(weight asc){title,slug, "items":items()${itemChannelFilter}{"q":question,"a":answer}}`
   // fetch groups from CMS
   const groups = (await fetchCMS(query, {brand, store, org, channel}, {preview})) as any[]
 

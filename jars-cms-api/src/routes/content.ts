@@ -38,14 +38,15 @@ content.get('/articles', async (req, res) => {
   const from = (p.page - 1) * p.limit
   const f = p.tag ? `&& $tag in tags` : ''
   const base = `*[_type=="greenhouseArticle" && status=="published" ${f}]`
-  const total = await c.fetch(`count(${base})`, {tag: p.tag})
+  const params: any = p.tag ? {tag: p.tag} : {}
+  const total = await c.fetch(`count(${base})`, params)
   const items = await c.fetch(
     `${base} | order(publishedAt desc)[${from}...${from + p.limit}]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
     tags, author, publishedAt, featured
   }`,
-    {tag: p.tag},
+    params,
   )
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')
   res.json({items, page: p.page, limit: p.limit, total, totalPages: Math.ceil(total / p.limit)})

@@ -1,7 +1,7 @@
 module.exports = {
   env: {
     browser: true,
-    es2021: true
+    es2021: true,
   },
   globals: {
     window: 'readonly',
@@ -9,9 +9,9 @@ module.exports = {
     fetch: 'readonly',
     FormData: 'readonly',
     FileReader: 'readonly',
-    Blob: 'readonly'
+    Blob: 'readonly',
   },
   rules: {
-    'no-console': 'off'
-  }
+    'no-console': 'off',
+  },
 }

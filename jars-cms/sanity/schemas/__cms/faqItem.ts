@@ -37,7 +37,7 @@ export default defineType({
       type: 'array',
       title: 'Channels',
       of: [{type: 'string'}],
-      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+      options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
     }),
   ],
 })

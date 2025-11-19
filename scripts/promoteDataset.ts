@@ -3,6 +3,26 @@ import {createClient} from '@sanity/client'
 
 dotenv.config()
 
+function ensureEnv(name: string) {
+  if (!process.env[name]) {
+    console.error(`Missing required env var: ${name}`)
+    process.exit(2)
+  }
+}
+
+async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
+  let lastErr: any
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delay * (i + 1)))
+    }
+  }
+  throw lastErr
+}
+
 async function main() {
   const src = process.env.SANITY_SOURCE_DATASET
   const tgt = process.env.SANITY_TARGET_DATASET
@@ -10,6 +30,8 @@ async function main() {
     console.error('Set SANITY_SOURCE_DATASET and SANITY_TARGET_DATASET in env')
     process.exit(2)
   }
+
+  ensureEnv('SANITY_PROJECT_ID')
 
   const projectId = process.env.SANITY_PROJECT_ID!
   // source client uses preview token if provided, target needs a token with write access
@@ -44,8 +66,8 @@ async function main() {
   let skipped = 0
 
   while (true) {
-    const batch = await srcClient.fetch(
-      `*[] | order(_createdAt asc)[${offset}...${offset + pageSize}]`,
+    const batch = await retry(() =>
+      srcClient.fetch(`*[] | order(_createdAt asc)[${offset}...${offset + pageSize}]`),
     )
     if (!batch || batch.length === 0) break
     fetched += batch.length
@@ -62,7 +84,7 @@ async function main() {
 
         if (dryRun) {
           // Check existence only to report
-          const exists = await tgtClient.getDocument(d._id)
+          const exists = await retry(() => tgtClient.getDocument(d._id))
           if (exists) {
             skipped++
             if (force) toReplace++
@@ -73,7 +95,7 @@ async function main() {
         }
 
         if (!force) {
-          const exists = await tgtClient.getDocument(d._id)
+          const exists = await retry(() => tgtClient.getDocument(d._id))
           if (exists) {
             skipped++
             continue
@@ -82,11 +104,11 @@ async function main() {
 
         if (d._id) {
           // createOrReplace will upsert by id
-          await tgtClient.createOrReplace(d)
+          await retry(() => tgtClient.createOrReplace(d))
           if (force) toReplace++
           else toCreate++
         } else {
-          await tgtClient.create(d)
+          await retry(() => tgtClient.create(d))
           toCreate++
         }
       } catch (err) {
@@ -104,6 +126,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err)
+  console.error('promotion failed', err)
   process.exit(1)
 })

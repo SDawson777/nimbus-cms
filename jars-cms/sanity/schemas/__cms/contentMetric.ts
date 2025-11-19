@@ -19,6 +19,8 @@ export default defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({name: 'contentId', title: 'Content ID (optional)', type: 'string'}),
+    defineField({name: 'brandSlug', title: 'Brand Slug (optional)', type: 'string'}),
+    defineField({name: 'storeSlug', title: 'Store Slug (optional)', type: 'string'}),
     defineField({name: 'views', title: 'Views', type: 'number', initialValue: 0}),
     defineField({name: 'clickThroughs', title: 'Click Throughs', type: 'number', initialValue: 0}),
     defineField({name: 'lastUpdated', title: 'Last Updated', type: 'datetime', readOnly: true}),

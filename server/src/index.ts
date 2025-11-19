@@ -3,13 +3,16 @@ import cors from 'cors'
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
+import {logger} from './lib/logger'
 import adminAuthRouter from './routes/adminAuth'
 import {requireAdmin} from './middleware/adminAuth'
 
 import {contentRouter} from './routes/content'
+import {personalizationRouter} from './routes/personalization'
 import {statusRouter} from './routes/status'
 import {adminRouter} from './routes/admin'
 import analyticsRouter from './routes/analytics'
+import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
 
 const app = express()
 // Security middlewares
@@ -18,18 +21,30 @@ app.use(helmet())
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-// Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins
+// Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins.
+// Credentials (cookies) are only allowed when the origin is a specific allowlisted origin.
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
   : ['http://localhost:3000', 'http://localhost:5173']
+
+const isWildcard = allowedOrigins.length === 1 && allowedOrigins[0] === '*'
+
 app.use(
   cors({
-    origin: (origin: any, callback: any) => {
-      // Allow requests with no origin (curl, server-to-server)
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
-      return callback(new Error('CORS origin denied'))
-    },
+    origin: isWildcard
+      ? true
+      : (origin: any, callback: any) => {
+          // Allow requests with no origin (server-to-server, curl)
+          if (!origin) return callback(null, true)
+          if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
+          logger.warn('CORS origin denied', {origin})
+          return callback(new Error('CORS origin denied'))
+        },
+    // Only set credentials when not using a wildcard origin
+    credentials: !isWildcard,
+    optionsSuccessStatus: 200,
   }),
 )
 
@@ -57,6 +72,9 @@ app.use('/api/v1/content', contentRouter)
 // Mount content routes for mobile and external consumers (mobile contract)
 app.use('/content', contentRouter)
 
+// personalization public endpoints
+app.use('/personalization', personalizationRouter)
+
 // Analytics endpoint (collect events)
 app.use('/analytics', analyticsRouter)
 
@@ -65,5 +83,14 @@ app.use('/api/v1/status', statusRouter)
 app.use('/status', statusRouter)
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
 app.use('/api/admin', requireAdmin, adminRouter)
+
+// Start compliance snapshot scheduler only when explicitly enabled (avoid running during tests)
+if (process.env.COMPLIANCE_SNAPSHOT_ENABLED === 'true') {
+  try {
+    startComplianceScheduler()
+  } catch (e) {
+    console.error('failed to start compliance scheduler', e)
+  }
+}
 
 export default app

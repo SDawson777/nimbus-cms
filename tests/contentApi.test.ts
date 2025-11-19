@@ -48,6 +48,15 @@ describe('GET /api/v1/content/faqs', () => {
     const res = await request(app).get('/api/v1/content/faqs')
     expect(res.status).toBe(500)
   })
+
+  it('forwards channel param to CMS for faqs', async () => {
+    const faqs = [{title: 't', slug: 't', items: [{q: 'q', a: 'a'}]}]
+    fetchCMSMock.mockResolvedValueOnce(faqs)
+    const res = await request(app).get('/api/v1/content/faqs').query({channel: 'web'})
+    expect(res.status).toBe(200)
+    const callArgs = fetchCMSMock.mock.calls[0]
+    expect(callArgs[1]).toMatchObject({channel: 'web'})
+  })
 })
 
 describe('GET /api/v1/content/articles', () => {
@@ -102,6 +111,33 @@ describe('GET /api/v1/content/articles', () => {
   it('validates query params', async () => {
     const res = await request(app).get('/api/v1/content/articles').query({limit: 100})
     expect(res.status).toBe(500)
+  })
+
+  it('forwards channel param to CMS for list queries', async () => {
+    const items = [
+      {
+        id: '1',
+        title: 'A',
+        slug: 'a',
+        excerpt: 'ex',
+        body: [],
+        cover: {src: '', alt: ''},
+        tags: [],
+        author: 'auth',
+        publishedAt: '2024',
+        featured: false,
+      },
+    ]
+    fetchCMSMock.mockResolvedValueOnce(1) // total
+    fetchCMSMock.mockResolvedValueOnce(items) // items
+    const res = await request(app)
+      .get('/api/v1/content/articles')
+      .query({page: 1, limit: 10, channel: 'mobile'})
+    expect(res.status).toBe(200)
+    // ensure server forwarded channel param to fetchCMS (second call params)
+    const secondCallArgs = fetchCMSMock.mock.calls[1]
+    expect(secondCallArgs).toBeDefined()
+    expect(secondCallArgs[1]).toMatchObject({channel: 'mobile'})
   })
 })
 

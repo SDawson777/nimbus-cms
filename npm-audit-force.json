@@ -5,26 +5,18 @@
       "name": "@sanity/insert-menu",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@sanity/ui"
-      ],
+      "via": ["@sanity/ui"],
       "effects": [],
       "range": "<=1.1.13",
-      "nodes": [
-        "node_modules/@sanity/insert-menu"
-      ],
+      "nodes": ["node_modules/@sanity/insert-menu"],
       "fixAvailable": true
     },
     "@sanity/ui": {
       "name": "@sanity/ui",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "react-refractor"
-      ],
-      "effects": [
-        "@sanity/insert-menu"
-      ],
+      "via": ["react-refractor"],
+      "effects": ["@sanity/insert-menu"],
       "range": "<=3.0.0-static.48",
       "nodes": [
         "node_modules/@sanity/insert-menu/node_modules/@sanity/ui",
@@ -44,10 +36,7 @@
           "title": "PrismJS DOM Clobbering vulnerability",
           "url": "https://github.com/advisories/GHSA-x7hr-w5r2-h6wg",
           "severity": "moderate",
-          "cwe": [
-            "CWE-79",
-            "CWE-94"
-          ],
+          "cwe": ["CWE-79", "CWE-94"],
           "cvss": {
             "score": 4.9,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:L/I:L/A:N"
@@ -55,13 +44,9 @@
           "range": "<1.30.0"
         }
       ],
-      "effects": [
-        "refractor"
-      ],
+      "effects": ["refractor"],
       "range": "<1.30.0",
-      "nodes": [
-        "node_modules/prismjs"
-      ],
+      "nodes": ["node_modules/prismjs"],
       "fixAvailable": {
         "name": "sanity",
         "version": "4.16.0",
@@ -72,12 +57,8 @@
       "name": "react-refractor",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "refractor"
-      ],
-      "effects": [
-        "@sanity/ui"
-      ],
+      "via": ["refractor"],
+      "effects": ["@sanity/ui"],
       "range": "<=2.2.0",
       "nodes": [
         "node_modules/@sanity/insert-menu/node_modules/react-refractor",
@@ -89,13 +70,8 @@
       "name": "refractor",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "prismjs"
-      ],
-      "effects": [
-        "react-refractor",
-        "sanity"
-      ],
+      "via": ["prismjs"],
+      "effects": ["react-refractor", "sanity"],
       "range": "<=4.6.0",
       "nodes": [
         "node_modules/@sanity/insert-menu/node_modules/refractor",
@@ -111,16 +87,10 @@
       "name": "sanity",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "@sanity/ui",
-        "react-refractor",
-        "refractor"
-      ],
+      "via": ["@sanity/ui", "react-refractor", "refractor"],
       "effects": [],
       "range": "2.29.4-purple-unicorn.509 - 2.30.1-purple-unicorn.964 || 3.0.0-definetype.62 - 4.2.0-next.0-fd837aba64-202507240922 || >=4.16.1-next.1",
-      "nodes": [
-        "node_modules/sanity"
-      ],
+      "nodes": ["node_modules/sanity"],
       "fixAvailable": {
         "name": "sanity",
         "version": "4.16.0",

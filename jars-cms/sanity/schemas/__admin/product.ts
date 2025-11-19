@@ -36,8 +36,11 @@ export default defineType({
       type: 'array',
       title: 'Channels',
       of: [{type: 'string'}],
-      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+      options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
     }),
+    // Recall flags for retail operations
+    defineField({name: 'isRecalled', type: 'boolean', title: 'Recalled?', initialValue: false}),
+    defineField({name: 'recallReason', type: 'string', title: 'Recall Reason (optional)'}),
   ],
   preview: {
     select: {title: 'name', media: 'image'},

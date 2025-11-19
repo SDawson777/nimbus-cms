@@ -2,10 +2,13 @@ import React, {useEffect, useState} from 'react'
 
 export default function Products() {
   const [items, setItems] = useState([])
+  const [showRecalled, setShowRecalled] = useState(false)
+
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/admin/products', {credentials: 'include'})
+        const q = showRecalled ? '/api/admin/products?includeRecalled=true' : '/api/admin/products'
+        const res = await fetch(q, {credentials: 'include'})
         if (res.ok) {
           const j = await res.json()
           setItems(j)
@@ -15,11 +18,19 @@ export default function Products() {
       }
     }
     load()
-  }, [])
+  }, [showRecalled])
 
   return (
     <div style={{padding: 20}}>
       <h1>Products</h1>
+      <div style={{marginBottom: 12}}>
+        <label style={{marginRight: 8}}>Show recalled:</label>
+        <input
+          type="checkbox"
+          checked={showRecalled}
+          onChange={(e) => setShowRecalled(e.target.checked)}
+        />
+      </div>
       <table style={{width: '100%', borderCollapse: 'collapse'}}>
         <thead>
           <tr>
@@ -28,6 +39,7 @@ export default function Products() {
             <th>Slug</th>
             <th>Price</th>
             <th>Type</th>
+            <th>Recalled</th>
           </tr>
         </thead>
         <tbody>
@@ -38,6 +50,7 @@ export default function Products() {
               <td>{p.slug}</td>
               <td>{p.price}</td>
               <td>{p.type}</td>
+              <td>{p.isRecalled ? 'Yes' : 'No'}</td>
             </tr>
           ))}
         </tbody>

@@ -5,32 +5,20 @@
       "name": "@architect/hydrate",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "@architect/inventory",
-        "@architect/utils",
-        "glob"
-      ],
+      "via": ["@architect/inventory", "@architect/utils", "glob"],
       "effects": [],
       "range": ">=3.4.1",
-      "nodes": [
-        "node_modules/@architect/hydrate"
-      ],
+      "nodes": ["node_modules/@architect/hydrate"],
       "fixAvailable": true
     },
     "@architect/inventory": {
       "name": "@architect/inventory",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "@architect/utils"
-      ],
-      "effects": [
-        "@sanity/runtime-cli"
-      ],
+      "via": ["@architect/utils"],
+      "effects": ["@sanity/runtime-cli"],
       "range": ">=3.6.6-RC.0",
-      "nodes": [
-        "node_modules/@architect/inventory"
-      ],
+      "nodes": ["node_modules/@architect/inventory"],
       "fixAvailable": {
         "name": "sanity",
         "version": "3.95.0",
@@ -41,17 +29,10 @@
       "name": "@architect/utils",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "glob"
-      ],
-      "effects": [
-        "@architect/hydrate",
-        "@architect/inventory"
-      ],
+      "via": ["glob"],
+      "effects": ["@architect/hydrate", "@architect/inventory"],
       "range": ">=4.0.0-RC.0",
-      "nodes": [
-        "node_modules/@architect/utils"
-      ],
+      "nodes": ["node_modules/@architect/utils"],
       "fixAvailable": {
         "name": "sanity",
         "version": "3.95.0",
@@ -62,16 +43,10 @@
       "name": "@sanity/cli",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "@sanity/runtime-cli"
-      ],
-      "effects": [
-        "sanity"
-      ],
+      "via": ["@sanity/runtime-cli"],
+      "effects": ["sanity"],
       "range": ">=3.95.1-next.0.e2f839b19a",
-      "nodes": [
-        "node_modules/@sanity/cli"
-      ],
+      "nodes": ["node_modules/@sanity/cli"],
       "fixAvailable": {
         "name": "sanity",
         "version": "3.95.0",
@@ -82,16 +57,10 @@
       "name": "@sanity/runtime-cli",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "@architect/inventory"
-      ],
-      "effects": [
-        "@sanity/cli"
-      ],
+      "via": ["@architect/inventory"],
+      "effects": ["@sanity/cli"],
       "range": "8.3.0 || 8.4.0 || >=9.0.0",
-      "nodes": [
-        "node_modules/@sanity/runtime-cli"
-      ],
+      "nodes": ["node_modules/@sanity/runtime-cli"],
       "fixAvailable": {
         "name": "sanity",
         "version": "3.95.0",
@@ -110,9 +79,7 @@
           "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
           "url": "https://github.com/advisories/GHSA-5j98-mcp5-4vw2",
           "severity": "high",
-          "cwe": [
-            "CWE-78"
-          ],
+          "cwe": ["CWE-78"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
@@ -126,9 +93,7 @@
           "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
           "url": "https://github.com/advisories/GHSA-5j98-mcp5-4vw2",
           "severity": "high",
-          "cwe": [
-            "CWE-78"
-          ],
+          "cwe": ["CWE-78"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
@@ -136,10 +101,7 @@
           "range": ">=11.0.0 <11.1.0"
         }
       ],
-      "effects": [
-        "@architect/hydrate",
-        "@architect/utils"
-      ],
+      "effects": ["@architect/hydrate", "@architect/utils"],
       "range": "10.3.7 - 10.4.5 || 11.0.0 - 11.0.3",
       "nodes": [
         "node_modules/@architect/utils/node_modules/glob",
@@ -164,9 +126,7 @@
           "title": "js-yaml has prototype pollution in merge (<<)",
           "url": "https://github.com/advisories/GHSA-mh29-5h37-fv8m",
           "severity": "moderate",
-          "cwe": [
-            "CWE-1321"
-          ],
+          "cwe": ["CWE-1321"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
@@ -180,9 +140,7 @@
           "title": "js-yaml has prototype pollution in merge (<<)",
           "url": "https://github.com/advisories/GHSA-mh29-5h37-fv8m",
           "severity": "moderate",
-          "cwe": [
-            "CWE-1321"
-          ],
+          "cwe": ["CWE-1321"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
@@ -192,24 +150,17 @@
       ],
       "effects": [],
       "range": "<3.14.2 || >=4.0.0 <4.1.1",
-      "nodes": [
-        "node_modules/js-yaml",
-        "node_modules/load-yaml-file/node_modules/js-yaml"
-      ],
+      "nodes": ["node_modules/js-yaml", "node_modules/load-yaml-file/node_modules/js-yaml"],
       "fixAvailable": true
     },
     "sanity": {
       "name": "sanity",
       "severity": "high",
       "isDirect": true,
-      "via": [
-        "@sanity/cli"
-      ],
+      "via": ["@sanity/cli"],
       "effects": [],
       "range": "3.94.1-next.0.6739e10a32 - 3.94.1 || >=3.95.1-next.0.e2f839b19a",
-      "nodes": [
-        "node_modules/sanity"
-      ],
+      "nodes": ["node_modules/sanity"],
       "fixAvailable": {
         "name": "sanity",
         "version": "3.95.0",
@@ -228,10 +179,7 @@
           "title": "tar-fs has a symlink validation bypass if destination directory is predictable with a specific tarball",
           "url": "https://github.com/advisories/GHSA-vj76-c3g6-qr5v",
           "severity": "high",
-          "cwe": [
-            "CWE-22",
-            "CWE-61"
-          ],
+          "cwe": ["CWE-22", "CWE-61"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -241,9 +189,7 @@
       ],
       "effects": [],
       "range": "2.0.0 - 2.1.3",
-      "nodes": [
-        "node_modules/tar-fs"
-      ],
+      "nodes": ["node_modules/tar-fs"],
       "fixAvailable": true
     }
   },

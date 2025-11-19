@@ -89,6 +89,13 @@ export default defineConfig({
           {name: 'iconRef', type: 'string'},
           {name: 'weight', type: 'number'},
           {name: 'active', type: 'boolean'},
+          {
+            name: 'channels',
+            type: 'array',
+            of: [{type: 'string'}],
+            options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
+            title: 'Channels (optional)',
+          },
         ],
       },
       {
@@ -118,6 +125,13 @@ export default defineConfig({
               },
             ],
           },
+          {
+            name: 'channels',
+            type: 'array',
+            of: [{type: 'string'}],
+            options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
+            title: 'Channels (optional)',
+          },
         ],
       },
       // Deals
@@ -142,6 +156,13 @@ export default defineConfig({
           {name: 'endAt', type: 'datetime'},
           {name: 'stores', type: 'array', of: [{type: 'string'}]},
           {name: 'active', type: 'boolean'},
+          {
+            name: 'channels',
+            type: 'array',
+            of: [{type: 'string'}],
+            options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
+            title: 'Channels (optional)',
+          },
           {name: 'reasonHint', type: 'string'},
         ],
       },

@@ -1,9 +1,10 @@
 import {defineField, defineType} from 'sanity'
 
 export default defineType({
-  name: 'legalPage',
+  // Consolidated canonical schema name used by server-side queries
+  name: 'legalDoc',
   type: 'document',
-  title: 'Legal Page',
+  title: 'Legal Doc',
   fields: [
     defineField({name: 'title', type: 'string', title: 'Title'}),
     defineField({
@@ -18,7 +19,7 @@ export default defineType({
       name: 'type',
       title: 'Type',
       type: 'string',
-      options: {list: ['terms', 'privacy', 'accessibility', 'ageGate']},
+      options: {list: ['terms', 'privacy', 'accessibility', 'ageGate', 'disclaimer']},
     }),
     defineField({name: 'stateCode', title: 'State code (optional)', type: 'string'}),
     defineField({name: 'version', title: 'Version', type: 'string'}),
@@ -32,6 +33,14 @@ export default defineType({
       type: 'array',
       title: 'Store overrides',
       of: [{type: 'reference', to: [{type: 'store'}]}],
+    }),
+    // Channels this legal doc applies to. If empty/undefined the doc is considered global.
+    defineField({
+      name: 'channels',
+      type: 'array',
+      title: 'Channels',
+      of: [{type: 'string'}],
+      options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
     }),
   ],
 })

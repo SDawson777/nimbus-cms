@@ -48,6 +48,7 @@ Known limitations & follow-ups
 Contact & next steps
 
 If you'd like, I can:
+
 - Open a PR that removes `.eslintignore` and switches to the `ignores` property in `eslint.config.mjs`.
 - Add a CI job to build Docker images and push to a registry.
 - Produce a one-page buyer handoff PDF summarizing deployment steps and pending items.

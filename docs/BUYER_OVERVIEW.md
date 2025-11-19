@@ -17,6 +17,14 @@ This is a concise summary you can hand to a buyer evaluating the CMS.
 - Analytics hooks: lightweight content metrics and hooks for recording views and counters.
 - Import/export/promote scripts for dataset migrations and snapshots.
 
+## Key value props for buyers
+
+- Multi-tenant cannabis CMS: support multiple organizations, brands, and store-level overrides to run different brands or regions from a single codebase.
+- Compliance engine: automated checks for required legal documents per store with versioning and snapshot capabilities for audits.
+- Live retail intelligence dashboards: aggregated content and product demand analytics for marketing and ops.
+- Omnichannel content delivery: channel-aware content (mobile/web/kiosk/email/ads) with previewing and targeted delivery.
+- Personalization & analytics: admin-managed personalization rules and delivery-time evaluation for prioritized recommendations.
+
 ## How it integrates with mobile/web
 
 - Editors use Sanity Studio to create and publish content.

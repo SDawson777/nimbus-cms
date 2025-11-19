@@ -28,6 +28,7 @@ export default function Legal() {
             <th>State</th>
             <th>Version</th>
             <th>Effective From</th>
+            <th>Channels</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -39,6 +40,9 @@ export default function Legal() {
               <td>{d.stateCode || 'Global'}</td>
               <td>{d.version}</td>
               <td>{d.effectiveFrom}</td>
+              <td>
+                {Array.isArray(d.channels) && d.channels.length ? d.channels.join(', ') : 'Global'}
+              </td>
               <td>
                 <a href="/studio" target="_blank" rel="noreferrer">
                   Open in Studio

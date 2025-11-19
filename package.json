@@ -50,6 +50,10 @@
     "styled-components": "^6.1.18",
     "zod": "^3.25.76"
   },
+  "optionalDependencies": {
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0"
+  },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.2",
     "@types/express": "^5.0.3",

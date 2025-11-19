@@ -18,6 +18,7 @@ legalRouter.get('/', async (req, res) => {
     })
     .parse(req.query)
   const preview = (req as any).preview ?? false
+  const channel = String((req.query as any).channel || '').trim()
 
   // tenant filters
   let tenantFilter = ''
@@ -42,8 +43,12 @@ legalRouter.get('/', async (req, res) => {
 
   // effective date window: effectiveFrom <= now && (effectiveTo not defined OR effectiveTo > now)
   const nowExpr = 'now()'
-  const query = `*[_type=="legalDoc" && type==$t ${tenantFilter} ${stateFilter} && effectiveFrom <= ${nowExpr} && (!defined(effectiveTo) || effectiveTo > ${nowExpr})] | order(effectiveFrom desc, version desc)[0]{title,type,stateCode,version,effectiveFrom,body}`
+  const channelExpr = channel
+    ? ' && ( !defined(channels) || count(channels) == 0 || $channel in channels )'
+    : ''
+  const query = `*[_type=="legalDoc" && type==$t ${tenantFilter} ${stateFilter}${channelExpr} && effectiveFrom <= ${nowExpr} && (!defined(effectiveTo) || effectiveTo > ${nowExpr})] | order(effectiveFrom desc, version desc)[0]{title,type,stateCode,version,effectiveFrom,body}`
 
+  params.channel = channel
   const item = await fetchCMS(query, params, {preview})
   res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=300')
   if (!item) return res.status(404).json({error: 'NOT_FOUND'})

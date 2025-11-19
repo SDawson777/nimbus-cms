@@ -36,10 +36,21 @@ articlesRouter.get('/', async (req, res) => {
   }
 
   const base = `*[_type=="greenhouseArticle" && status=="published" ${filter} ${tenantFilter}]`
-  const channelFilter = channel ? ' && $channel in channels' : ''
-  const total = await fetchCMS<number>(`count(${base})`, {tag, brand, store, org}, {preview})
+  // Channel semantics: when a channel is provided, include docs that either do not define channels,
+  // or have an empty channels array, or explicitly include the requested channel.
+  const channelExpr = channel
+    ? ' && ( !defined(channels) || count(channels) == 0 || $channel in channels )'
+    : ''
+  // Scheduling semantics: if schedule.isScheduled is true, require publish/unpublish window checks.
+  const scheduleExpr =
+    ' && ( !defined(schedule) || !schedule.isScheduled || (( !defined(schedule.publishAt) || schedule.publishAt <= now() ) && ( !defined(schedule.unpublishAt) || schedule.unpublishAt > now() )) )'
+  const total = await fetchCMS<number>(
+    `count(${base}${channelExpr}${scheduleExpr})`,
+    {tag, brand, store, org, channel},
+    {preview},
+  )
   const items = await fetchCMS(
-    `${base}${channelFilter} | order(publishedAt desc)[${from}...${from + limit}]{
+    `${base}${channelExpr}${scheduleExpr} | order(publishedAt desc)[${from}...${from + limit}]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
     tags, author, publishedAt, featured
@@ -54,13 +65,19 @@ articlesRouter.get('/', async (req, res) => {
 // single article
 articlesRouter.get('/:slug', async (req, res) => {
   const preview = (req as any).preview ?? false
-  const query = `*[_type=="greenhouseArticle" && slug.current==$s][0]{
+  const channel = String((req.query as any).channel || '').trim()
+  const channelExpr = channel
+    ? ' && ( !defined(channels) || count(channels) == 0 || $channel in channels )'
+    : ''
+  const scheduleExpr =
+    ' && ( !defined(schedule) || !schedule.isScheduled || (( !defined(schedule.publishAt) || schedule.publishAt <= now() ) && ( !defined(schedule.unpublishAt) || schedule.unpublishAt > now() )) )'
+  const query = `*[_type=="greenhouseArticle" && slug.current==$s${channelExpr}${scheduleExpr}][0]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
     tags, author, publishedAt, featured,
     variants[]->{variantKey, title, excerpt, body}
   }`
-  const item = await fetchCMS(query, {s: req.params.slug}, {preview})
+  const item = await fetchCMS(query, {s: req.params.slug, channel}, {preview})
   if (!item) return res.status(404).json({error: 'NOT_FOUND'})
   // Support ?variant=KEY to return variant overrides when present
   const variantKey = String(req.query.variant || '').trim()

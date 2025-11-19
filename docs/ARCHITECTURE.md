@@ -25,7 +25,30 @@ The codebase supports optional multi-tenant scoping at the org/brand/store level
 ## Theming and assets
 
 - Themes are stored as `themeConfig` documents in Sanity and include colors, typography, and `logo` (image reference). The server persists canonical Sanity asset references (asset id) and `logo.alt` for accessibility.
+- Themes are stored as `themeConfig` documents in Sanity and include colors, typography, and `logo` (image reference). Each `themeConfig` can be brand-level or a store-level override. The server persists canonical Sanity asset references (asset id) and `logo.alt` for accessibility.
+- The theme engine resolves configuration using the precedence: store-level override -> brand-level theme -> global default (no brand/store). The `/content/theme` endpoint returns a flattened contract designed for multi-frontend consumption (mobile, web, kiosks).
 - The Admin SPA uploads logos using a multipart-first strategy with a JSON dataURL fallback so environments without `multer` still work.
+
+## Live Retail Intelligence Dashboard
+
+- The Admin Dashboard aggregates content metrics, per-store engagement, top content, and product demand signals. It's powered by the analytics subsystem and can be extended to show custom KPIs.
+
+## Compliance automation
+
+- A compliance engine evaluates required legal documents per-store and computes a compliance score. The engine prefers state-scoped documents and supports snapshotting for audit.
+
+## Advanced theming and omnichannel
+
+- The system supports channel-aware content (channels: mobile, web, kiosk, email, ads) and admin previews per channel. Themes are resolved by store->brand->global precedence and provided as a flattened contract for clients.
+
+## Retail operations automations (scheduling, recall)
+
+- Content documents (articles, deals, promos) support optional `schedule` objects (publishAt, unpublishAt, isScheduled) evaluated at read-time so editors can schedule visibility windows without separate jobs.
+- Products support recall flags (`isRecalled`, `recallReason`). Admin endpoints and UI default to hiding recalled products; a recall audit document is written when recalls are toggled.
+
+## Personalization engine
+
+- Admin-authored `personalizationRule` documents allow editors to declare condition -> action mappings that boost priority for matching content. The server exposes `POST /personalization/apply` which evaluates enabled rules against a user context and returns scored, ordered candidates. Rules are simple, extendable, and stored in Sanity so editors can manage them in Studio.
 
 ## Admin SPA and RBAC
 
@@ -38,6 +61,31 @@ The codebase supports optional multi-tenant scoping at the org/brand/store level
 ## Legal/versioning
 
 - Legal documents (terms, privacy, accessibility, ageGate) are versioned and time-windowed with `effectiveFrom` and optional `effectiveTo`. The API returns the most recent applicable document per-request and supports `state` scoping for US-state-specific legal content.
+
+## Compliance engine
+
+- The server includes a lightweight compliance engine that evaluates per-store compliance with required legal document types (for example: `terms`, `privacy`, `accessibility`, `ageGate`).
+- Implementation details:
+  - `server/src/lib/compliance.ts` fetches stores and currently effective `legalDoc` documents and prefers state-specific documents with a fallback to a global `legalDoc` (no `stateCode`).
+  - For tie-breaking between multiple current legal docs the engine prefers a numeric `version` (if parseable) otherwise the latest `effectiveFrom` date.
+  - The engine computes a `complianceScore` (0–100) = percentage of required types present, lists `missingTypes`, and returns `currentLegalDocs` for quick inspection.
+  - The admin endpoint `GET /api/admin/compliance/overview` exposes per-store compliance (protected with `ORG_ADMIN` role) and supports an optional `types` query parameter to customize required types.
+
+  ## Personalization engine (rule-based)
+
+  This project includes a lightweight, admin-driven personalization engine that lets editors define rules which map user attributes to prioritized content. Rules are stored in Sanity as `personalizationRule` documents and are evaluated at request-time by the server.
+
+  Key points:
+  - Rules are authored in Studio and include `conditions` (key/operator/value) and `actions` (targetType, targetSlugOrKey, priorityBoost, optional channel).
+  - Operators supported: `equals`, `in`, `lessThan`, `greaterThanOrEqual`.
+  - The server exposes a public endpoint `POST /personalization/apply` that accepts a user context and content type and returns a score-sorted list of content candidates.
+  - Evaluation is best-effort and read-only; personalization does not change canonical content documents.
+  - Admins can list rules via `GET /api/admin/personalization/rules` and simulate results in the Admin SPA.
+
+## Studio and schema notes
+
+- The canonical Sanity schema for legal documents is `legalDoc` (document). Fields include `title`, `slug`, `type` (terms/privacy/accessibility/ageGate/disclaimer), `stateCode` (optional), `version`, `effectiveFrom`, optional `effectiveTo`, `body`, and internal `notes`.
+- The Studio desk structure groups legal documents by type and state and provides quick access to global vs state-scoped docs.
 
 ## Environment variables
 

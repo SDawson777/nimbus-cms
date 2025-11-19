@@ -23,7 +23,7 @@ export const deskStructure: StructureResolver = (S) =>
                         .child(
                           S.documentList()
                             .title('Terms')
-                            .schemaType('legalPage')
+                            .schemaType('legalDoc')
                             .filter('type == $type')
                             .params({type: 'terms'}),
                         ),
@@ -32,7 +32,7 @@ export const deskStructure: StructureResolver = (S) =>
                         .child(
                           S.documentList()
                             .title('Privacy')
-                            .schemaType('legalPage')
+                            .schemaType('legalDoc')
                             .filter('type == $type')
                             .params({type: 'privacy'}),
                         ),
@@ -41,7 +41,7 @@ export const deskStructure: StructureResolver = (S) =>
                         .child(
                           S.documentList()
                             .title('Accessibility')
-                            .schemaType('legalPage')
+                            .schemaType('legalDoc')
                             .filter('type == $type')
                             .params({type: 'accessibility'}),
                         ),
@@ -50,7 +50,7 @@ export const deskStructure: StructureResolver = (S) =>
                         .child(
                           S.documentList()
                             .title('Age Gate')
-                            .schemaType('legalPage')
+                            .schemaType('legalDoc')
                             .filter('type == $type')
                             .params({type: 'ageGate'}),
                         ),
@@ -61,7 +61,7 @@ export const deskStructure: StructureResolver = (S) =>
                 .child(async () => {
                   // Fetch distinct state codes from Sanity and build list items dynamically
                   const codes: string[] = await client.fetch(
-                    `*[_type=="legalPage" && defined(stateCode)].stateCode`,
+                    `*[_type=="legalDoc" && defined(stateCode)].stateCode`,
                   )
                   const uniq = Array.from(new Set((codes || []).filter(Boolean)))
                   return S.list()
@@ -72,7 +72,7 @@ export const deskStructure: StructureResolver = (S) =>
                         .child(
                           S.documentList()
                             .title('Global Legal')
-                            .schemaType('legalPage')
+                            .schemaType('legalDoc')
                             .filter('!defined(stateCode) || stateCode == null'),
                         ),
                       ...uniq.map((s) =>
@@ -81,7 +81,7 @@ export const deskStructure: StructureResolver = (S) =>
                           .child(
                             S.documentList()
                               .title(String(s))
-                              .schemaType('legalPage')
+                              .schemaType('legalDoc')
                               .filter('stateCode == $state')
                               .params({state: s}),
                           ),

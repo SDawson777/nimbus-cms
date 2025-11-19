@@ -6,34 +6,60 @@ export const themeRouter = Router()
 
 // GET /content/theme?brand=brandSlug
 themeRouter.get('/', async (req, res) => {
-  const {brand} = z.object({brand: z.string().optional()}).parse(req.query)
+  const q = z.object({brand: z.string().optional(), store: z.string().optional()}).parse(req.query)
+  const brand = q.brand && String(q.brand).trim()
+  const store = q.store && String(q.store).trim()
 
-  // Resolve theme by brand slug with optional store-level override merging.
-  if (!brand) return res.status(400).json({error: 'MISSING_BRAND'})
   try {
-    // fetch store override if store provided
-    const store = String((req.query as any).store || '').trim() || undefined
+    // Resolution: store override -> brand-level -> global default
     let storeTheme: any = null
-    if (store) {
-      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, primaryColor, secondaryColor, backgroundColor, textColor, "logoUrl":logo.asset->url, logoUrl, typography}`
+    let brandTheme: any = null
+    let globalTheme: any = null
+
+    if (brand && store) {
+      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, store:store->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`
       storeTheme = await fetchCMS(sq, {brand, store}, {preview: (req as any).preview})
     }
-    const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, backgroundColor, textColor, "logoUrl":logo.asset->url, logoUrl, typography}`
-    const brandTheme = await fetchCMS(bq, {brand}, {preview: (req as any).preview})
-
-    const merged: any = Object.assign({}, brandTheme || {})
-    if (storeTheme) {
-      // override brand fields with store-specific values when present
-      for (const k of Object.keys(storeTheme)) {
-        const val: any = (storeTheme as any)[k]
-        if (val !== undefined && val !== null) merged[k] = val
-      }
+    if (brand) {
+      const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`
+      brandTheme = await fetchCMS(bq, {brand}, {preview: (req as any).preview})
     }
+    // global default (no brand and no store)
+    const gq = `*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`
+    try {
+      globalTheme = await fetchCMS(gq, {}, {preview: (req as any).preview})
+    } catch {
+      globalTheme = null
+    }
+
+    // pick base theme
+    let merged: any = {}
+    if (storeTheme) merged = Object.assign({}, storeTheme)
+    else if (brandTheme) merged = Object.assign({}, brandTheme)
+    else if (globalTheme) merged = Object.assign({}, globalTheme)
+
     if (!merged || Object.keys(merged).length === 0)
       return res.status(404).json({error: 'NOT_FOUND'})
+
+    // Flatten response to the agreed contract
+    const out = {
+      brand: merged.brand || undefined,
+      store: merged.store || undefined,
+      primaryColor: merged.primaryColor || null,
+      secondaryColor: merged.secondaryColor || null,
+      accentColor: merged.accentColor || null,
+      backgroundColor: merged.backgroundColor || null,
+      surfaceColor: merged.surfaceColor || null,
+      textColor: merged.textColor || null,
+      mutedTextColor: merged.mutedTextColor || null,
+      logoUrl: merged.logoUrl || merged.logo || null,
+      darkModeEnabled: Boolean(merged.darkModeEnabled || false),
+      cornerRadius: merged.cornerRadius || null,
+      elevationStyle: merged.elevationStyle || null,
+    }
+
     res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600')
-    res.json(merged)
-    return
+    return res.json(out)
   } catch (err) {
     console.error('failed to fetch theme', err)
     return res.status(500).json({error: 'FAILED'})

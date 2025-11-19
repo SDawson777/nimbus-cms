@@ -5,15 +5,36 @@ import {createClient} from '@sanity/client'
 
 dotenv.config()
 
+function ensureEnv(name: string) {
+  if (!process.env[name]) {
+    console.error(`Missing required env var: ${name}`)
+    process.exit(2)
+  }
+}
+
+async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
+  let lastErr: any
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delay * (i + 1)))
+    }
+  }
+  throw lastErr
+}
+
 async function main() {
-  const filePath = path.resolve(process.cwd(), process.argv.slice(2)[0])
+  ensureEnv('SANITY_PROJECT_ID')
+  ensureEnv('SANITY_DATASET')
+
   const argv = process.argv.slice(2)
   if (argv.length === 0) {
     console.error('Usage: importContent.ts <path-to-export.json> [--dry-run] [--force]')
     process.exit(2)
   }
-  // filePath derived from argv[0]
-  // const filePath = path.resolve(process.cwd(), argv[0])
+  const filePath = path.resolve(process.cwd(), argv[0])
   if (!fs.existsSync(filePath)) {
     console.error('File not found:', filePath)
     process.exit(2)
@@ -52,7 +73,7 @@ async function main() {
         if (dryRun) {
           // Report what would happen
           if (id) {
-            const exists = await client.getDocument(id)
+            const exists = await retry(() => client.getDocument(id))
             if (exists && !force) console.log('[dry-run] skip existing', id)
             else if (exists && force) console.log('[dry-run] would replace', id)
             else console.log('[dry-run] would create', id)
@@ -64,15 +85,15 @@ async function main() {
 
         if (id) {
           if (!force) {
-            const exists = await client.getDocument(id)
+            const exists = await retry(() => client.getDocument(id))
             if (exists) {
               // skip unless forced
               continue
             }
           }
-          await client.createOrReplace({...doc, _id: id})
+          await retry(() => client.createOrReplace({...doc, _id: id}))
         } else {
-          await client.create(doc)
+          await retry(() => client.create(doc))
         }
       } catch (err) {
         console.error('failed to import doc', doc._id || doc.slug || '', err)
@@ -84,6 +105,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err)
+  console.error('import failed', err)
   process.exit(1)
 })

@@ -5,7 +5,30 @@ import {createClient} from '@sanity/client'
 
 dotenv.config()
 
+function ensureEnv(name: string) {
+  if (!process.env[name]) {
+    console.error(`Missing required env var: ${name}`)
+    process.exit(2)
+  }
+}
+
+async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
+  let lastErr: any
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delay * (i + 1)))
+    }
+  }
+  throw lastErr
+}
+
 async function main() {
+  ensureEnv('SANITY_PROJECT_ID')
+  ensureEnv('SANITY_DATASET')
+
   const outDir = path.join(process.cwd(), 'backups')
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, {recursive: true})
 
@@ -22,28 +45,39 @@ async function main() {
 
   // Types we consider relevant for export
   const types = [
-    'greenhouseArticle',
-    'faqGroup',
-    'legalDoc',
-    'deal',
-    'product',
     'organization',
     'brand',
     'store',
+    'themeConfig',
+    'legalDoc',
+    'article',
+    'faqItem',
+    'deal',
+    'product',
     'contentMetric',
+    'personalizationRule',
   ]
 
   console.log('Exporting types:', types.join(', '))
 
   const results: Record<string, any[]> = {}
+  const pageSize = 1000
 
   for (const t of types) {
-    const q = `*[_type == "${t}"]` // simple full export per type
     console.log('Querying', t)
     try {
-      const docs = await client.fetch(q)
-      results[t] = docs || []
-      console.log(`  fetched ${results[t].length} ${t}`)
+      const rows: any[] = []
+      let offset = 0
+      while (true) {
+        const q = `*[_type == "${t}"] | order(_createdAt asc)[${offset}...${offset + pageSize}]`
+        const batch = await retry(() => client.fetch(q))
+        if (!batch || batch.length === 0) break
+        rows.push(...batch)
+        console.log(`  fetched batch ${offset}..${offset + batch.length} (${batch.length})`)
+        offset += pageSize
+      }
+      results[t] = rows
+      console.log(`  fetched total ${rows.length} ${t}`)
     } catch (err) {
       console.error('failed to fetch', t, err)
       results[t] = []
@@ -52,10 +86,11 @@ async function main() {
 
   // Also export any other top-level docs (safety)
   try {
-    const others = await client.fetch('*[!(_type in $types)]', {types})
+    const others = await retry(() => client.fetch('*[!(_type in $types)]', {types}))
     results.__others = others || []
   } catch (err) {
-    // ignore
+    console.warn('failed to fetch other docs', err)
+    results.__others = []
   }
 
   fs.writeFileSync(
@@ -66,6 +101,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err)
+  console.error('export failed', err)
   process.exit(1)
 })

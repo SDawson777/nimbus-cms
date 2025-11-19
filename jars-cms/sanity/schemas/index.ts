@@ -3,8 +3,9 @@ import category from './__cms/category'
 import quiz from './__cms/quiz'
 import author from './__cms/author'
 import faqItem from './__cms/faqItem'
-import legalPage from './__cms/legalPage'
+import legalDoc from './__cms/legalPage'
 import deal from './__cms/deal'
+import promo from './__cms/promo'
 import transparencyPage from './__cms/transparencyPage'
 import accessibilityPage from './__cms/accessibilityPage'
 import awardsExplainer from './__cms/awardsExplainer'
@@ -16,6 +17,10 @@ import store from './__admin/store'
 import organization from './__admin/organization'
 import brand from './__admin/brand'
 import variantInventory from './__admin/variantInventory'
+import complianceSnapshot from './__admin/complianceSnapshot'
+import complianceMonitor from './__admin/complianceMonitor'
+import recallAudit from './__admin/recallAudit'
+import personalizationRule from './__admin/personalizationRule'
 
 export const schemaTypes = [
   article,
@@ -26,8 +31,9 @@ export const schemaTypes = [
   // tenant-aware CMS types
   organization,
   brand,
-  legalPage,
+  legalDoc,
   deal,
+  promo,
   transparencyPage,
   accessibilityPage,
   awardsExplainer,
@@ -37,4 +43,8 @@ export const schemaTypes = [
   drop,
   store,
   variantInventory,
+  complianceSnapshot,
+  complianceMonitor,
+  recallAudit,
+  personalizationRule,
 ]

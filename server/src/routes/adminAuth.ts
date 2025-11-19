@@ -14,8 +14,8 @@ router.use(cookieParser())
 // Basic rate limiter for admin login to mitigate brute-force in-memory.
 // For production, replace with Redis-backed store (connect-redis) and per-IP/user throttling.
 const loginLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 8, // limit each IP to 8 login requests per windowMs
+  windowMs: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS || 60 * 1000), // default 1 minute
+  max: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_MAX || 8), // default 8 requests per window
   standardHeaders: true,
   legacyHeaders: false,
 })

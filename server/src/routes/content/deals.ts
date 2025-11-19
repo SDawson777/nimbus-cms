@@ -39,14 +39,18 @@ dealsRouter.get('/', async (req, res) => {
   }
 
   const channel = String((req.query as any).channel || '').trim()
-  const channelFilter = channel ? ' && $channel in channels' : ''
+  const channelExpr = channel
+    ? ' && ( !defined(channels) || count(channels) == 0 || $channel in channels )'
+    : ''
+  const scheduleExpr =
+    ' && ( !defined(schedule) || !schedule.isScheduled || (( !defined(schedule.publishAt) || schedule.publishAt <= now() ) && ( !defined(schedule.unpublishAt) || schedule.unpublishAt > now() )) )'
 
-  const query = `*[_type=="deal" && active==true && now() >= startAt && now() <= endAt ${filter}] | order(priority desc)[0...$lim]{
+  const query = `*[_type=="deal" && active==true && now() >= startAt && now() <= endAt ${filter}${channelExpr}${scheduleExpr}] | order(priority desc)[0...$lim]{
     title,"slug":slug.current,badge,ctaText,ctaLink,
     "image":{"src":image.asset->url,"alt":image.alt},
     priority,startAt,endAt,stores
   }`
-  const items = await fetchCMS(query.replace('}]', `}${channelFilter}]`), {...params, channel})
+  const items = await fetchCMS(query, {...params, channel})
   const results = Array.isArray(items) ? items : []
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')
   res.json(results)

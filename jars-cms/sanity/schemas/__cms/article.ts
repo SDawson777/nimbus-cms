@@ -71,7 +71,18 @@ export default defineType({
       type: 'array',
       title: 'Channels',
       of: [{type: 'string'}],
-      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+      options: {list: ['mobile', 'web', 'kiosk', 'email', 'ads']},
+    }),
+    // Scheduling for retail operations: optional schedule object
+    defineField({
+      name: 'schedule',
+      type: 'object',
+      title: 'Schedule',
+      fields: [
+        {name: 'publishAt', type: 'datetime', title: 'Publish At (optional)'},
+        {name: 'unpublishAt', type: 'datetime', title: 'Unpublish At (optional)'},
+        {name: 'isScheduled', type: 'boolean', title: 'Is Scheduled?', initialValue: false},
+      ],
     }),
     // Optional A/B variants
     defineField({
