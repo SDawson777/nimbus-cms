@@ -36,7 +36,5 @@ export const schemaTypes = [
   banner,
   drop,
   store,
-  organization,
-  brand,
   variantInventory,
 ]
