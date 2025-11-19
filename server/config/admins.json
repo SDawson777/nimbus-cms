@@ -1,0 +1,20 @@
+{
+  "admins": [
+    {
+      "id": "1",
+      "email": "owner@example.com",
+      "passwordHash": "",
+      "role": "OWNER",
+      "organizationSlug": "jars-org",
+      "brandSlug": "jars",
+      "storeSlug": "jars-main"
+    },
+    {
+      "id": "2",
+      "email": "editor@example.com",
+      "passwordHash": "",
+      "role": "EDITOR",
+      "brandSlug": "jars"
+    }
+  ]
+}

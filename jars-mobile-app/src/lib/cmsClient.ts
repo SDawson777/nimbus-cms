@@ -7,7 +7,7 @@ if (!baseUrl) {
 
 if (process.env.NODE_ENV !== 'production') {
   // Log the CMS base URL in development for easier troubleshooting
-   
+
   console.log(`CMS base URL: ${baseUrl}`)
 }
 

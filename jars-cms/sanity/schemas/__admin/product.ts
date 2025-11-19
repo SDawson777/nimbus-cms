@@ -21,10 +21,23 @@ export default defineType({
       to: [{type: 'productType'}],
     }),
     // Multi-tenant fields (optional)
-  defineField({name: 'brand', type: 'reference', title: 'Brand', to: [{type: 'brand'}]}),
-    defineField({name: 'stores', type: 'array', title: 'Store overrides', of: [{type: 'reference', to: [{type: 'store'}]}]}),
+    defineField({name: 'brand', type: 'reference', title: 'Brand', to: [{type: 'brand'}]}),
+    defineField({
+      name: 'stores',
+      type: 'array',
+      title: 'Store overrides',
+      of: [{type: 'reference', to: [{type: 'store'}]}],
+    }),
     defineField({name: 'availability', type: 'string', title: 'Availability'}),
     defineField({name: 'image', type: 'image', title: 'Image', options: {hotspot: true}}),
+    // Channels this product is available on
+    defineField({
+      name: 'channels',
+      type: 'array',
+      title: 'Channels',
+      of: [{type: 'string'}],
+      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+    }),
   ],
   preview: {
     select: {title: 'name', media: 'image'},

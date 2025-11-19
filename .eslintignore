@@ -1,0 +1,8 @@
+server/dist
+**/dist
+node_modules
+apps/admin/public
+*.min.js
+coverage
+/.parcel-cache
+/.next

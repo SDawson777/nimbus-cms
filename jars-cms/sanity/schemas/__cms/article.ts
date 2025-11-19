@@ -65,6 +65,44 @@ export default defineType({
       title: 'Tags',
       of: [{type: 'string'}],
     }),
+    // Channels this article is intended for (mobile, web, kiosk, email, etc.)
+    defineField({
+      name: 'channels',
+      type: 'array',
+      title: 'Channels',
+      of: [{type: 'string'}],
+      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+    }),
+    // Optional A/B variants
+    defineField({
+      name: 'variants',
+      type: 'array',
+      title: 'Variants',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            {name: 'variantKey', type: 'string', title: 'Variant Key (A/B/...)'},
+            {name: 'title', type: 'string', title: 'Title override'},
+            {name: 'excerpt', type: 'text', title: 'Excerpt override'},
+            {
+              name: 'body',
+              type: 'array',
+              title: 'Body override',
+              of: [{type: 'block'}, {type: 'image'}],
+            },
+          ],
+        },
+      ],
+    }),
+    // Optional tenant scoping
+    defineField({name: 'brand', type: 'reference', title: 'Brand', to: [{type: 'brand'}]}),
+    defineField({
+      name: 'stores',
+      type: 'array',
+      title: 'Store overrides',
+      of: [{type: 'reference', to: [{type: 'store'}]}],
+    }),
     defineField({
       name: 'published',
       type: 'boolean',

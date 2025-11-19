@@ -1,0 +1,242 @@
+:root {
+  /* Brandable variables: override these in deployment or via a small admin theme editor */
+  --bg: #0f1724;
+  --card: #0b1220;
+  --muted: #94a3b8;
+  --accent: #7c3aed;
+  --glass: rgba(255, 255, 255, 0.03);
+  --logo-height: 36px;
+  --radius: 10px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    'Helvetica Neue',
+    Arial;
+  background: linear-gradient(180deg, #061024 0%, #071233 100%);
+  color: #fff;
+  margin: 0;
+}
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px;
+}
+.site-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand .logo {
+  height: var(--logo-height);
+  width: auto;
+  display: block;
+}
+.nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.nav .card {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+}
+
+/* Buttons and forms */
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+input[type='text'],
+input[type='email'],
+input[type='password'],
+textarea {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: inherit;
+}
+
+/* Admin layout */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 18px;
+}
+.admin-sidebar {
+  background: var(--card);
+  padding: 12px;
+  border-radius: var(--radius);
+}
+.admin-main {
+  background: var(--card);
+  padding: 18px;
+  border-radius: var(--radius);
+}
+
+/* Reduce motion */
+.a11y-reduce-motion *,
+*::before,
+*::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  animation-delay: -1ms !important;
+}
+.site-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent);
+}
+.site-header h1 {
+  margin: 6px 0;
+  font-weight: 700;
+}
+.tag {
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.intro h2,
+.how h2,
+.notes h2 {
+  color: #fff;
+  margin-top: 0;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.card {
+  display: block;
+  padding: 14px 16px;
+  background: var(--card);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.6);
+}
+code {
+  background: var(--glass);
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: #e6eef8;
+  font-size: 0.95em;
+}
+.how p {
+  color: var(--muted);
+}
+.notes ul {
+  color: var(--muted);
+}
+.site-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 18px 0;
+  text-align: center;
+  color: var(--muted);
+  margin-top: 40px;
+}
+
+/* Accessibility helpers */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: var(--card);
+  color: #fff;
+  border-radius: 6px;
+  z-index: 9999;
+}
+
+/* Stronger focus styles for keyboard users */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid rgba(124, 58, 237, 0.8);
+  outline-offset: 3px;
+}
+
+/* High contrast mode */
+.a11y-high-contrast {
+  --bg: #000000;
+  --card: #111111;
+  --muted: #bcd0ff;
+  --accent: #ffb86b;
+  background: #000;
+}
+
+/* Large text */
+.a11y-large-text {
+  font-size: 1.2rem;
+}
+
+/* Dyslexia-friendly adjustments */
+.a11y-dyslexic {
+  font-family: 'OpenDyslexic', Arial, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 520px) {
+  .container {
+    padding: 18px;
+  }
+  .cards {
+    gap: 10px;
+  }
+}
+
+/* Minimal style for floating a11y widget */
+.a11y-widget button {
+  margin: 4px 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
+  cursor: pointer;
+}

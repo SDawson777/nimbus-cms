@@ -17,6 +17,7 @@ articlesRouter.get('/', async (req, res) => {
     })
     .parse(req.query)
   const preview = (req as any).preview ?? false
+  const channel = String((req.query as any).channel || '').trim()
   const from = (page - 1) * limit
   const filter = tag ? '&& $tag in tags' : ''
 
@@ -35,14 +36,15 @@ articlesRouter.get('/', async (req, res) => {
   }
 
   const base = `*[_type=="greenhouseArticle" && status=="published" ${filter} ${tenantFilter}]`
+  const channelFilter = channel ? ' && $channel in channels' : ''
   const total = await fetchCMS<number>(`count(${base})`, {tag, brand, store, org}, {preview})
   const items = await fetchCMS(
-    `${base} | order(publishedAt desc)[${from}...${from + limit}]{
+    `${base}${channelFilter} | order(publishedAt desc)[${from}...${from + limit}]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
     tags, author, publishedAt, featured
   }`,
-    {tag, brand, store, org},
+    {tag, brand, store, org, channel},
     {preview},
   )
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')
@@ -55,10 +57,30 @@ articlesRouter.get('/:slug', async (req, res) => {
   const query = `*[_type=="greenhouseArticle" && slug.current==$s][0]{
     "id":_id, title, "slug":slug.current, excerpt, body,
     "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
-    tags, author, publishedAt, featured
+    tags, author, publishedAt, featured,
+    variants[]->{variantKey, title, excerpt, body}
   }`
   const item = await fetchCMS(query, {s: req.params.slug}, {preview})
   if (!item) return res.status(404).json({error: 'NOT_FOUND'})
+  // Support ?variant=KEY to return variant overrides when present
+  const variantKey = String(req.query.variant || '').trim()
+  let out: any = item
+  if (variantKey) {
+    try {
+      const itm: any = item
+      const v = (itm.variants || []).find((vv: any) => String(vv.variantKey) === variantKey)
+      if (v) {
+        out = {
+          ...itm,
+          title: v.title || itm.title,
+          excerpt: v.excerpt || itm.excerpt,
+          body: v.body || itm.body,
+        }
+      }
+    } catch {
+      // ignore and return original
+    }
+  }
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')
-  res.json(item)
+  res.json(out)
 })

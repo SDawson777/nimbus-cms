@@ -1,65 +1,63 @@
-# Mobile API Contract (canonical + mobile usage)
+# Mobile API contract (canonical + mobile usage)
 
-This document lists the canonical CMS API endpoints and the mobile app contract (the mobile app uses the `/content/*` paths where possible). The canonical documented contract (legacy) lives under `/api/v1/content/*` and the mobile app uses `/content/*` and `/api/admin/products`.
+This document lists the canonical CMS API endpoints and the mobile app contract. The mobile app uses the `/content/*` paths; the admin surface uses `/api/admin/*`.
 
-## Summary of endpoints (mobile-first)
+All endpoints return JSON. Preview (draft) mode is enabled by supplying the header `X-Preview: true` or the query param `?preview=true`.
+
+## Canonical mobile endpoints
 
 - GET /content/legal
-  - Query params: `type` (one of `terms`, `privacy`, `accessibility`)
-  - Preview: `X-Preview: true` header OR `?preview=true`
-  - Response: { title: string; body: any }
+  - Query params: `type` (one of `terms`, `privacy`, `accessibility`, `ageGate`), optional `state` (US state code)
+  - Response: { title: string; body: PortableText | string; type: string; stateCode?: string; version?: string | number; effectiveFrom?: string }
+  - Cache: public, max-age=86400
 
-- GET /content/fa_q (aliases: /content/faqs, /content/faq)
+- GET /content/faqs (aliases: /content/faq)
   - Response: Array of FAQ items
-  - Shape: [{ id: string; question: string; answer: string }]
+  - Shape: [{ id: string; question: string; answer: PortableText | string }]
   - Cache: public, max-age=86400
 
 - GET /content/articles
-  - Query params: `page` (number), `limit` (number), `tag` (string optional)
+  - Query params: `page` (number), `limit` (number), `tag` (string), `channel` (optional string: `mobile|web|kiosk|email`)
   - Response: { items: CMSArticle[]; page: number; limit: number; total: number; totalPages: number }
-  - CMSArticle fields (high level): { id, title, slug, excerpt?, body?, cover?: { src, alt }, tags?, author?, publishedAt?, featured? }
+  - CMSArticle fields: { id, title, slug, excerpt?, body?, cover?: { src, alt }, tags?, author?, publishedAt?, featured? }
 
 - GET /content/articles/:slug
-  - Response: CMSArticle (single object) or 404 { error: 'NOT_FOUND' }
+  - Response: CMSArticle or 404 { error: 'NOT_FOUND' }
+
+- GET /content/theme
+  - Query params: `brand` (required slug), optional `store` (slug)
+  - Response: { brand: string; primaryColor?: string; secondaryColor?: string; backgroundColor?: string; textColor?: string; logoUrl?: string; logoAssetId?: string; logoAlt?: string }
 
 - GET /content/filters
-  - Response: ShopFilter[]
-  - Shape: [{ id: string; label: string }]
+  - Response: ShopFilter[] (e.g. [{ id: string; label: string }])
 
-- GET /api/admin/products
-  - Response: CMSProduct[]
-  - Shape: [{ \_\_id: string; name: string; slug: string; price: number; type: string; effects?: string[]; image: { url: string; alt?: string } }]
+## Admin endpoints (selected)
+
+- POST /api/admin/theme
+  - Body: { brand: string; store?: string; primaryColor?: string; secondaryColor?: string; backgroundColor?: string; textColor?: string; logoAssetId?: string; logoAlt?: string }
+  - Auth: `admin_token` cookie (JWT) with `EDITOR` role required
+  - Behavior: creates or updates deterministic `themeConfig` document for brand (and optional store override). When `logoAssetId` is provided the server writes a Sanity image reference with `logo.alt` when `logoAlt` is present.
+
+- POST /api/admin/upload-logo
+  - JSON fallback path: accepts { filename: string; data: string } where `data` is a dataURL/base64 string. Returns { ok: true, url, assetId }
+
+- POST /api/admin/upload-logo-multipart
+  - Multipart FormData path (field name `file`) — preferred when available. Returns { ok: true, url, assetId }
 
 ## Legacy canonical endpoints
 
-The same functionality is exposed at the legacy canonical endpoints used by docs and tests:
-
-- GET /api/v1/content/legal
-- GET /api/v1/content/faqs
-- GET /api/v1/content/articles
-- GET /api/v1/content/articles/:slug
-- GET /api/v1/content/filters
-- ... and others (copy, deals)
-
-Both the legacy and mobile endpoints are wired to the same route handlers to avoid duplication. Preview handling is a single source of truth: either `?preview=true` or the `X-Preview: true` header enables draft preview mode.
+The same functionality is also exposed under legacy paths like `/api/v1/content/*` for internal compatibility. Both mount to the same handlers.
 
 ## Errors and cache
 
-- Errors: endpoints return JSON errors with appropriate HTTP status codes (4xx/5xx) — never raw HTML/text.
-- Cache headers: endpoints set Cache-Control values; generally public caching with reasonable TTLs (examples in code: legal and faqs use 86400 seconds, filters use 43200, articles use 300).
-
-## Notes for integrators
-
-- The mobile app reads CMS base URL from `EXPO_PUBLIC_CMS_API_URL` and calls the `/content/*` paths. Ensure your deployed API exposes those paths (the server mounts both `/api/v1/content` and `/content`).
-- For previewing draft content set `X-Preview: true` on requests.
+- Errors are returned as JSON with appropriate HTTP status codes.
+- Cache-Control header examples: legal and faqs use 86400, filters use 43200, articles use shorter TTLs.
 
 ## Multi-tenant extensions
 
-This CMS supports optional multi-tenant scoping via query parameters. These are optional and backward-compatible with the mobile app.
+Optional query params: `org`, `brand`, `store`. When provided, endpoints will attempt to filter or resolve referenced brand/store documents. These parameters are backward-compatible; omitting them returns global content.
 
-- Query params: `org`, `brand`, `store` (provide slug values)
-- Example: GET /content/articles?brand=jars&store=jars-detroit
+## Notes for integrators
 
-When provided, endpoints will attempt to filter content to documents referencing the given brand/store/organization. If omitted, global content is returned as before.
-
-Note: These params are optional — existing mobile clients that don't send them will continue to receive the same responses.
+- Mobile app reads the CMS base URL from `EXPO_PUBLIC_CMS_API_URL`.
+- For previewing draft content set `X-Preview: true` or `?preview=true`.

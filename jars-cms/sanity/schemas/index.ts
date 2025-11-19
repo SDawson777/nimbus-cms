@@ -23,6 +23,9 @@ export const schemaTypes = [
   quiz,
   author,
   faqItem,
+  // tenant-aware CMS types
+  organization,
+  brand,
   legalPage,
   deal,
   transparencyPage,
