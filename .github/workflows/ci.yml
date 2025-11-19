@@ -52,9 +52,10 @@ jobs:
           # serve the static admin build and run pa11y checks against the homepage
           npx http-server ./apps/admin/dist -p 8080 >/dev/null 2>&1 &
           sleep 2
-          # Force pa11y v6 via npx to ensure the CLI supports passing chrome args
-          # and avoid variations from preinstalled global pa11y versions in CI
-          npx pa11y@6 http://localhost:8080 --chrome-launcher-args="--no-sandbox --disable-setuid-sandbox"
+          # Run pa11y programmatically so we can pass Chrome flags reliably
+          # This uses the local pa11y installation (installed by `npm ci`) and
+          # avoids CLI flag/version mismatches across CI environments.
+          node scripts/run-pa11y.js http://localhost:8080
 
       - name: Package build artifacts (optional)
         if: ${{ always() }}
