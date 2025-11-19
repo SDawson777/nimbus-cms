@@ -1,9 +1,102 @@
 import {StructureResolver} from 'sanity/desk'
+import {client} from './sanityClient'
 
 export const deskStructure: StructureResolver = (S) =>
   S.list()
     .title('Content')
     .items([
+      // Legal section
+      S.listItem()
+        .title('Legal')
+        .child(
+          S.list()
+            .title('Legal')
+            .items([
+              S.listItem()
+                .title('By Type')
+                .child(
+                  S.list()
+                    .title('Types')
+                    .items([
+                      S.listItem()
+                        .title('Terms')
+                        .child(
+                          S.documentList()
+                            .title('Terms')
+                            .schemaType('legalPage')
+                            .filter('type == $type')
+                            .params({type: 'terms'}),
+                        ),
+                      S.listItem()
+                        .title('Privacy')
+                        .child(
+                          S.documentList()
+                            .title('Privacy')
+                            .schemaType('legalPage')
+                            .filter('type == $type')
+                            .params({type: 'privacy'}),
+                        ),
+                      S.listItem()
+                        .title('Accessibility')
+                        .child(
+                          S.documentList()
+                            .title('Accessibility')
+                            .schemaType('legalPage')
+                            .filter('type == $type')
+                            .params({type: 'accessibility'}),
+                        ),
+                      S.listItem()
+                        .title('Age Gate')
+                        .child(
+                          S.documentList()
+                            .title('Age Gate')
+                            .schemaType('legalPage')
+                            .filter('type == $type')
+                            .params({type: 'ageGate'}),
+                        ),
+                    ]),
+                ),
+              S.listItem()
+                .title('By State')
+                .child(async () => {
+                  // Fetch distinct state codes from Sanity and build list items dynamically
+                  const codes: string[] = await client.fetch(
+                    `*[_type=="legalPage" && defined(stateCode)].stateCode`,
+                  )
+                  const uniq = Array.from(new Set((codes || []).filter(Boolean)))
+                  return S.list()
+                    .title('States')
+                    .items([
+                      S.listItem()
+                        .title('Global')
+                        .child(
+                          S.documentList()
+                            .title('Global Legal')
+                            .schemaType('legalPage')
+                            .filter('!defined(stateCode) || stateCode == null'),
+                        ),
+                      ...uniq.map((s) =>
+                        S.listItem()
+                          .title(String(s))
+                          .child(
+                            S.documentList()
+                              .title(String(s))
+                              .schemaType('legalPage')
+                              .filter('stateCode == $state')
+                              .params({state: s}),
+                          ),
+                      ),
+                    ])
+                }),
+            ]),
+        ),
+
+      // Other content
+      S.listItem()
+        .title('Organizations')
+        .schemaType('organization')
+        .child(S.documentTypeList('organization')),
+      S.listItem().title('Brands').schemaType('brand').child(S.documentTypeList('brand')),
       S.listItem().title('Articles').schemaType('article').child(S.documentTypeList('article')),
       S.listItem().title('Categories').schemaType('category').child(S.documentTypeList('category')),
       S.listItem().title('Quizzes').schemaType('quiz').child(S.documentTypeList('quiz')),

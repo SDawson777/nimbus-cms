@@ -8,26 +8,48 @@ Canonical (current)
 - `apps/studio/` — The canonical Sanity Studio for editors. This is the admin UI that talks to the same Sanity project/dataset as the `server/` API.
 - `docs/` — Documentation for architecture, studio setup, and migration notes.
 
-Other services
+# Project architecture and canonical locations
 
-- `core-api/` — An optional separate product/store API that uses Prisma. It's not required to run the CMS; treat it as a separate service.
+This document explains where the canonical code and responsibilities live, how the pieces fit together, and highlights the multi-tenant model, admin SPA, analytics, and theming support.
 
-Legacy / Archived folders
+## Canonical components
 
-The following folders are kept for historical reference and examples only. They are not used by the current `server/` or `apps/studio/` systems and should not be treated as the canonical implementation.
+- `server/` — The TypeScript Express CMS API. This is the canonical runtime that serves the mobile-friendly `/content/*` endpoints and the admin `/api/*` endpoints. It wires to Sanity using `@sanity/client`, supports preview mode, deterministic writes, RBAC, and theming.
+- `apps/studio/` — The Sanity Studio where editors/publishers manage content, legal packs, and brand/store documents. Studio schemas live here and are the source of truth for document shapes.
+- `apps/admin/` — The Admin SPA (React + Vite) used by product and marketing teams to edit theme settings, upload assets, and manage administrative workflows.
 
-- `jars-cms/` — Older combined Express + Sanity implementation. Kept for reference.
-- `jars-cms-api/` — Legacy API implementation (archived). Do not use for new development.
-- `jars-mobile-app/` — An older mobile app repository used as a reference implementation; the production mobile app is maintained separately.
+## Multi-tenant model
 
-If you're a buyer or new maintainer: focus on `server/` and `apps/studio/`.
+The codebase supports optional multi-tenant scoping at the org/brand/store level. The API accepts optional query params and request fields (e.g. `org`, `brand`, `store`) and resolves those slugs into Sanity references when writing/updating documents. Theme documents are created with deterministic `_id` patterns (for idempotent upserts) like `themeConfig-<brand>` or `themeConfig-<brand>-store-<store>`.
 
-Preview and tokens
+## Theming and assets
 
-- The API supports preview mode via the `X-Preview: true` header or `?preview=true` query parameter. When preview is enabled the API uses `SANITY_PREVIEW_TOKEN` (or falls back to `SANITY_API_TOKEN` if set).
-- Environment variables used by the server and studio are listed in `.env.example` and include `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `SANITY_PREVIEW_TOKEN`.
+- Themes are stored as `themeConfig` documents in Sanity and include colors, typography, and `logo` (image reference). The server persists canonical Sanity asset references (asset id) and `logo.alt` for accessibility.
+- The Admin SPA uploads logos using a multipart-first strategy with a JSON dataURL fallback so environments without `multer` still work.
 
-Governance and handoff notes
+## Admin SPA and RBAC
 
-- Do NOT delete the legacy folders; they are intentionally preserved as archives.
-- Label any future archived code with a top-of-file README banner pointing to `docs/ARCHITECTURE.md` so buyers can find canonical sources.
+- The Admin SPA talks to protected `/api/admin/*` endpoints guarded by a JWT cookie (`admin_token`) and role-based middleware (`requireRole`). The server uses a `createWriteClient()` helper to centralize write client creation for Sanity.
+
+## Analytics & content metrics
+
+- The server collects lightweight content metrics and exposes endpoints to record and query analytics counters for articles and content. The analytics subsystem is intentionally decoupled so it can be swapped for a third-party provider.
+
+## Legal/versioning
+
+- Legal documents (terms, privacy, accessibility, ageGate) are versioned and time-windowed with `effectiveFrom` and optional `effectiveTo`. The API returns the most recent applicable document per-request and supports `state` scoping for US-state-specific legal content.
+
+## Environment variables
+
+Key env vars (see `.env.example`):
+
+- `SANITY_PROJECT_ID`, `SANITY_DATASET`
+- `SANITY_API_TOKEN`, `SANITY_PREVIEW_TOKEN`
+- `JWT_SECRET` (admin token signing)
+
+## Handoff and governance notes
+
+- Focus on `server/`, `apps/studio/`, and `apps/admin/` when onboarding a buyer.
+- Keep legacy folders (`jars-cms/`, `jars-cms-api/`, `jars-mobile-app/`) as archives; they are not the canonical runtime.
+
+If you need an architecture diagram, a simple flow is: Studio → Sanity → CMS API → Mobile / Admin SPA

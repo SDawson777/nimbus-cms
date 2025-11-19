@@ -9,6 +9,7 @@ import {requireAdmin} from './middleware/adminAuth'
 import {contentRouter} from './routes/content'
 import {statusRouter} from './routes/status'
 import {adminRouter} from './routes/admin'
+import analyticsRouter from './routes/analytics'
 
 const app = express()
 // Security middlewares
@@ -18,10 +19,12 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
 // Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins
-const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:5173']
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173']
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: any, callback: any) => {
       // Allow requests with no origin (curl, server-to-server)
       if (!origin) return callback(null, true)
       if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
@@ -54,10 +57,13 @@ app.use('/api/v1/content', contentRouter)
 // Mount content routes for mobile and external consumers (mobile contract)
 app.use('/content', contentRouter)
 
+// Analytics endpoint (collect events)
+app.use('/analytics', analyticsRouter)
+
 // status routes (legacy and a simple /status alias)
 app.use('/api/v1/status', statusRouter)
 app.use('/status', statusRouter)
-// admin routes (products used by mobile)
-app.use('/api/admin', adminRouter)
+// admin routes (products used by mobile) - protect all API admin routes with requireAdmin
+app.use('/api/admin', requireAdmin, adminRouter)
 
 export default app

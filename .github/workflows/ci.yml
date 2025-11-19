@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install repo dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test --silent
+
+      - name: Build API (server)
+        run: npm run build:api
+
+      - name: Install admin deps
+        working-directory: ./apps/admin
+        run: npm ci
+
+      - name: Build Admin SPA
+        working-directory: ./apps/admin
+        run: npm run build
+
+      - name: Run accessibility checks (pa11y)
+        if: always()
+        run: |
+          # serve the static admin build and run pa11y checks against the homepage
+          npx http-server ./apps/admin/dist -p 8080 >/dev/null 2>&1 &
+          sleep 2
+          npx pa11y http://localhost:8080
+
+      - name: Package build artifacts (optional)
+        if: ${{ always() }}
+        run: |
+          echo "Built server/dist and apps/admin/dist (if present)."
+
+      - name: Build Docker image (optional)
+        if: env.BUILD_DOCKER == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: server/Dockerfile
+          push: false
+          tags: jars-cms-server:latest
+
+  # Optional: you can add further jobs for lint, integration tests, or publish steps.

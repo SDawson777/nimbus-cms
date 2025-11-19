@@ -12,5 +12,5 @@ export default defineCliConfig({
    * Move to `deployment.autoUpdates` shape per newer Sanity recommendations.
    * Learn more at https://www.sanity.io/docs/cli#auto-updates
    */
-  deployment: { autoUpdates: true },
+  deployment: {autoUpdates: true},
 })

@@ -1,23 +1,32 @@
 # Server Dockerfile for JARS CMS API
-FROM node:18-alpine
-
-# Create app directory
+## Multi-stage Dockerfile
+## Builder: install deps and build TypeScript + admin assets
+FROM node:18 AS builder
 WORKDIR /app
-
-# Copy package manifests
 COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm ci --only=production
+# Copy full repo and build artifacts
+COPY . .
 
-# Copy server sources
-COPY server ./server
-
-# Build server
+# Build admin app (if present) and server
+RUN npm run build:admin || true
 RUN npm run build:api
 
-# Expose port
+## Runtime image: smaller footprint
+FROM node:18-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Install only production deps
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+# Copy built server and static assets from builder
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/server/static ./server/static
+COPY --from=builder /app/apps/admin/dist ./apps/admin/dist
+
 EXPOSE 4010
 
-# Start the compiled server
 CMD ["node", "server/dist/server.js"]

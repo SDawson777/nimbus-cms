@@ -17,5 +17,21 @@ export default defineType({
     defineField({name: 'endDate', type: 'datetime', title: 'End Date'}),
     defineField({name: 'tags', type: 'array', title: 'Tags', of: [{type: 'string'}]}),
     defineField({name: 'reason', type: 'string', title: 'Reason Text'}),
+    // Channels this deal is targeted to
+    defineField({
+      name: 'channels',
+      type: 'array',
+      title: 'Channels',
+      of: [{type: 'string'}],
+      options: {list: ['mobile', 'web', 'kiosk', 'email']},
+    }),
+    // Optional tenant scoping
+    defineField({name: 'brand', type: 'reference', title: 'Brand', to: [{type: 'brand'}]}),
+    defineField({
+      name: 'stores',
+      type: 'array',
+      title: 'Stores',
+      of: [{type: 'reference', to: [{type: 'store'}]}],
+    }),
   ],
 })

@@ -24,8 +24,12 @@ describe('GET /api/v1/content/legal', () => {
   })
 
   it('validates query params', async () => {
+    // Previously missing `type` caused validation error. Now we default to 'terms'.
+    const doc = {title: 'Terms', version: '1', updatedAt: '2024', body: []}
+    fetchCMSMock.mockResolvedValueOnce(doc)
     const res = await request(app).get('/api/v1/content/legal')
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({title: doc.title, body: doc.body})
   })
 })
 
@@ -137,7 +141,10 @@ describe('Mobile and legacy endpoints consistency', () => {
     fetchCMSMock.mockResolvedValueOnce(doc)
     const resMobile = await request(app).get('/content/legal').query({type: 'terms'})
     expect(resMobile.status).toBe(200)
-    expect(resMobile.body).toEqual({title: doc.title, body: doc.body})
+    // Mobile endpoint returns extended shape with version/effectiveFrom
+    expect(resMobile.body).toHaveProperty('title', doc.title)
+    expect(resMobile.body).toHaveProperty('body')
+    expect(resMobile.body).toHaveProperty('version')
   })
 
   it('faqs: /content/fa_q matches /api/v1/content/faqs', async () => {

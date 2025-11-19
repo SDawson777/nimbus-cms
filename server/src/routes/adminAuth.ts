@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
-import {loadAdmins, findAdmin} from '../lib/admins'
+import {loadAdmins, findAdmin, getEnvAdmin, AdminUser} from '../lib/admins'
+import {requireAdmin} from '../middleware/adminAuth'
 
 const router = Router()
 const COOKIE_NAME = 'admin_token'
@@ -28,48 +29,73 @@ router.post('/login', loginLimiter, async (req: any, res) => {
   if (!email || !password) return res.status(400).json({error: 'MISSING_CREDENTIALS'})
 
   const cfg = loadAdmins()
+  // prefer file-backed config
   if (cfg) {
-    // use JSON config to find brand/disp/admin
     const found = findAdmin(brand, dispensary, email)
     if (!found || !found.admin) return res.status(401).json({error: 'INVALID_CREDENTIALS'})
-    const admin = found.admin
+    const admin = found.admin as AdminUser
     let valid = false
     if (admin.passwordHash) {
       valid = await bcrypt.compare(password, admin.passwordHash)
     } else {
-      // no hash provided in config; not recommended
       valid = false
     }
     if (!valid) return res.status(401).json({error: 'INVALID_CREDENTIALS'})
-    const token = jwt.sign(
-      {email, brand: found.brand.id, dispensary: found.dispensary.id},
-      jwtSecret,
-      {
-        expiresIn: '4h',
-      },
-    )
-    res.cookie(COOKIE_NAME, token, {httpOnly: true, secure: process.env.NODE_ENV === 'production'})
+    const safePayload = {
+      id: admin.id,
+      email: admin.email,
+      role: admin.role,
+      organizationSlug: admin.organizationSlug,
+      brandSlug: admin.brandSlug,
+      storeSlug: admin.storeSlug,
+    }
+    const token = jwt.sign(safePayload, jwtSecret, {expiresIn: '4h'})
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 4 * 60 * 60 * 1000,
+      path: '/',
+    })
     return res.json({ok: true})
   }
 
   // fallback to env-based single-admin mode
-  const adminEmail = process.env.ADMIN_EMAIL
-  const adminPassword = process.env.ADMIN_PASSWORD
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
-  if (!adminEmail || (!adminPassword && !adminPasswordHash)) {
-    return res.status(500).json({error: 'ADMIN_NOT_CONFIGURED'})
-  }
-  if (email !== adminEmail) return res.status(401).json({error: 'INVALID_CREDENTIALS'})
+  const envAdmin = getEnvAdmin()
+  if (!envAdmin) return res.status(500).json({error: 'ADMIN_NOT_CONFIGURED'})
+  if (email !== envAdmin.email) return res.status(401).json({error: 'INVALID_CREDENTIALS'})
   let valid = false
-  if (adminPasswordHash) {
-    valid = await bcrypt.compare(password, adminPasswordHash)
-  } else {
-    valid = password === adminPassword
+  if (envAdmin.passwordHash) {
+    valid = await bcrypt.compare(password, envAdmin.passwordHash)
+  } else if (process.env.ADMIN_PASSWORD) {
+    valid = password === process.env.ADMIN_PASSWORD
   }
   if (!valid) return res.status(401).json({error: 'INVALID_CREDENTIALS'})
-  const token = jwt.sign({email}, jwtSecret, {expiresIn: '4h'})
-  res.cookie(COOKIE_NAME, token, {httpOnly: true, secure: process.env.NODE_ENV === 'production'})
+  const safePayload = {
+    id: envAdmin.id,
+    email: envAdmin.email,
+    role: envAdmin.role,
+    organizationSlug: envAdmin.organizationSlug,
+    brandSlug: envAdmin.brandSlug,
+    storeSlug: envAdmin.storeSlug,
+  }
+  const token = jwt.sign(safePayload, jwtSecret, {expiresIn: '4h'})
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 4 * 60 * 60 * 1000,
+    path: '/',
+  })
   res.json({ok: true})
+})
+
+// Return the current admin (from signed cookie)
+router.get('/me', requireAdmin, (req: any, res) => {
+  const admin = (req as any).admin || null
+  // ensure passwordHash is never leaked
+  if (admin && admin.passwordHash) delete admin.passwordHash
+  res.json({admin})
 })
 
 // GET /admin/logout

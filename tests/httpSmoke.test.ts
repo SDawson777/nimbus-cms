@@ -1,4 +1,5 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
+import jwt from 'jsonwebtoken'
 import request from 'supertest'
 
 var fetchCMSMock: any
@@ -38,9 +39,7 @@ describe('HTTP smoke routes', () => {
   it('GET /content/articles returns array of {title, slug}', async () => {
     // list count then items
     fetchCMSMock.mockResolvedValueOnce(1)
-    fetchCMSMock.mockResolvedValueOnce([
-      {id: '1', title: 'One', slug: 'one'},
-    ])
+    fetchCMSMock.mockResolvedValueOnce([{id: '1', title: 'One', slug: 'one'}])
     const res = await request(app).get('/content/articles').query({page: 1, limit: 10})
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.items)).toBe(true)
@@ -83,7 +82,11 @@ describe('HTTP smoke routes', () => {
       },
     ]
     fetchCMSMock.mockResolvedValueOnce(products)
-    const res = await request(app).get('/api/admin/products')
+    const token = jwt.sign(
+      {id: 't', email: 'tester', role: 'EDITOR'},
+      process.env.JWT_SECRET || 'dev-secret',
+    )
+    const res = await request(app).get('/api/admin/products').set('Cookie', `admin_token=${token}`)
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
     expect(res.body[0]).toHaveProperty('__id')

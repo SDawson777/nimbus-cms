@@ -1,0 +1,377 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@architect/hydrate": {
+      "name": "@architect/hydrate",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@architect/inventory",
+        "@architect/utils",
+        "glob"
+      ],
+      "effects": [],
+      "range": ">=3.4.1",
+      "nodes": [
+        "node_modules/@architect/hydrate"
+      ],
+      "fixAvailable": true
+    },
+    "@architect/inventory": {
+      "name": "@architect/inventory",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@architect/utils"
+      ],
+      "effects": [
+        "@sanity/runtime-cli"
+      ],
+      "range": ">=3.6.6-RC.0",
+      "nodes": [
+        "node_modules/@architect/inventory"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@architect/utils": {
+      "name": "@architect/utils",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "glob"
+      ],
+      "effects": [
+        "@architect/hydrate",
+        "@architect/inventory"
+      ],
+      "range": ">=4.0.0-RC.0",
+      "nodes": [
+        "node_modules/@architect/utils"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@sanity/cli": {
+      "name": "@sanity/cli",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@sanity/runtime-cli"
+      ],
+      "effects": [
+        "sanity"
+      ],
+      "range": ">=3.95.1-next.0.e2f839b19a",
+      "nodes": [
+        "node_modules/@sanity/cli"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@sanity/insert-menu": {
+      "name": "@sanity/insert-menu",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@sanity/ui"
+      ],
+      "effects": [],
+      "range": "<=1.1.13",
+      "nodes": [
+        "node_modules/@sanity/insert-menu"
+      ],
+      "fixAvailable": true
+    },
+    "@sanity/runtime-cli": {
+      "name": "@sanity/runtime-cli",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@architect/inventory"
+      ],
+      "effects": [
+        "@sanity/cli"
+      ],
+      "range": "8.3.0 || 8.4.0 || >=9.0.0",
+      "nodes": [
+        "node_modules/@sanity/runtime-cli"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@sanity/ui": {
+      "name": "@sanity/ui",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "react-refractor"
+      ],
+      "effects": [
+        "@sanity/insert-menu"
+      ],
+      "range": "<=3.0.0-static.48",
+      "nodes": [
+        "node_modules/@sanity/insert-menu/node_modules/@sanity/ui",
+        "node_modules/sanity/node_modules/@sanity/ui"
+      ],
+      "fixAvailable": true
+    },
+    "glob": {
+      "name": "glob",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1109840,
+          "name": "glob",
+          "dependency": "glob",
+          "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
+          "url": "https://github.com/advisories/GHSA-5j98-mcp5-4vw2",
+          "severity": "high",
+          "cwe": [
+            "CWE-78"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": ">=10.3.7 <10.5.0"
+        },
+        {
+          "source": 1109841,
+          "name": "glob",
+          "dependency": "glob",
+          "title": "glob CLI: Command injection via -c/--cmd executes matches with shell:true",
+          "url": "https://github.com/advisories/GHSA-5j98-mcp5-4vw2",
+          "severity": "high",
+          "cwe": [
+            "CWE-78"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": ">=11.0.0 <11.1.0"
+        }
+      ],
+      "effects": [
+        "@architect/hydrate",
+        "@architect/utils"
+      ],
+      "range": "10.3.7 - 10.4.5 || 11.0.0 - 11.0.3",
+      "nodes": [
+        "node_modules/@architect/utils/node_modules/glob",
+        "node_modules/@sanity/import/node_modules/glob",
+        "node_modules/glob"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "js-yaml": {
+      "name": "js-yaml",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1109801,
+          "name": "js-yaml",
+          "dependency": "js-yaml",
+          "title": "js-yaml has prototype pollution in merge (<<)",
+          "url": "https://github.com/advisories/GHSA-mh29-5h37-fv8m",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": "<3.14.2"
+        },
+        {
+          "source": 1109802,
+          "name": "js-yaml",
+          "dependency": "js-yaml",
+          "title": "js-yaml has prototype pollution in merge (<<)",
+          "url": "https://github.com/advisories/GHSA-mh29-5h37-fv8m",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": ">=4.0.0 <4.1.1"
+        }
+      ],
+      "effects": [],
+      "range": "<3.14.2 || >=4.0.0 <4.1.1",
+      "nodes": [
+        "node_modules/js-yaml",
+        "node_modules/load-yaml-file/node_modules/js-yaml"
+      ],
+      "fixAvailable": true
+    },
+    "prismjs": {
+      "name": "prismjs",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1105770,
+          "name": "prismjs",
+          "dependency": "prismjs",
+          "title": "PrismJS DOM Clobbering vulnerability",
+          "url": "https://github.com/advisories/GHSA-x7hr-w5r2-h6wg",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-94"
+          ],
+          "cvss": {
+            "score": 4.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:L/I:L/A:N"
+          },
+          "range": "<1.30.0"
+        }
+      ],
+      "effects": [
+        "refractor"
+      ],
+      "range": "<1.30.0",
+      "nodes": [
+        "node_modules/prismjs"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "react-refractor": {
+      "name": "react-refractor",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "refractor"
+      ],
+      "effects": [
+        "@sanity/ui"
+      ],
+      "range": "<=2.2.0",
+      "nodes": [
+        "node_modules/@sanity/insert-menu/node_modules/react-refractor",
+        "node_modules/sanity/node_modules/react-refractor"
+      ],
+      "fixAvailable": true
+    },
+    "refractor": {
+      "name": "refractor",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "prismjs"
+      ],
+      "effects": [
+        "react-refractor",
+        "sanity"
+      ],
+      "range": "<=4.6.0",
+      "nodes": [
+        "node_modules/@sanity/insert-menu/node_modules/refractor",
+        "node_modules/sanity/node_modules/refractor"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "sanity": {
+      "name": "sanity",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@sanity/cli",
+        "@sanity/ui",
+        "react-refractor",
+        "refractor"
+      ],
+      "effects": [],
+      "range": "2.29.4-purple-unicorn.509 - 2.30.1-purple-unicorn.964 || >=3.0.0-definetype.62",
+      "nodes": [
+        "node_modules/sanity"
+      ],
+      "fixAvailable": {
+        "name": "sanity",
+        "version": "4.16.0",
+        "isSemVerMajor": true
+      }
+    },
+    "tar-fs": {
+      "name": "tar-fs",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1109532,
+          "name": "tar-fs",
+          "dependency": "tar-fs",
+          "title": "tar-fs has a symlink validation bypass if destination directory is predictable with a specific tarball",
+          "url": "https://github.com/advisories/GHSA-vj76-c3g6-qr5v",
+          "severity": "high",
+          "cwe": [
+            "CWE-22",
+            "CWE-61"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=2.0.0 <2.1.4"
+        }
+      ],
+      "effects": [],
+      "range": "2.0.0 - 2.1.3",
+      "nodes": [
+        "node_modules/tar-fs"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 6,
+      "high": 8,
+      "critical": 0,
+      "total": 14
+    },
+    "dependencies": {
+      "prod": 1214,
+      "dev": 301,
+      "optional": 101,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 1615
+    }
+  }
+}

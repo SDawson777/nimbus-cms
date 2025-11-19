@@ -5,10 +5,19 @@ export const faqsRouter = Router()
 
 async function fetchAndFlattenFaqs(req: any, res: any) {
   const preview = req.preview ?? false
-  const query =
-    '*[_type=="faqGroup"] | order(weight asc){title,slug, "items":items(){"q":question,"a":answer}}'
+  const {org, brand, store} = req.query || {}
+  const channel = String((req.query as any).channel || '').trim()
+
+  // tenant filters
+  let tenantFilter = ''
+  if (brand) tenantFilter += ' && references(*[_type=="brand" && slug.current==$brand]._id)'
+  if (store) tenantFilter += ' && references(*[_type=="store" && slug.current==$store]._id)'
+  if (org) tenantFilter += ' && references(*[_type=="organization" && slug.current==$org]._id)'
+
+  const channelFilter = channel ? ' && $channel in channels' : ''
+  const query = `*[_type=="faqGroup" ${tenantFilter}${channelFilter}] | order(weight asc){title,slug, "items":items(){"q":question,"a":answer}}`
   // fetch groups from CMS
-  const groups = await fetchCMS(query, {}, {preview})
+  const groups = (await fetchCMS(query, {brand, store, org, channel}, {preview})) as any[]
 
   // If this request is under the legacy mount (/api/v1/content), return the original groups shape
   if (String(req.baseUrl || '').startsWith('/api/v1')) {
