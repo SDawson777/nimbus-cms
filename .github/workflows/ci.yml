@@ -52,8 +52,9 @@ jobs:
           # serve the static admin build and run pa11y checks against the homepage
           npx http-server ./apps/admin/dist -p 8080 >/dev/null 2>&1 &
           sleep 2
-          # Puppeteer requires disabling the sandbox in many CI environments
-          npx pa11y http://localhost:8080 --chrome-launcher-flags="--no-sandbox,--disable-setuid-sandbox"
+          # Use a Node script to run pa11y programmatically so we can pass
+          # Chromium flags reliably across pa11y versions and CI environments
+          node scripts/run-pa11y.js http://localhost:8080
 
       - name: Package build artifacts (optional)
         if: ${{ always() }}
