@@ -1,7 +1,11 @@
-import React, {useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import {useAdmin} from '../lib/adminContext'
 
 export default function Personalization() {
+  const {capabilities} = useAdmin()
   const [rules, setRules] = useState([])
+  const [rulesLoading, setRulesLoading] = useState(true)
+  const [rulesError, setRulesError] = useState(null)
   const [simCtx, setSimCtx] = useState({
     preference: '',
     location: '',
@@ -9,30 +13,64 @@ export default function Personalization() {
     lastPurchaseDaysAgo: '',
   })
   const [result, setResult] = useState(null)
+  const [simulateError, setSimulateError] = useState(null)
+  const [simulateLoading, setSimulateLoading] = useState(false)
 
-  useEffect(() => {
-    let mounted = true
-    fetch('/api/admin/personalization/rules', {credentials: 'include'})
-      .then((r) => r.json())
-      .then((j) => mounted && setRules(j))
-      .catch(() => {})
-    return () => {
-      mounted = false
+  const canManage = !!capabilities?.canManagePersonalization
+  const canView = !!capabilities?.canViewPersonalization
+
+  const loadRules = useCallback(async () => {
+    setRulesLoading(true)
+    setRulesError(null)
+    try {
+      const res = await fetch('/api/admin/personalization/rules', {credentials: 'include'})
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || 'Failed to load rules')
+      }
+      const payload = await res.json()
+      setRules(Array.isArray(payload) ? payload : [])
+    } catch (err) {
+      console.error('load rules failed', err)
+      setRules([])
+      setRulesError(err?.message || 'Failed to load rules')
+    } finally {
+      setRulesLoading(false)
     }
   }, [])
 
+  useEffect(() => {
+    loadRules()
+  }, [loadRules])
+
+  const hasRules = useMemo(() => Array.isArray(rules) && rules.length > 0, [rules])
+
   async function simulate() {
-    const body = {
-      context: {...simCtx, lastPurchaseDaysAgo: Number(simCtx.lastPurchaseDaysAgo || 0)},
-      contentType: 'article',
+    setSimulateError(null)
+    setResult(null)
+    setSimulateLoading(true)
+    try {
+      const body = {
+        context: {...simCtx, lastPurchaseDaysAgo: Number(simCtx.lastPurchaseDaysAgo || 0)},
+        contentType: 'article',
+      }
+      const res = await fetch('/personalization/apply', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || 'Simulation failed')
+      }
+      const j = await res.json()
+      setResult(j)
+    } catch (err) {
+      console.error('simulate failed', err)
+      setSimulateError(err?.message || 'Simulation failed')
+    } finally {
+      setSimulateLoading(false)
     }
-    const res = await fetch('/personalization/apply', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-    })
-    const j = await res.json()
-    setResult(j)
   }
 
   const studioBaseUrl = (import.meta.env.VITE_STUDIO_URL || '/studio').replace(/\/$/, '')
@@ -42,87 +80,109 @@ export default function Personalization() {
   return (
     <div style={{padding: 20}}>
       <h1>Personalization Rules</h1>
-      <div style={{display: 'flex', gap: 20}}>
-        <div style={{flex: 1}}>
-          <h2>Rules</h2>
-          <ul>
-            {rules.map((r) => (
-              <li key={r._id} style={{marginBottom: 8}}>
-                <strong>{r.name}</strong> {r.enabled ? '' : '(disabled)'}
-                <br />
-                <small>{r.description}</small>
-                <div>
-                  Conditions:{' '}
-                  {(r.conditions || []).map((c) => `${c.key} ${c.operator} ${c.value}`).join('; ')}
-                </div>
-                <div>
-                  Actions:{' '}
-                  {(r.actions || [])
-                    .map(
-                      (a) =>
-                        `${a.targetType}:${a.targetSlugOrKey} (+${a.priorityBoost})${a.channel ? ' @' + a.channel : ''}`,
-                    )
-                    .join('; ')}
-                </div>
-                <div>
-                  <a
-                    href={`${studioBaseUrl}/desk/personalizationRule;${r._id}${studioPreviewSuffix}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open in Studio
-                  </a>
-                </div>
-              </li>
-            ))}
-          </ul>
+      {!canView && (
+        <div style={{padding: 12, background: '#fee2e2', color: '#b91c1c', marginTop: 12}}>
+          You do not have permission to view personalization rules. Contact an Org or Brand Admin.
         </div>
+      )}
 
-        <div style={{width: 360}}>
-          <h2>Simulator</h2>
-          <label>
-            Preference
-            <br />
-            <input
-              value={simCtx.preference}
-              onChange={(e) => setSimCtx({...simCtx, preference: e.target.value})}
-            />
-          </label>
-          <label>
-            Location
-            <br />
-            <input
-              value={simCtx.location}
-              onChange={(e) => setSimCtx({...simCtx, location: e.target.value})}
-            />
-          </label>
-          <label>
-            Time of day
-            <br />
-            <input
-              value={simCtx.timeOfDay}
-              onChange={(e) => setSimCtx({...simCtx, timeOfDay: e.target.value})}
-            />
-          </label>
-          <label>
-            Last purchase days ago
-            <br />
-            <input
-              value={simCtx.lastPurchaseDaysAgo}
-              onChange={(e) => setSimCtx({...simCtx, lastPurchaseDaysAgo: e.target.value})}
-            />
-          </label>
-          <div style={{marginTop: 8}}>
-            <button onClick={simulate}>Simulate</button>
+      {canView && (
+        <div style={{display: 'flex', gap: 20, marginTop: 16, flexWrap: 'wrap'}}>
+          <div style={{flex: 1, minWidth: 320}}>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <h2 style={{margin: 0}}>Rules</h2>
+              <button type="button" onClick={loadRules} disabled={rulesLoading}>
+                {rulesLoading ? 'Refreshing…' : 'Reload'}
+              </button>
+            </div>
+            {rulesError && (
+              <div style={{marginTop: 8, padding: 10, background: '#fee2e2', color: '#b91c1c'}}>
+                Failed to load rules: {rulesError}
+              </div>
+            )}
+            {!rulesError && !hasRules && !rulesLoading && (
+              <div style={{marginTop: 8}}>No rules configured for this scope.</div>
+            )}
+            {rulesLoading && <div style={{marginTop: 8}}>Loading rules…</div>}
+            {hasRules && (
+              <ul style={{marginTop: 12}}>
+                {rules.map((r) => (
+                  <li key={r._id} style={{marginBottom: 12}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                      <strong>{r.name}</strong>
+                      {!r.enabled && (
+                        <span style={{fontSize: 12, color: '#b45309', background: '#fef3c7', padding: '0 6px', borderRadius: 999}}>
+                          Disabled
+                        </span>
+                      )}
+                    </div>
+                    {r.description && <small style={{display: 'block'}}>{r.description}</small>}
+                    <div style={{marginTop: 4}}>
+                      <strong>Conditions:</strong>{' '}
+                      {(r.conditions || []).map((c) => `${c.key} ${c.operator} ${c.value}`).join('; ') || '—'}
+                    </div>
+                    <div>
+                      <strong>Actions:</strong>{' '}
+                      {(r.actions || [])
+                        .map(
+                          (a) =>
+                            `${a.targetType}:${a.targetSlugOrKey} (+${a.priorityBoost || 0})${a.channel ? ' @' + a.channel : ''}`,
+                        )
+                        .join('; ') || '—'}
+                    </div>
+                    <div>
+                      <a
+                        href={`${studioBaseUrl}/desk/personalizationRule;${r._id}${studioPreviewSuffix}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open in Studio
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div style={{marginTop: 16}}>
-            <h3>Result</h3>
-            <pre style={{whiteSpace: 'pre-wrap'}}>
-              {result ? JSON.stringify(result, null, 2) : 'Run simulation'}
-            </pre>
+
+          <div style={{width: 360, flex: '0 0 auto'}}>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <h2 style={{margin: 0}}>Simulator</h2>
+              {!canManage && (
+                <span style={{fontSize: 12, color: '#b91c1c'}}>Editor role required to simulate</span>
+              )}
+            </div>
+            {['preference', 'location', 'timeOfDay', 'lastPurchaseDaysAgo'].map((field) => (
+              <label key={field} style={{display: 'block', marginTop: 8}}>
+                {field === 'lastPurchaseDaysAgo'
+                  ? 'Last purchase days ago'
+                  : field.charAt(0).toUpperCase() + field.slice(1)}
+                <br />
+                <input
+                  value={simCtx[field]}
+                  onChange={(e) => setSimCtx({...simCtx, [field]: e.target.value})}
+                  disabled={!canManage}
+                  style={{width: '100%'}}
+                />
+              </label>
+            ))}
+            <div style={{marginTop: 8}}>
+              <button onClick={simulate} disabled={!canManage || simulateLoading}>
+                {simulateLoading ? 'Running…' : 'Simulate'}
+              </button>
+            </div>
+            {simulateError && (
+              <div style={{marginTop: 8, color: '#b91c1c'}}>{simulateError}</div>
+            )}
+            <div style={{marginTop: 16}}>
+              <h3>Result</h3>
+              <pre style={{whiteSpace: 'pre-wrap'}}>
+                {result ? JSON.stringify(result, null, 2) : 'Run simulation'}
+              </pre>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

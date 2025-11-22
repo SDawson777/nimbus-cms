@@ -1,12 +1,40 @@
 import {Router} from 'express'
+import {z} from 'zod'
 import {fetchCMS} from '../../lib/cms'
 
 export const faqsRouter = Router()
 
+const slugPattern = /^[a-z0-9-]+$/i
+const preprocessQueryValue = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) {
+    const [first] = value
+    return typeof first === 'string' ? first.trim() : undefined
+  }
+  if (typeof value === 'string') {
+    return value.trim()
+  }
+  return undefined
+}
+
+const optionalSlugField = z
+  .preprocess(preprocessQueryValue, z.string().min(1).max(64).regex(slugPattern))
+  .transform((val) => val?.toLowerCase())
+  .optional()
+
+const querySchema = z.object({
+  org: optionalSlugField,
+  brand: optionalSlugField,
+  store: optionalSlugField,
+  channel: optionalSlugField,
+})
+
 async function fetchAndFlattenFaqs(req: any, res: any) {
   const preview = req.preview ?? false
-  const {org, brand, store} = req.query || {}
-  const channel = String((req.query as any).channel || '').trim()
+  const parsed = querySchema.safeParse(req.query || {})
+  if (!parsed.success) {
+    return res.status(400).json({error: 'INVALID_FAQ_FILTERS', details: parsed.error.issues})
+  }
+  const {org, brand, store, channel} = parsed.data
 
   // tenant filters
   let tenantFilter = ''
@@ -20,7 +48,9 @@ async function fetchAndFlattenFaqs(req: any, res: any) {
     : ''
   const query = `*[_type=="faqGroup" ${tenantFilter}] | order(weight asc){title,slug, "items":items()${itemChannelFilter}{"q":question,"a":answer}}`
   // fetch groups from CMS
-  const groups = (await fetchCMS(query, {brand, store, org, channel}, {preview})) as any[]
+  const params: Record<string, string | undefined> = {brand, store, org}
+  if (channel) params.channel = channel
+  const groups = (await fetchCMS(query, params, {preview})) as any[]
 
   // If this request is under the legacy mount (/api/v1/content), return the original groups shape
   if (String(req.baseUrl || '').startsWith('/api/v1')) {

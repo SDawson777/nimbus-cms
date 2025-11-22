@@ -31,6 +31,12 @@ describe('GET /api/v1/content/legal', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual({title: doc.title, body: doc.body})
   })
+
+  it('rejects invalid tenant filters', async () => {
+    const res = await request(app).get('/api/v1/content/legal').query({brand: 'DROP TABLE'})
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty('error', 'INVALID_LEGAL_FILTERS')
+  })
 })
 
 describe('GET /api/v1/content/faqs', () => {
@@ -56,6 +62,12 @@ describe('GET /api/v1/content/faqs', () => {
     expect(res.status).toBe(200)
     const callArgs = fetchCMSMock.mock.calls[0]
     expect(callArgs[1]).toMatchObject({channel: 'web'})
+  })
+
+  it('validates slug filters for faqs', async () => {
+    const res = await request(app).get('/api/v1/content/faqs').query({brand: 'DROP TABLE'})
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty('error', 'INVALID_FAQ_FILTERS')
   })
 })
 
@@ -250,7 +262,13 @@ describe('GET /api/v1/content/deals', () => {
 
   it('validates query params', async () => {
     const res = await request(app).get('/api/v1/content/deals').query({limit: 0})
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects invalid tenant filters', async () => {
+    const res = await request(app).get('/api/v1/content/deals').query({brand: 'DROP TABLE'})
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty('error', 'INVALID_DEAL_FILTERS')
   })
 })
 
@@ -265,6 +283,7 @@ describe('GET /api/v1/content/copy', () => {
 
   it('requires context', async () => {
     const res = await request(app).get('/api/v1/content/copy')
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty('error', 'INVALID_COPY_CONTEXT')
   })
 })

@@ -63,36 +63,36 @@ const analyticsLimiter = rateLimit({
 // POST /analytics/event
 // Body: { type: 'view'|'click', contentType: 'article'|'faq'|'legal'|'product', contentSlug: string }
 analyticsRouter.post('/event', analyticsLimiter, async (req, res) => {
-  const body = z
-    .object({
-      type: z.enum(['view', 'click']),
-      contentType: z.enum(['article', 'faq', 'legal', 'product']),
-      contentSlug: z.string(),
-      contentId: z.string().optional(),
-      brandSlug: z.string().optional(),
-      storeSlug: z.string().optional(),
-    })
-    .parse(req.body)
-
-  const client = createClient({
-    projectId: process.env.SANITY_PROJECT_ID!,
-    dataset: process.env.SANITY_DATASET!,
-    apiVersion: process.env.SANITY_API_VERSION || '2023-07-01',
-    token: process.env.SANITY_API_TOKEN,
-    useCdn: false,
-  })
-
-  // Use a deterministic _id so repeated events for the same content map to the same metric doc.
-  // sanitize slug by replacing / with - for safety
-  const safeSlug = String(body.contentSlug).replace(/[^a-zA-Z0-9-_.]/g, '-')
-  // Use a deterministic id that includes optional brand/store so metrics are scoped safely
-  const brandPart = body.brandSlug ? `-brand-${String(body.brandSlug)}` : ''
-  const storePart = body.storeSlug ? `-store-${String(body.storeSlug)}` : ''
-  const id = `contentMetric-${body.contentType}${brandPart}${storePart}-${safeSlug}`
-
-  const now = new Date().toISOString()
-
   try {
+    const body = z
+      .object({
+        type: z.enum(['view', 'click']),
+        contentType: z.enum(['article', 'faq', 'legal', 'product']),
+        contentSlug: z.string(),
+        contentId: z.string().optional(),
+        brandSlug: z.string().optional(),
+        storeSlug: z.string().optional(),
+      })
+      .parse(req.body)
+
+    const client = createClient({
+      projectId: process.env.SANITY_PROJECT_ID!,
+      dataset: process.env.SANITY_DATASET!,
+      apiVersion: process.env.SANITY_API_VERSION || '2023-07-01',
+      token: process.env.SANITY_API_TOKEN,
+      useCdn: false,
+    })
+
+    // Use a deterministic _id so repeated events for the same content map to the same metric doc.
+    // sanitize slug by replacing / with - for safety
+    const safeSlug = String(body.contentSlug).replace(/[^a-zA-Z0-9-_.]/g, '-')
+    // Use a deterministic id that includes optional brand/store so metrics are scoped safely
+    const brandPart = body.brandSlug ? `-brand-${String(body.brandSlug)}` : ''
+    const storePart = body.storeSlug ? `-store-${String(body.storeSlug)}` : ''
+    const id = `contentMetric-${body.contentType}${brandPart}${storePart}-${safeSlug}`
+
+    const now = new Date().toISOString()
+
     // Ensure aggregate metric exists and increment
     await client.createIfNotExists({
       _id: id,
@@ -135,6 +135,9 @@ analyticsRouter.post('/event', analyticsLimiter, async (req, res) => {
 
     res.status(200).json({ok: true, metric: updated})
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({error: 'INVALID_ANALYTICS_EVENT', details: err.issues})
+    }
     logger.error('analytics event failed', err)
     res.status(500).json({error: 'FAILED'})
   }

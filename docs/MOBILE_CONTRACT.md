@@ -68,6 +68,18 @@ All endpoints return JSON. Preview (draft) mode is enabled by supplying the head
   - Response: { items: [ { id: string, slug: string, title?: string, type: string, score: number, reasons?: any[] } ] }
   - Notes: Returns candidates scored by admin-authored rules. This is opt-in and does not alter default content endpoints.
 
+### Client guidance
+
+- **Channels and audiences**: The API is channel-aware; include `context.channel` when requesting rules that target `web`, `mobile`, `kiosk`, or `email` content. Actions with a `channel` constraint are ignored unless the incoming context matches.
+- **Payload shape**: Provide the minimal context keys required by your rules. Unrecognized keys are ignored. To keep payloads consistent across platforms, we recommend camelCased keys with primitive values (string, number, boolean).
+- **Content hydration**: When `slugs` is omitted, the service will fetch candidate documents itself. When slugs are supplied (e.g., pre-filtered by a feed), the service will only score that subset.
+- **Cadence and caching**:
+  - Web/mobile clients should treat responses as short-lived hints and recompute no less than every 5–15 minutes per user session.
+  - If an upstream CDN caches responses, include `context.userId` or `context.sessionId` in the cache key to avoid serving cross-user personalization.
+  - When the personalization endpoint is unreachable, fall back to deterministic ordering (e.g., sort by published date) and log the failure for later analysis.
+- **Webhook availability**: For scheduled rollouts, use the admin dashboard to configure webhook notifications. Webhooks emit whenever a `personalizationRule` toggles `enabled`, which allows clients to pre-populate caches.
+- **Telemetry**: Include rule decision information (the `reasons` array) in your analytics events where possible; this helps track how often boosts actually surface in production and informs future rule tuning.
+
 ## Admin endpoints used by integrators
 
 - POST /analytics/event

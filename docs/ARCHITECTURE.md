@@ -36,6 +36,7 @@ The codebase supports optional multi-tenant scoping at the org/brand/store level
 ## Compliance automation
 
 - A compliance engine evaluates required legal documents per-store and computes a compliance score. The engine prefers state-scoped documents and supports snapshotting for audit.
+- The admin compliance overview endpoint now memoizes live computations for 60 seconds (`COMPLIANCE_OVERVIEW_CACHE_TTL_MS` override) and falls back to cached snapshots when available, exposing the cache mode via `X-Compliance-Cache` headers (`SNAPSHOT`, `MISS`, `HIT`).
 
 ## Advanced theming and omnichannel
 
@@ -53,6 +54,32 @@ The codebase supports optional multi-tenant scoping at the org/brand/store level
 ## Admin SPA and RBAC
 
 - The Admin SPA talks to protected `/api/admin/*` endpoints guarded by a JWT cookie (`admin_token`) and role-based middleware (`requireRole`). Requests also require a CSRF token (`admin_csrf` cookie + `X-CSRF-Token` header) issued by the API, aligning SPA fetches and Vitest suites with the same middleware.
+- A complete endpoint × role matrix lives in [`docs/RBAC_MATRIX.md`](./RBAC_MATRIX.md) so buyers can see exactly which routes are available per role and how brand/store scope is enforced.
+
+### Role hierarchy
+
+| Role | Scope | Typical permissions |
+| --- | --- | --- |
+| OWNER | Global | Full superuser control across every tenant. |
+| ORG_ADMIN | Organization | Analytics + compliance across their org (and its brands/stores). |
+| BRAND_ADMIN | Brand | Manage one brand and all of its stores. |
+| EDITOR | Brand | Author content + theming for their assigned brand and its stores. |
+| STORE_MANAGER | Store | Operate only on their specific store overrides. |
+| VIEWER | Scoped read | Read-only dashboards scoped by their token (often brand/store). |
+
+### Theme API scope enforcement
+
+Theme endpoints now enforce tenant scope in addition to the minimum role. Brand/store slugs baked into the admin token must match the brand/store being queried or mutated, unless the user is an OWNER/ORG_ADMIN (global) or BRAND_ADMIN (brand-wide).
+
+| Endpoint | Minimum role | Scope behavior |
+| --- | --- | --- |
+| `GET /api/admin/theme` | VIEWER | Requires `brand` query to match the caller's brand; optional `store` must match their store slug (or belong to their brand). |
+| `POST /api/admin/theme` | EDITOR | Caller must have access to the target brand; store overrides require brand match or the exact store slug (for store managers). |
+| `GET /api/admin/theme/configs` | VIEWER | Rejects brand/store filters outside the caller's scope and automatically narrows results to their brand/store when no filters are provided. |
+| `POST /api/admin/theme/config` | EDITOR | Enforces brand + store scope before writing Sanity documents. |
+| `DELETE /api/admin/theme/config/:id` | EDITOR | Loads the target config, verifies ownership, and only then deletes it. |
+
+Helpers (`ensureBrandScope`/`ensureStoreScope`) wrap these checks, so future theme endpoints inherit the same RBAC guarantees without duplicating logic.
 
 ## Analytics & content metrics
 
@@ -106,8 +133,16 @@ Key env vars (see `.env.example`):
 - `JWT_SECRET` (admin token signing)
 - `ANALYTICS_INGEST_KEY` (comma-separated shared keys for analytics clients)
 - `MAX_LOGO_BYTES`, `JSON_BODY_LIMIT` (govern logo upload size / JSON payload parsing)
-- `COMPLIANCE_SNAPSHOT_ENABLED` (turns on the scheduled compliance snapshot job)
+- `ENABLE_COMPLIANCE_SCHEDULER` (set to `true` on exactly one instance to run the scheduled compliance snapshot job)
+- `COMPLIANCE_OVERVIEW_CACHE_TTL_MS` (optional; defaults to 60s)
 - `LOG_LEVEL` (optional; set to `debug` to emit debug-level logs)
+
+## Reference docs
+
+- [`docs/RBAC_MATRIX.md`](./RBAC_MATRIX.md) — endpoint × role matrix plus scope expectations.
+- [`docs/API_REFERENCE_ADMIN.md`](./API_REFERENCE_ADMIN.md) — request/response contracts for `/api/admin/*` routes.
+- [`docs/SECURITY_NOTES.md`](./SECURITY_NOTES.md) — threat model, scheduler guidance, and secret hygiene checklist.
+- [`docs/PERSONALIZATION_CLIENT_GUIDE.md`](./PERSONALIZATION_CLIENT_GUIDE.md) — deep dive on `/personalization/apply` usage.
 
 ## Handoff and governance notes
 

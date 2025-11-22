@@ -5,17 +5,44 @@ import {fetchCMS} from '../../lib/cms'
 
 export const dealsRouter = Router()
 
+const slugPattern = /^[a-z0-9-]+$/i
+const idPattern = /^[a-zA-Z0-9_.-]+$/
+
+const preprocessQueryValue = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) {
+    const [first] = value
+    return typeof first === 'string' ? first.trim() : undefined
+  }
+  if (typeof value === 'string') {
+    return value.trim()
+  }
+  return undefined
+}
+
+const optionalSlugField = z
+  .preprocess(preprocessQueryValue, z.string().min(1).max(64).regex(slugPattern))
+  .transform((val) => val?.toLowerCase())
+  .optional()
+
+const optionalIdField = z
+  .preprocess(preprocessQueryValue, z.string().min(1).max(64).regex(idPattern))
+  .optional()
+
+const querySchema = z.object({
+  storeId: optionalIdField,
+  limit: z.coerce.number().min(1).max(50).default(20),
+  brand: optionalSlugField,
+  store: optionalSlugField,
+  org: optionalSlugField,
+  channel: optionalSlugField,
+})
+
 dealsRouter.get('/', async (req, res) => {
-  const {storeId, limit, brand, store, org} = z
-    .object({
-      storeId: z.string().optional(),
-      limit: z.coerce.number().min(1).max(50).default(20),
-      brand: z.string().optional(),
-      store: z.string().optional(),
-      org: z.string().optional(),
-      channel: z.string().optional(),
-    })
-    .parse(req.query)
+  const parsed = querySchema.safeParse(req.query || {})
+  if (!parsed.success) {
+    return res.status(400).json({error: 'INVALID_DEAL_FILTERS', details: parsed.error.issues})
+  }
+  const {storeId, limit, brand, store, org, channel} = parsed.data
 
   // build tenant filter: prefer explicit storeId (legacy), otherwise accept slug-based filters
   let filter = ''
@@ -38,7 +65,6 @@ dealsRouter.get('/', async (req, res) => {
     }
   }
 
-  const channel = String((req.query as any).channel || '').trim()
   const channelExpr = channel
     ? ' && ( !defined(channels) || count(channels) == 0 || $channel in channels )'
     : ''
@@ -50,7 +76,8 @@ dealsRouter.get('/', async (req, res) => {
     "image":{"src":image.asset->url,"alt":image.alt},
     priority,startAt,endAt,stores
   }`
-  const items = await fetchCMS(query, {...params, channel})
+  const queryParams = channel ? {...params, channel} : params
+  const items = await fetchCMS(query, queryParams)
   const results = Array.isArray(items) ? items : []
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=300')
   res.json(results)

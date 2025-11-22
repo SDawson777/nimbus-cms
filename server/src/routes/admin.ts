@@ -1,9 +1,9 @@
-import {Router} from 'express'
+import {Router, Response, Request} from 'express'
 import crypto from 'crypto'
 import {fetchCMS, createWriteClient} from '../lib/cms'
 import {computeCompliance} from '../lib/compliance'
 import {z} from 'zod'
-import {requireRole} from '../middleware/requireRole'
+import {requireRole, canAccessBrand, canAccessStore} from '../middleware/requireRole'
 import {portableTextToHtml} from '../lib/portableText'
 import {logger} from '../lib/logger'
 
@@ -48,15 +48,132 @@ function buildMetricScopeFilter(admin: any) {
   return {filter, params}
 }
 
+function ensureBrandScope(res: Response, admin: any, brand?: string | null) {
+  if (!brand) return true
+  if (canAccessBrand(admin, brand)) return true
+  res.status(403).json({error: 'FORBIDDEN'})
+  return false
+}
+
+function ensureStoreScope(
+  res: Response,
+  admin: any,
+  store?: string | null,
+  brand?: string | null,
+) {
+  if (!store) return true
+  if (canAccessStore(admin, store, brand)) return true
+  res.status(403).json({error: 'FORBIDDEN'})
+  return false
+}
+
+function resolveScopedBrand(
+  req: Request,
+  providedBrand?: string | null,
+): {ok: true; brand: string} | {ok: false; status: number; error: string} {
+  const admin = (req as any).admin
+  const targetBrand = (providedBrand || admin?.brandSlug || '').trim()
+  if (!targetBrand) return {ok: false, status: 400, error: 'MISSING_BRAND'}
+  if (!canAccessBrand(admin, targetBrand)) return {ok: false, status: 403, error: 'FORBIDDEN'}
+  return {ok: true, brand: targetBrand}
+}
+
 export const adminRouter = Router()
 
 // Simple in-memory cache for overview responses to avoid repeated heavy queries.
-const overviewCache: Map<string, {ts: number; data: any}> = new Map()
+type AnalyticsCacheEntry = {ts: number; data: any; refreshedAt?: string}
+const overviewCache: Map<string, AnalyticsCacheEntry> = new Map()
 const OVERVIEW_CACHE_TTL = Number(process.env.ANALYTICS_OVERVIEW_CACHE_TTL_MS || 30000)
+const complianceOverviewCache: Map<string, {ts: number; data: any}> = new Map()
+const COMPLIANCE_OVERVIEW_CACHE_TTL_MS = Number(
+  process.env.COMPLIANCE_OVERVIEW_CACHE_TTL_MS || 60000,
+)
+
+export function __clearComplianceOverviewCacheForTests() {
+  complianceOverviewCache.clear()
+}
 const ANALYTICS_CACHE_DOC_PREFIX = 'analyticsOverviewCache'
 const MAX_LOGO_BYTES = Number(process.env.MAX_LOGO_BYTES || 2 * 1024 * 1024)
 const ALLOWED_LOGO_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'svg', 'webp'])
 const ALLOWED_LOGO_MIME = new Set(['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'])
+const analyticsSettingsSchema = z
+  .object({
+    windowDays: z.coerce.number().positive().max(365).default(30),
+    recentDays: z.coerce.number().positive().max(365).default(7),
+    wRecentClicks: z.coerce
+      .number()
+      .refine((n) => Number.isFinite(n), {
+        message: 'wRecentClicks must be a number',
+      })
+      .default(2.5),
+    wRecentViews: z.coerce
+      .number()
+      .refine((n) => Number.isFinite(n), {
+        message: 'wRecentViews must be a number',
+      })
+      .default(0.2),
+    wHistoricClicks: z.coerce
+      .number()
+      .refine((n) => Number.isFinite(n), {
+        message: 'wHistoricClicks must be a number',
+      })
+      .default(1),
+    wHistoricViews: z.coerce
+      .number()
+      .refine((n) => Number.isFinite(n), {
+        message: 'wHistoricViews must be a number',
+      })
+      .default(0.05),
+    thresholdRising: z.coerce.number().min(0).default(200),
+    thresholdSteady: z.coerce.number().min(0).default(40),
+    thresholdFalling: z.coerce.number().min(0).default(10),
+  })
+  .superRefine((val, ctx) => {
+    if (val.recentDays > val.windowDays) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['recentDays'],
+        message: 'recentDays cannot exceed windowDays',
+      })
+    }
+  })
+
+function firstQueryValue(value: any) {
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+function normalizeQueryParams(query: any): Record<string, any> {
+  const normalized: Record<string, any> = {}
+  if (!query) return normalized
+  for (const key of Object.keys(query)) {
+    normalized[key] = firstQueryValue((query as any)[key])
+  }
+  return normalized
+}
+
+function withoutCacheBust(query: Record<string, any>) {
+  const next = {...query}
+  if (Object.prototype.hasOwnProperty.call(next, 'cacheBust')) {
+    delete next.cacheBust
+  }
+  return next
+}
+
+function coerceNumber(value: any): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const num = Number(value)
+  if (!Number.isFinite(num)) return undefined
+  return num
+}
+
+function resolveNumber(values: Array<any>, fallback: number): number {
+  for (const value of values) {
+    const num = coerceNumber(value)
+    if (typeof num === 'number') return num
+  }
+  return fallback
+}
 
 function buildAnalyticsCacheKey(admin: any, query: any) {
   return JSON.stringify({
@@ -72,17 +189,18 @@ function getAnalyticsCacheDocId(cacheKey: string) {
   return `${ANALYTICS_CACHE_DOC_PREFIX}-${hash}`
 }
 
-async function readPersistentAnalyticsOverviewCache(cacheKey: string, ttlMs: number) {
+type AnalyticsCacheDoc = {data: any; ts: string}
+
+async function readAnalyticsOverviewCacheDoc(cacheKey: string): Promise<AnalyticsCacheDoc | null> {
   try {
     const doc = await fetchCMS(
       '*[_id == $id][0]{payload, ts}',
       {id: getAnalyticsCacheDocId(cacheKey)},
     )
     if (!doc || !(doc as any).payload || !(doc as any).ts) return null
-    const age = Date.now() - Date.parse((doc as any).ts)
-    if (Number.isFinite(age) && age < ttlMs) {
-      return JSON.parse((doc as any).payload)
-    }
+    const ts = (doc as any).ts as string
+    const payload = JSON.parse((doc as any).payload as string)
+    return {data: payload, ts}
   } catch (err) {
     logger.warn('analytics overview cache read failed', {
       error: err instanceof Error ? err.message : String(err),
@@ -91,20 +209,340 @@ async function readPersistentAnalyticsOverviewCache(cacheKey: string, ttlMs: num
   return null
 }
 
-async function writePersistentAnalyticsOverviewCache(cacheKey: string, data: any) {
+type AnalyticsOverviewComputation = {
+  payload: {
+    topArticles: any[]
+    topFaqs: any[]
+    topProducts: any[]
+    storeEngagement: any[]
+    productDemand: any[]
+    productSeries: any[]
+  }
+  cacheMode: 'HIT' | 'PERSISTED' | 'MISS'
+  refreshedAt: string
+}
+
+async function computeAnalyticsOverview(
+  admin: any,
+  rawQuery: any,
+  options: {forceRefresh?: boolean} = {},
+): Promise<AnalyticsOverviewComputation> {
+  const normalizedQuery = normalizeQueryParams(rawQuery)
+  const cacheKey = buildAnalyticsCacheKey(admin, normalizedQuery)
+  const now = Date.now()
+  const forceRefresh = options.forceRefresh === true
+
+  if (!forceRefresh) {
+    const cached = overviewCache.get(cacheKey)
+    if (cached && now - cached.ts < OVERVIEW_CACHE_TTL) {
+      const refreshedAt = cached.refreshedAt || new Date(cached.ts).toISOString()
+      return {payload: cached.data, cacheMode: 'HIT', refreshedAt}
+    }
+    const persisted = await readPersistentAnalyticsOverviewCache(cacheKey, OVERVIEW_CACHE_TTL)
+    if (persisted) {
+      overviewCache.set(cacheKey, {ts: now, data: persisted.data, refreshedAt: persisted.ts})
+      return {payload: persisted.data, cacheMode: 'PERSISTED', refreshedAt: persisted.ts}
+    }
+  }
+
+  const limit = Math.max(1, resolveNumber([normalizedQuery.limit], 5))
+  const page = Math.max(0, resolveNumber([normalizedQuery.page], 0))
+  const perPage = Math.max(1, resolveNumber([normalizedQuery.perPage], limit))
+
+  const {filter, params} = buildMetricScopeFilter(admin)
+  const orgSlug = admin?.organizationSlug || 'global'
+
+  let settings: any = null
+  try {
+    settings = await fetchCMS('*[_type=="analyticsSettings" && orgSlug == $org][0]', {org: orgSlug})
+  } catch (err) {
+    logger.warn('analytics settings fetch failed', {
+      orgSlug,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+
+  const windowDays = Math.max(
+    1,
+    resolveNumber(
+      [normalizedQuery.windowDays, settings?.windowDays, process.env.ANALYTICS_WINDOW_DAYS],
+      30,
+    ),
+  )
+  const recentDaysRaw = resolveNumber(
+    [normalizedQuery.recentDays, settings?.recentDays, process.env.ANALYTICS_RECENT_DAYS],
+    7,
+  )
+  const recentDays = Math.min(windowDays, Math.max(1, recentDaysRaw))
+  const wRecentClicks = resolveNumber(
+    [normalizedQuery.wRecentClicks, settings?.wRecentClicks, process.env.ANALYTICS_WEIGHT_RECENT_CLICKS],
+    2.5,
+  )
+  const wRecentViews = resolveNumber(
+    [normalizedQuery.wRecentViews, settings?.wRecentViews, process.env.ANALYTICS_WEIGHT_RECENT_VIEWS],
+    0.2,
+  )
+  const wHistoricClicks = resolveNumber(
+    [
+      normalizedQuery.wHistoricClicks,
+      settings?.wHistoricClicks,
+      process.env.ANALYTICS_WEIGHT_HISTORIC_CLICKS,
+    ],
+    1,
+  )
+  const wHistoricViews = resolveNumber(
+    [
+      normalizedQuery.wHistoricViews,
+      settings?.wHistoricViews,
+      process.env.ANALYTICS_WEIGHT_HISTORIC_VIEWS,
+    ],
+    0.05,
+  )
+  const thresholdRising = resolveNumber(
+    [normalizedQuery.thresholdRising, settings?.thresholdRising, process.env.ANALYTICS_THRESHOLD_RISING],
+    200,
+  )
+  const thresholdSteady = resolveNumber(
+    [normalizedQuery.thresholdSteady, settings?.thresholdSteady, process.env.ANALYTICS_THRESHOLD_STEADY],
+    40,
+  )
+  const thresholdFalling = resolveNumber(
+    [normalizedQuery.thresholdFalling, settings?.thresholdFalling, process.env.ANALYTICS_THRESHOLD_FALLING],
+    10,
+  )
+
+  const start = page * perPage
+  const end = start + perPage
+  const topArticlesQ = `*[_type=="contentMetric" && contentType=="article" ${filter}] | order(views desc)[${start}...${end}]{contentSlug, views, clickThroughs, lastUpdated}`
+  const topFaqsQ = `*[_type=="contentMetric" && contentType=="faq" ${filter}] | order(views desc)[${start}...${end}]{contentSlug, views, clickThroughs, lastUpdated}`
+  const topProductsQ = `*[_type=="contentMetric" && contentType=="product" ${filter}] | order(clickThroughs desc)[${start}...${end}]{contentSlug, views, clickThroughs, lastUpdated}`
+  const startHistoric = new Date(Date.now() - 1000 * 60 * 60 * 24 * windowDays).toISOString()
+  const productsForDemandQ = `*[_type=="contentMetricDaily" && contentType=="product" ${filter} && date >= $startHistoric]{contentSlug, views, clickThroughs, date}`
+  const storeQ = `*[_type=="contentMetricDaily" ${filter} && defined(storeSlug) && date >= $startHistoric]{storeSlug, date, views, clickThroughs}`
+
+  const [topArticles, topFaqs, topProducts, productsForDemand, storeRows] = await Promise.all([
+    fetchCMS(topArticlesQ, params),
+    fetchCMS(topFaqsQ, params),
+    fetchCMS(topProductsQ, params),
+    fetchCMS(productsForDemandQ, {...params, startHistoric}),
+    fetchCMS(storeQ, {...params, startHistoric}),
+  ])
+
+  const bySlug: Record<
+    string,
+    {views: number; clicks: number; recentViews: number; recentClicks: number}
+  > = {}
+  const recentCutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * recentDays)
+  ;((productsForDemand as any[]) || []).forEach((row) => {
+    const slug = row.contentSlug
+    if (!bySlug[slug]) bySlug[slug] = {views: 0, clicks: 0, recentViews: 0, recentClicks: 0}
+    const v = Number(row.views || 0)
+    const c = Number(row.clickThroughs || 0)
+    bySlug[slug].views += v
+    bySlug[slug].clicks += c
+    const d = new Date(row.date)
+    if (d >= recentCutoff) {
+      bySlug[slug].recentViews += v
+      bySlug[slug].recentClicks += c
+    }
+  })
+
+  const productDemand = Object.keys(bySlug).map((slug) => {
+    const s = bySlug[slug]
+    const demandScore =
+      s.recentClicks * wRecentClicks +
+      s.recentViews * wRecentViews +
+      (s.clicks - s.recentClicks) * wHistoricClicks +
+      (s.views - s.recentViews) * wHistoricViews
+    let status = 'lowEngagement'
+    if (demandScore > thresholdRising) status = 'risingDemand'
+    else if (demandScore >= thresholdSteady) status = 'steady'
+    else if (demandScore >= thresholdFalling) status = 'fallingDemand'
+    return {slug, demandScore, status}
+  })
+
+  const seriesDates: string[] = []
+  for (let i = windowDays - 1; i >= 0; i--) {
+    const d = new Date()
+    d.setUTCDate(d.getUTCDate() - i)
+    seriesDates.push(d.toISOString().slice(0, 10))
+  }
+
+  const groupedSeries: Record<string, Record<string, {views: number; clickThroughs: number}>> = {}
+  ;((productsForDemand as any[]) || []).forEach((row) => {
+    const slug = row.contentSlug
+    const date = String(row.date).slice(0, 10)
+    if (!groupedSeries[slug]) groupedSeries[slug] = {}
+    if (!groupedSeries[slug][date]) groupedSeries[slug][date] = {views: 0, clickThroughs: 0}
+    groupedSeries[slug][date].views += Number(row.views || 0)
+    groupedSeries[slug][date].clickThroughs += Number(row.clickThroughs || 0)
+  })
+
+  const productSeries: Array<{
+    slug: string
+    series: Array<{date: string; views: number; clickThroughs: number}>
+  }> = []
+  const slugsForSeries = ((topProducts as any[]) || []).map((p: any) => p.contentSlug)
+  slugsForSeries.forEach((slug: string) => {
+    const map = groupedSeries[slug] || {}
+    const series = seriesDates.map((date) => ({
+      date,
+      views: map[date]?.views || 0,
+      clickThroughs: map[date]?.clickThroughs || 0,
+    }))
+    productSeries.push({slug, series})
+  })
+
+  const storeMap: Record<string, {views: number; clickThroughs: number}> = {}
+  ;((storeRows as any[]) || []).forEach((row: any) => {
+    const slug = row.storeSlug || 'unknown'
+    if (!storeMap[slug]) storeMap[slug] = {views: 0, clickThroughs: 0}
+    storeMap[slug].views += Number(row.views || 0)
+    storeMap[slug].clickThroughs += Number(row.clickThroughs || 0)
+  })
+  const storeEngagement = Object.keys(storeMap).map((k) => ({storeSlug: k, ...storeMap[k]}))
+
+  const payload = {
+    topArticles: Array.isArray(topArticles) ? topArticles : [],
+    topFaqs: Array.isArray(topFaqs) ? topFaqs : [],
+    topProducts: Array.isArray(topProducts) ? topProducts : [],
+    storeEngagement,
+    productDemand,
+    productSeries,
+  }
+
+  const refreshedAt = new Date().toISOString()
+  try {
+    overviewCache.set(cacheKey, {ts: now, data: payload, refreshedAt})
+  } catch (err) {
+    logger.warn('analytics overview cache set failed', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+  await writePersistentAnalyticsOverviewCache(cacheKey, payload, refreshedAt)
+  return {payload, cacheMode: 'MISS', refreshedAt}
+}
+
+adminRouter.get('/analytics/overview', requireRole('ORG_ADMIN'), async (req, res) => {
+  try {
+    const admin = (req as any).admin
+    const result = await computeAnalyticsOverview(admin, req.query)
+    res.set('X-Analytics-Overview-Cache', result.cacheMode)
+    return res.json(result.payload)
+  } catch (err) {
+    req.log.error('admin.analytics.overview_failed', err)
+    res.status(500).json({error: 'FAILED'})
+  }
+})
+
+adminRouter.get('/analytics/summary', requireRole('VIEWER'), async (req, res) => {
+  try {
+    const admin = (req as any).admin
+    const summaryQuery = withoutCacheBust(normalizeQueryParams(req.query))
+    const cacheKey = buildAnalyticsCacheKey(admin, summaryQuery)
+    const ttlMs = OVERVIEW_CACHE_TTL
+    const now = Date.now()
+    let lastRefreshedAt: string | null = null
+    let ageMs: number | null = null
+    let source: 'NONE' | 'MEMORY' | 'MEMORY_STALE' | 'PERSISTED' = 'NONE'
+
+    const cached = overviewCache.get(cacheKey)
+    if (cached) {
+      lastRefreshedAt = cached.refreshedAt || new Date(cached.ts).toISOString()
+      ageMs = now - cached.ts
+      source = ageMs < ttlMs ? 'MEMORY' : 'MEMORY_STALE'
+    } else {
+      const persisted = await readAnalyticsOverviewCacheDoc(cacheKey)
+      if (persisted) {
+        lastRefreshedAt = persisted.ts
+        ageMs = now - Date.parse(persisted.ts)
+        source = 'PERSISTED'
+      }
+    }
+
+    const stale = !lastRefreshedAt || (ageMs !== null && ageMs > ttlMs)
+    res.json({cacheKey, ttlMs, lastRefreshedAt, ageMs, stale, source})
+  } catch (err) {
+    req.log.error('admin.analytics.summary_failed', err)
+    res.status(500).json({error: 'FAILED'})
+  }
+})
+
+adminRouter.post('/analytics/summary', requireRole('ORG_ADMIN'), async (req, res) => {
+  try {
+    const admin = (req as any).admin
+    const bodyQuery = normalizeQueryParams((req.body && req.body.query) || {})
+    const initialQuery = withoutCacheBust(normalizeQueryParams(req.query))
+    const mergedQuery = withoutCacheBust({...initialQuery, ...bodyQuery})
+    const result = await computeAnalyticsOverview(admin, mergedQuery, {forceRefresh: true})
+    res.json({
+      ok: true,
+      cacheMode: result.cacheMode,
+      lastRefreshedAt: result.refreshedAt,
+      preview: {
+        topArticles: result.payload.topArticles.slice(0, 3),
+        topProducts: result.payload.topProducts.slice(0, 3),
+        storeEngagement: result.payload.storeEngagement.slice(0, 3),
+      },
+    })
+  } catch (err) {
+    req.log.error('admin.analytics.summary_refresh_failed', err)
+    res.status(500).json({error: 'FAILED'})
+  }
+})
+
+async function readPersistentAnalyticsOverviewCache(cacheKey: string, ttlMs: number) {
+  const doc = await readAnalyticsOverviewCacheDoc(cacheKey)
+  if (!doc) return null
+  const age = Date.now() - Date.parse(doc.ts)
+  if (Number.isFinite(age) && age < ttlMs) {
+    return doc
+  }
+  return null
+}
+
+async function writePersistentAnalyticsOverviewCache(cacheKey: string, data: any, ts?: string) {
   try {
     const client = createWriteClient()
+    const refreshedAt = ts || new Date().toISOString()
     await client.createOrReplace({
       _id: getAnalyticsCacheDocId(cacheKey),
       _type: 'analyticsOverviewCache',
       scopeKey: cacheKey,
       payload: JSON.stringify(data),
-      ts: new Date().toISOString(),
+      ts: refreshedAt,
     })
   } catch (err) {
     logger.warn('analytics overview cache write failed', {
       error: err instanceof Error ? err.message : String(err),
     })
+  }
+}
+
+function buildComplianceCacheKey(admin: any, types: string[], brandOverride?: string | null) {
+  const normalizedTypes = [...new Set((types || []).map((t) => String(t).trim()).filter(Boolean))].sort()
+  return JSON.stringify({
+    org: admin?.organizationSlug || 'global',
+    brand:
+      typeof brandOverride !== 'undefined'
+        ? brandOverride || null
+        : admin?.brandSlug || null,
+    types: normalizedTypes,
+  })
+}
+
+function invalidateComplianceCache(scope: {org?: string | null; brand?: string | null}) {
+  const targetOrg = scope.org || 'global'
+  const targetBrand = scope.brand || null
+  for (const key of Array.from(complianceOverviewCache.keys())) {
+    try {
+      const parsed = JSON.parse(key)
+      if (parsed.org === targetOrg && parsed.brand === targetBrand) {
+        complianceOverviewCache.delete(key)
+      }
+    } catch (_err) {
+      complianceOverviewCache.delete(key)
+    }
   }
 }
 
@@ -181,13 +619,16 @@ adminRouter.use((req, _res, next) => {
 adminRouter.get('/products', requireRole('EDITOR'), async (req, res) => {
   const preview = (req as any).preview ?? false
   const includeRecalled = String((req.query as any).includeRecalled || '').toLowerCase() === 'true'
-  const query = `*[_type == "product"]{
+  const admin = (req as any).admin
+  const {filter, params} = buildScopeFilter(admin)
+  const query = `*[_type == "product" ${filter}]{
     _id, name, "slug":slug.current, price, effects, productType->{title},
     "image": image{ "url": image.asset->url, "alt": image.alt },
-    isRecalled, recallReason
+    isRecalled, recallReason, "brand":brand->slug.current,
+    "stores":stores[]->slug.current
   }`
   try {
-    const items = await fetchCMS<any[]>(query, {}, {preview})
+    const items = await fetchCMS<any[]>(query, params, {preview})
     const mapped = (items || []).map((p: any) => {
       const out: any = {
         __id: p._id,
@@ -236,17 +677,48 @@ adminRouter.get('/products/recalled-count', requireRole('VIEWER'), async (req, r
 
 // PATCH /api/admin/products/:id/recall -> toggle recall status (EDITOR)
 adminRouter.post('/products/:id/recall', requireRole('EDITOR'), async (req, res) => {
-  const id = req.params.id
-  const {isRecalled, recallReason} = req.body || {}
   try {
+    const admin = (req as any).admin
+    const {id} = z.object({id: z.string().min(1, 'MISSING_ID')}).parse(req.params || {})
+    const body = z
+      .object({
+        isRecalled: z.boolean().optional(),
+        recallReason: z
+          .string()
+          .trim()
+          .max(500, 'recallReason too long')
+          .optional()
+          .nullable(),
+        reason: z
+          .string()
+          .trim()
+          .max(500)
+          .optional()
+          .nullable(),
+        operatorReason: z
+          .string()
+          .trim()
+          .max(500)
+          .optional()
+          .nullable(),
+      })
+      .parse(req.body || {})
+    const {isRecalled, recallReason, reason, operatorReason} = body
     const client = createWriteClient()
 
     // Read previous state for audit (use fetchCMS so tests can mock it)
     const prev = await fetchCMS<any>(
-      '*[_id == $id][0]{isRecalled, recallReason}',
+      '*[_id == $id][0]{isRecalled, recallReason, "brand":brand->slug.current, "stores":stores[]->slug.current}',
       {id},
       {preview: false},
     )
+    const brandSlug = prev?.brand || null
+    const storeSlugs = Array.isArray(prev?.stores) ? prev.stores.filter(Boolean) : []
+    const hasBrandAccess = !brandSlug || canAccessBrand(admin, brandSlug)
+    const hasStoreAccess = storeSlugs.some((store: string) => canAccessStore(admin, store, brandSlug))
+    if (!hasBrandAccess && !hasStoreAccess) {
+      return res.status(403).json({error: 'FORBIDDEN'})
+    }
     const previousState = {isRecalled: !!prev?.isRecalled, recallReason: prev?.recallReason || null}
 
     const patch = client.patch(id)
@@ -256,16 +728,16 @@ adminRouter.post('/products/:id/recall', requireRole('EDITOR'), async (req, res)
 
     // Write an audit record for the recall change
     try {
-      const admin = (req as any).admin || {}
+      const auditAdmin = (req as any).admin || {}
       const currentState = {isRecalled: !!isRecalled, recallReason: recallReason || null}
       await client.create({
         _type: 'recallAudit',
         productId: id,
-        changedBy: admin.email || admin.name || 'unknown',
-        role: admin.role || 'unknown',
+        changedBy: auditAdmin.email || auditAdmin.name || 'unknown',
+        role: auditAdmin.role || 'unknown',
         previous: previousState,
         current: currentState,
-        reason: (req.body && (req.body.reason || req.body.operatorReason)) || null,
+        reason: reason || operatorReason || null,
         ts: new Date().toISOString(),
       })
     } catch (auditErr) {
@@ -275,6 +747,9 @@ adminRouter.post('/products/:id/recall', requireRole('EDITOR'), async (req, res)
 
     res.json({ok: true})
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({error: 'INVALID_RECALL_PAYLOAD', details: err.issues})
+    }
     req.log.error('admin.products.recall_toggle_failed', err)
     res.status(500).json({error: 'FAILED_TO_UPDATE'})
   }
@@ -309,10 +784,15 @@ adminRouter.get('/personalization/rules', requireRole('VIEWER'), async (req, res
 // GET/POST /api/admin/theme - read or update theme configs
 adminRouter.get('/theme', requireRole('VIEWER'), async (req, res) => {
   try {
+    const admin = (req as any).admin
     const {brand, store} = req.query as any
     if (!brand) return res.status(400).json({error: 'MISSING_BRAND'})
+    const brandSlug = String(brand)
+    const storeSlug = store ? String(store) : null
+    if (!ensureBrandScope(res, admin, brandSlug)) return
+    if (storeSlug && !ensureStoreScope(res, admin, storeSlug, brandSlug)) return
     const q = `*[_type=="themeConfig" && brand->slug.current==$brand ${store ? '&& store->slug.current==$store' : '&& !defined(store)'}][0]{"brand":brand->slug.current, primaryColor, secondaryColor, backgroundColor, textColor, "logoUrl":logo.asset->url, logoUrl, typography}`
-    const item = await fetchCMS(q, {brand, store})
+    const item = await fetchCMS(q, {brand: brandSlug, store: storeSlug || undefined})
     if (!item) return res.status(404).json({error: 'NOT_FOUND'})
     res.json(item)
   } catch (err) {
@@ -353,6 +833,9 @@ adminRouter.post('/theme', requireRole('EDITOR'), async (req, res) => {
     .parse(body)
 
   try {
+    const admin = (req as any).admin
+    if (!ensureBrandScope(res, admin, schema.brand)) return
+    if (schema.store && !ensureStoreScope(res, admin, schema.store, schema.brand)) return
     // create client to perform writes (use wrapper to make testing easier)
     const client = createWriteClient()
 
@@ -407,6 +890,7 @@ adminRouter.post('/theme', requireRole('EDITOR'), async (req, res) => {
 // GET /api/admin/theme/configs - list all theme configs grouped by brand/store
 adminRouter.get('/theme/configs', requireRole('VIEWER'), async (req, res) => {
   try {
+    const admin = (req as any).admin
     const q = z
       .object({
         page: z.coerce.number().optional(),
@@ -420,16 +904,26 @@ adminRouter.get('/theme/configs', requireRole('VIEWER'), async (req, res) => {
     const brand = q.brand && String(q.brand).trim()
     const store = q.store && String(q.store).trim()
 
+    if (brand && !ensureBrandScope(res, admin, brand)) return
+    const brandScopeHint = brand || admin?.brandSlug || null
+    if (store && !ensureStoreScope(res, admin, store, brandScopeHint)) return
+
     // Build where clause
     let where = ''
     const params: any = {}
     if (brand) {
       where += ' && brand->slug.current == $brand'
       params.brand = brand
+    } else if (admin?.brandSlug) {
+      where += ' && brand->slug.current == $brand'
+      params.brand = admin.brandSlug
     }
     if (store) {
       where += ' && store->slug.current == $store'
       params.store = store
+    } else if (admin?.storeSlug) {
+      where += ' && store->slug.current == $store'
+      params.store = admin.storeSlug
     }
 
     const listQ = `*[_type=="themeConfig" ${where}]{_id, "brand":brand->slug.current, "brandName":brand->name, "store":store->slug.current, "storeName":store->name, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, darkModeEnabled, cornerRadius, elevationStyle} | order(brand asc, store asc)[${page * perPage}...${page * perPage + perPage}]`
@@ -470,6 +964,7 @@ adminRouter.get('/theme/configs', requireRole('VIEWER'), async (req, res) => {
 // POST /api/admin/theme/config - create or update a themeConfig
 adminRouter.post('/theme/config', requireRole('EDITOR'), async (req, res) => {
   try {
+    const admin = (req as any).admin
     const colorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/
     const schema = z
       .object({
@@ -512,6 +1007,9 @@ adminRouter.post('/theme/config', requireRole('EDITOR'), async (req, res) => {
         elevationStyle: z.string().optional(),
       })
       .parse(req.body || {})
+
+    if (schema.brand && !ensureBrandScope(res, admin, schema.brand)) return
+    if (schema.store && !ensureStoreScope(res, admin, schema.store, schema.brand || null)) return
 
     const client = createWriteClient()
     // Resolve brand and store refs if provided
@@ -572,8 +1070,15 @@ adminRouter.post('/theme/config', requireRole('EDITOR'), async (req, res) => {
 // DELETE /api/admin/theme/config/:id
 adminRouter.delete('/theme/config/:id', requireRole('EDITOR'), async (req, res) => {
   try {
-    const id = String((req.params as any).id || '')
-    if (!id) return res.status(400).json({error: 'MISSING_ID'})
+    const admin = (req as any).admin
+    const {id} = z.object({id: z.string().min(1)}).parse(req.params || {})
+    const doc = (await fetchCMS(
+      '*[_type=="themeConfig" && _id == $id][0]{"brand":brand->slug.current, "store":store->slug.current}',
+      {id},
+    )) as any
+    if (!doc) return res.status(404).json({error: 'NOT_FOUND'})
+    if (!ensureBrandScope(res, admin, doc?.brand || null)) return
+    if (!ensureStoreScope(res, admin, doc?.store || null, doc?.brand || null)) return
     const client = createWriteClient()
     // @ts-ignore
     await client.delete(id)
@@ -964,28 +1469,59 @@ adminRouter.get('/compliance/overview', requireRole('ORG_ADMIN'), async (req, re
       ? reqTypes.split(',').map((s) => s.trim())
       : ['terms', 'privacy', 'accessibility', 'ageGate']
     const admin = (req as any).admin
+    const brandParam = typeof req.query.brand === 'string' ? req.query.brand.trim() : ''
+    let targetBrand = admin?.brandSlug || null
+    if (brandParam) {
+      if (!ensureBrandScope(res, admin, brandParam)) return
+      targetBrand = brandParam
+    }
+    const storeParam = typeof req.query.store === 'string' ? req.query.store.trim() : ''
+    let storeFilter = storeParam || null
+    if (storeFilter) {
+      if (!ensureStoreScope(res, admin, storeFilter, targetBrand)) return
+    } else if (admin?.storeSlug) {
+      storeFilter = admin.storeSlug
+    }
+    const applyStoreFilter = (rows: any[]) =>
+      storeFilter ? (rows || []).filter((row: any) => row.storeSlug === storeFilter) : rows
 
     // Prefer a pre-computed snapshot for the org (or global fallback)
     try {
+      const snapshotId = targetBrand
+        ? `complianceSnapshotLatest-brand-${targetBrand}`
+        : `complianceSnapshotLatest-${admin?.organizationSlug || 'global'}`
       const snapshot = await fetchCMS('*[_type=="complianceSnapshot" && _id == $id][0]', {
-        id: `complianceSnapshotLatest-${admin?.organizationSlug || 'global'}`,
+        id: snapshotId,
       })
-      if (snapshot && (snapshot as any).results)
-        return res.json({
-          results: (snapshot as any).results,
-          snapshotTs: (snapshot as any).ts,
-          snapshotId: (snapshot as any)._id,
-        })
+      if (snapshot && (snapshot as any).results) {
+        const results = applyStoreFilter((snapshot as any).results)
+        return res
+          .set('X-Compliance-Cache', 'SNAPSHOT')
+          .json({
+            results,
+            snapshotTs: (snapshot as any).ts,
+            snapshotId,
+          })
+      }
     } catch (_e) {
       // fall back to live compute
     }
 
+    const cacheKey = buildComplianceCacheKey(admin, types, targetBrand)
+    const cached = complianceOverviewCache.get(cacheKey)
+    if (cached && Date.now() - cached.ts < COMPLIANCE_OVERVIEW_CACHE_TTL_MS) {
+      res.set('X-Compliance-Cache', 'HIT')
+      return res.json(applyStoreFilter(cached.data))
+    }
+
     const rows = await computeCompliance(types, {
       org: admin?.organizationSlug,
-      brand: admin?.brandSlug,
+      brand: targetBrand,
     })
+    complianceOverviewCache.set(cacheKey, {ts: Date.now(), data: rows})
+    res.set('X-Compliance-Cache', 'MISS')
     // backward-compatible response: return array for live compute
-    return res.json(rows)
+    return res.json(applyStoreFilter(rows))
   } catch (err) {
     req.log.error('admin.compliance.overview_failed', err)
     res.status(500).json({error: 'FAILED'})
@@ -995,28 +1531,45 @@ adminRouter.get('/compliance/overview', requireRole('ORG_ADMIN'), async (req, re
 // POST /api/admin/compliance/snapshot - trigger manual snapshot for admin's scope
 adminRouter.post('/compliance/snapshot', requireRole('ORG_ADMIN'), async (req, res) => {
   try {
+    const payload = z
+      .object({
+        org: z
+          .string()
+          .trim()
+          .min(1)
+          .optional(),
+        brand: z
+          .string()
+          .trim()
+          .min(1)
+          .optional(),
+        types: z
+          .array(z.enum(['terms', 'privacy', 'accessibility', 'ageGate']))
+          .optional(),
+      })
+      .parse(req.body || {})
     const admin = (req as any).admin
     // determine target scope with RBAC enforcement
     // only allow org admins to snapshot their own org; OWNER can snapshot global or provide org param
     let targetOrg = admin.organizationSlug
     let targetBrand = admin.brandSlug
-    if (admin.role === 'OWNER' && req.body?.org) {
-      targetOrg = req.body.org
+    if (admin.role === 'OWNER' && payload.org) {
+      targetOrg = payload.org
     }
-    if (req.body?.brand) {
+    if (payload.brand) {
       // only OWNER or BRAND_ADMIN for their brand may specify brand param
       if (admin.role !== 'OWNER' && admin.role !== 'BRAND_ADMIN') {
         return res.status(403).json({error: 'FORBIDDEN'})
       }
       // BRAND_ADMIN may only snapshot their own brand
-      if (admin.role === 'BRAND_ADMIN' && req.body.brand !== admin.brandSlug) {
+      if (admin.role === 'BRAND_ADMIN' && payload.brand !== admin.brandSlug) {
         return res.status(403).json({error: 'FORBIDDEN'})
       }
-      targetBrand = req.body.brand
+      targetBrand = payload.brand
     }
 
     // run a one-off compute for the given scope and persist
-    const types = req.body?.types || ['terms', 'privacy', 'accessibility', 'ageGate']
+    const types = payload.types || ['terms', 'privacy', 'accessibility', 'ageGate']
     const results = await computeCompliance(types, {org: targetOrg, brand: targetBrand})
     const client = createWriteClient()
     const ts = new Date().toISOString()
@@ -1072,8 +1625,12 @@ adminRouter.post('/compliance/snapshot', requireRole('ORG_ADMIN'), async (req, r
       ts,
       id: historyId,
     })
+    invalidateComplianceCache({org: targetOrg || 'global', brand: targetBrand || null})
     res.json({ok: true, id: historyId, ts, studioUrl})
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({error: 'INVALID_COMPLIANCE_REQUEST', details: err.issues})
+    }
     req.log.error('admin.compliance.snapshot_failed', err)
     res.status(500).json({error: 'FAILED'})
   }
@@ -1133,39 +1690,18 @@ adminRouter.post('/analytics/settings', requireRole('ORG_ADMIN'), async (req, re
   try {
     const admin = (req as any).admin
     const org = admin?.organizationSlug || 'global'
-    const body = req.body || {}
-    // Server-side validation
-    const errors: Record<string, string> = {}
-    const windowDays = Number(body.windowDays ?? 30)
-    const recentDays = Number(body.recentDays ?? 7)
-    const wRecentClicks = Number(body.wRecentClicks ?? 2.5)
-    const wRecentViews = Number(body.wRecentViews ?? 0.2)
-    const wHistoricClicks = Number(body.wHistoricClicks ?? 1)
-    const wHistoricViews = Number(body.wHistoricViews ?? 0.05)
-    const thresholdRising = Number(body.thresholdRising ?? 200)
-    const thresholdSteady = Number(body.thresholdSteady ?? 40)
-    const thresholdFalling = Number(body.thresholdFalling ?? 10)
-
-    if (!Number.isFinite(windowDays) || windowDays <= 0)
-      errors.windowDays = 'windowDays must be a positive number'
-    if (!Number.isFinite(recentDays) || recentDays <= 0)
-      errors.recentDays = 'recentDays must be a positive number'
-    if (recentDays > windowDays) errors.recentDays = 'recentDays cannot exceed windowDays'
-    if (!Number.isFinite(wRecentClicks)) errors.wRecentClicks = 'wRecentClicks must be a number'
-    if (!Number.isFinite(wRecentViews)) errors.wRecentViews = 'wRecentViews must be a number'
-    if (!Number.isFinite(wHistoricClicks))
-      errors.wHistoricClicks = 'wHistoricClicks must be a number'
-    if (!Number.isFinite(wHistoricViews)) errors.wHistoricViews = 'wHistoricViews must be a number'
-    if (!Number.isFinite(thresholdRising) || thresholdRising < 0)
-      errors.thresholdRising = 'thresholdRising must be >= 0'
-    if (!Number.isFinite(thresholdSteady) || thresholdSteady < 0)
-      errors.thresholdSteady = 'thresholdSteady must be >= 0'
-    if (!Number.isFinite(thresholdFalling) || thresholdFalling < 0)
-      errors.thresholdFalling = 'thresholdFalling must be >= 0'
-
-    if (Object.keys(errors).length > 0) {
-      return res.status(400).json({error: 'INVALID_SETTINGS', details: errors})
-    }
+    const parsed = analyticsSettingsSchema.parse(req.body || {})
+    const {
+      windowDays,
+      recentDays,
+      wRecentClicks,
+      wRecentViews,
+      wHistoricClicks,
+      wHistoricViews,
+      thresholdRising,
+      thresholdSteady,
+      thresholdFalling,
+    } = parsed
     const id = `analyticsSettings-${org}`
     const doc: any = {
       _id: id,
@@ -1196,6 +1732,9 @@ adminRouter.post('/analytics/settings', requireRole('ORG_ADMIN'), async (req, re
 
     res.json({ok: true, settings: created})
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({error: 'INVALID_SETTINGS', details: err.issues})
+    }
     req.log.error('admin.analytics.settings_save_failed', err)
     res.status(500).json({error: 'FAILED'})
   }
@@ -1233,8 +1772,17 @@ adminRouter.get('/legal/current', requireRole('VIEWER'), async (req, res) => {
 // POST /api/admin/upload-logo - accepts {filename, data} where data is a dataURL or base64 string
 adminRouter.post('/upload-logo', requireRole('EDITOR'), async (req, res) => {
   try {
-    const {filename, data} = req.body || {}
-    if (!filename || !data) return res.status(400).json({error: 'MISSING_FILE'})
+    const {filename, data, brand} = z
+      .object({
+        filename: z.string().trim().min(1),
+        data: z.string().min(1),
+        brand: z.string().trim().min(1).optional(),
+      })
+      .parse(req.body || {})
+  const brandResult = resolveScopedBrand(req, brand)
+  if (!brandResult.ok) return res.status(brandResult.status).json({error: brandResult.error})
+  const scopedBrand = brandResult.brand
+  req.log.info('admin.upload_logo', {brand: scopedBrand, admin: (req as any).admin?.email})
     const client = createWriteClient()
     // strip data URL prefix if present
     const mime = extractMimeFromDataUrl(typeof data === 'string' ? data : '')
@@ -1250,6 +1798,9 @@ adminRouter.post('/upload-logo', requireRole('EDITOR'), async (req, res) => {
     const assetId = uploaded && (uploaded._id || (uploaded.asset && uploaded.asset._id))
     res.json({ok: true, url, assetId, uploaded})
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({error: 'INVALID_FILE_PAYLOAD', details: err.issues})
+    }
     req.log.error('admin.theme.logo_upload_failed', err)
     res.status(500).json({error: 'FAILED'})
   }
@@ -1262,9 +1813,26 @@ adminRouter.post(
   upload ? upload.single('file') : (req, res, next) => next(),
   async (req, res) => {
     try {
-      // multer places file on req.file
-      const file = (req as any).file
-      if (!file) return res.status(400).json({error: 'MISSING_FILE'})
+      const file = z
+        .object({
+          originalname: z.string().trim().min(1),
+          buffer: z.instanceof(Buffer),
+          mimetype: z.string().optional(),
+        })
+        .parse((req as any).file || null)
+      const payloadBrand = (() => {
+        const bodyBrand = (req as any).body?.brand
+        if (typeof bodyBrand === 'string') return bodyBrand
+        if (Array.isArray(bodyBrand) && bodyBrand.length) return bodyBrand[0]
+        return undefined
+      })()
+      const brandResult = resolveScopedBrand(req, payloadBrand)
+      if (!brandResult.ok) return res.status(brandResult.status).json({error: brandResult.error})
+      const scopedBrand = brandResult.brand
+      req.log.info('admin.upload_logo_multipart', {
+        brand: scopedBrand,
+        admin: (req as any).admin?.email,
+      })
       const validation = validateLogoUpload(file.buffer, file.originalname || 'logo', file.mimetype)
       if (!validation.ok) return res.status(validation.status).json({error: validation.error})
       const client = createWriteClient()
@@ -1277,6 +1845,9 @@ adminRouter.post(
       const assetId = uploaded && (uploaded._id || (uploaded.asset && uploaded.asset._id))
       res.json({ok: true, url, assetId, uploaded})
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({error: 'INVALID_FILE', details: err.issues})
+      }
       req.log.error('admin.theme.logo_upload_multipart_failed', err)
       res.status(500).json({error: 'FAILED'})
     }

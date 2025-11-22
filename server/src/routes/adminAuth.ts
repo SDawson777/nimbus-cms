@@ -6,10 +6,34 @@ import rateLimit from 'express-rate-limit'
 import crypto from 'crypto'
 import {loadAdmins, findAdmin, getEnvAdmin, AdminUser} from '../lib/admins'
 import {requireAdmin} from '../middleware/adminAuth'
+import {z} from 'zod'
 
 const router = Router()
 const COOKIE_NAME = 'admin_token'
 const CSRF_COOKIE = 'admin_csrf'
+const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000
+const isProduction = process.env.NODE_ENV === 'production'
+
+const sessionCookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: 'lax' as const,
+  path: '/',
+}
+
+const csrfCookieOptions = {
+  httpOnly: false,
+  secure: isProduction,
+  sameSite: 'lax' as const,
+  path: '/',
+}
+
+const loginBodySchema = z.object({
+  brand: z.string().trim().min(1).optional(),
+  dispensary: z.string().trim().min(1).optional(),
+  email: z.string().email(),
+  password: z.string().min(1),
+})
 
 router.use(cookieParser())
 
@@ -25,7 +49,11 @@ const loginLimiter = rateLimit({
 // POST /admin/login
 // body: {brand?: string, dispensary?: string, email, password}
 router.post('/login', loginLimiter, async (req: any, res) => {
-  const {brand, dispensary, email, password} = req.body || {}
+  const parsed = loginBodySchema.safeParse(req.body || {})
+  if (!parsed.success) {
+    return res.status(400).json({error: 'INVALID_CREDENTIALS', details: parsed.error.issues})
+  }
+  const {brand, dispensary, email, password} = parsed.data
   const jwtSecret = process.env.JWT_SECRET
   if (!jwtSecret) {
     return res.status(500).json({error: 'SERVER_MISCONFIGURED'})
@@ -56,20 +84,8 @@ router.post('/login', loginLimiter, async (req: any, res) => {
       storeSlug: admin.storeSlug,
     }
     const token = jwt.sign(safePayload, jwtSecret, {expiresIn: '4h'})
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 4 * 60 * 60 * 1000,
-      path: '/',
-    })
-    res.cookie(CSRF_COOKIE, csrfToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 4 * 60 * 60 * 1000,
-      path: '/',
-    })
+    res.cookie(COOKIE_NAME, token, {...sessionCookieOptions, maxAge: SESSION_MAX_AGE_MS})
+    res.cookie(CSRF_COOKIE, csrfToken, {...csrfCookieOptions, maxAge: SESSION_MAX_AGE_MS})
     return res.json({ok: true, csrfToken})
   }
 
@@ -93,20 +109,8 @@ router.post('/login', loginLimiter, async (req: any, res) => {
     storeSlug: envAdmin.storeSlug,
   }
   const token = jwt.sign(safePayload, jwtSecret, {expiresIn: '4h'})
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 4 * 60 * 60 * 1000,
-    path: '/',
-  })
-  res.cookie(CSRF_COOKIE, csrfToken, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 4 * 60 * 60 * 1000,
-    path: '/',
-  })
+  res.cookie(COOKIE_NAME, token, {...sessionCookieOptions, maxAge: SESSION_MAX_AGE_MS})
+  res.cookie(CSRF_COOKIE, csrfToken, {...csrfCookieOptions, maxAge: SESSION_MAX_AGE_MS})
   res.json({ok: true, csrfToken})
 })
 
@@ -120,8 +124,8 @@ router.get('/me', requireAdmin, (req: any, res) => {
 
 // GET /admin/logout
 router.get('/logout', (_req, res) => {
-  res.clearCookie(COOKIE_NAME)
-  res.clearCookie(CSRF_COOKIE)
+  res.clearCookie(COOKIE_NAME, sessionCookieOptions)
+  res.clearCookie(CSRF_COOKIE, csrfCookieOptions)
   // Prefer a redirect when called from a browser link; keep JSON for XHR callers
   if (_req.headers.accept && _req.headers.accept.indexOf('text/html') !== -1) {
     return res.redirect('/admin')

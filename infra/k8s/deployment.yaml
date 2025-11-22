@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jars-cms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jars-cms
+  template:
+    metadata:
+      labels:
+        app: jars-cms
+    spec:
+      containers:
+        - name: cms-api
+          image: your-registry/jars-cms:latest
+          ports:
+            - containerPort: 4010
+          envFrom:
+            - secretRef:
+                name: jars-cms-secrets
+            - configMapRef:
+                name: jars-cms-config
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 4010
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 4010
+            initialDelaySeconds: 30
+            periodSeconds: 30

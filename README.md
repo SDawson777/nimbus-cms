@@ -107,5 +107,6 @@ await fetch('https://cms.example.com/analytics/event', {
 
 - Ensure you set up a Sanity project and tokens. Use `SANITY_PREVIEW_TOKEN` for draft previews.
 - Admin endpoints require an `admin_token` cookie (JWT) with appropriate roles.
+- Review [`docs/RBAC_MATRIX.md`](./docs/RBAC_MATRIX.md) for the complete endpoint × role matrix before issuing admin credentials to partners.
 
-For more details see `docs/ARCHITECTURE.md`, `docs/MOBILE_CONTRACT.md`, `docs/DEPLOYMENT.md`, `docs/STUDIO.md`, and `docs/BUYER_OVERVIEW.md`.
+For more details see `docs/ARCHITECTURE.md`, `docs/MOBILE_CONTRACT.md`, `docs/DEPLOYMENT.md`, `docs/STUDIO.md`, `docs/BUYER_OVERVIEW.md`, [`docs/API_REFERENCE_ADMIN.md`](./docs/API_REFERENCE_ADMIN.md), and [`docs/SECURITY_NOTES.md`](./docs/SECURITY_NOTES.md).

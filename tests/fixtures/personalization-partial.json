@@ -1,0 +1,39 @@
+{
+  "rules": [
+    {
+      "_id": "boost-vegan",
+      "name": "Boost Vegan Bundle",
+      "enabled": true,
+      "conditions": [{ "key": "diet", "operator": "equals", "value": "vegan" }],
+      "actions": [{ "targetType": "article", "targetSlugOrKey": "vegan-guide", "priorityBoost": 25 }]
+    },
+    {
+      "_id": "channel-banner",
+      "name": "Web Banner Feature",
+      "enabled": true,
+      "conditions": [{ "key": "channel", "operator": "equals", "value": "web" }],
+      "actions": [
+        {
+          "targetType": "banner",
+          "targetSlugOrKey": "homepage-hero",
+          "priorityBoost": 15,
+          "channel": "web"
+        }
+      ]
+    },
+    {
+      "_id": "missing-target",
+      "name": "Missing Target",
+      "enabled": true,
+      "conditions": [{ "key": "diet", "operator": "equals", "value": "vegan" }],
+      "actions": [{ "targetType": "article", "priorityBoost": 5 }]
+    },
+    {
+      "_id": "paused-rollout",
+      "name": "Paused Rollout",
+      "enabled": false,
+      "conditions": [{ "key": "diet", "operator": "equals", "value": "vegan" }],
+      "actions": [{ "targetType": "article", "targetSlugOrKey": "vegan-guide", "priorityBoost": 50 }]
+    }
+  ]
+}

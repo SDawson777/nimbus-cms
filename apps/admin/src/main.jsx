@@ -11,6 +11,7 @@ import Analytics from './pages/Analytics'
 import AnalyticsSettings from './pages/AnalyticsSettings'
 import ThemePage from './pages/Theme'
 import Personalization from './pages/Personalization'
+import {AdminProvider} from './lib/adminContext'
 
 function App() {
   return (
@@ -88,4 +89,8 @@ function App() {
   )
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(
+  <AdminProvider>
+    <App />
+  </AdminProvider>,
+)

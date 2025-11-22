@@ -5,20 +5,46 @@ import {portableTextToHtml} from '../../lib/portableText'
 
 export const legalRouter = Router()
 
+const slugPattern = /^[a-z0-9-]+$/i
+const preprocessQueryValue = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) {
+    const [first] = value
+    return typeof first === 'string' ? first.trim() : undefined
+  }
+  if (typeof value === 'string') {
+    return value.trim()
+  }
+  return undefined
+}
+
+const optionalSlugField = z
+  .preprocess(preprocessQueryValue, z.string().min(1).max(64).regex(slugPattern))
+  .transform((val) => val?.toLowerCase())
+  .optional()
+
+const optionalStateField = z
+  .preprocess(preprocessQueryValue, z.string().length(2).regex(/^[a-z]{2}$/i))
+  .transform((val) => val?.toUpperCase())
+  .optional()
+
+const querySchema = z.object({
+  type: optionalSlugField,
+  state: optionalStateField,
+  org: optionalSlugField,
+  brand: optionalSlugField,
+  store: optionalSlugField,
+  channel: optionalSlugField,
+})
+
 // returns a single legal document from CMS; honors `?preview=true`
 legalRouter.get('/', async (req, res) => {
+  const parsed = querySchema.safeParse(req.query || {})
+  if (!parsed.success) {
+    return res.status(400).json({error: 'INVALID_LEGAL_FILTERS', details: parsed.error.issues})
+  }
   // support `type` (terms/privacy/etc) and optional `state` (US state code)
-  const {type, state, org, brand, store} = z
-    .object({
-      type: z.string().optional(),
-      state: z.string().optional(),
-      org: z.string().optional(),
-      brand: z.string().optional(),
-      store: z.string().optional(),
-    })
-    .parse(req.query)
+  const {type, state, org, brand, store, channel} = parsed.data
   const preview = (req as any).preview ?? false
-  const channel = String((req.query as any).channel || '').trim()
 
   // tenant filters
   let tenantFilter = ''
@@ -48,7 +74,7 @@ legalRouter.get('/', async (req, res) => {
     : ''
   const query = `*[_type=="legalDoc" && type==$t ${tenantFilter} ${stateFilter}${channelExpr} && effectiveFrom <= ${nowExpr} && (!defined(effectiveTo) || effectiveTo > ${nowExpr})] | order(effectiveFrom desc, version desc)[0]{title,type,stateCode,version,effectiveFrom,body}`
 
-  params.channel = channel
+  if (channel) params.channel = channel
   const item = await fetchCMS(query, params, {preview})
   res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=300')
   if (!item) return res.status(404).json({error: 'NOT_FOUND'})

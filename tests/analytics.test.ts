@@ -160,20 +160,20 @@ describe('GET /api/admin/analytics/overview', () => {
     ]
     const storeRows = [{storeSlug: 's1', views: 100, clickThroughs: 10}]
 
-    // fetchCMS is called 4 times + storeRows call = 5 sequential calls in our implementation
+    // fetchCMS calls: persisted cache check, settings, and five data queries
+    fetchCMSMock.mockResolvedValueOnce(null)
     fetchCMSMock.mockResolvedValueOnce(null)
     fetchCMSMock.mockResolvedValueOnce(topArticles)
     fetchCMSMock.mockResolvedValueOnce(topFaqs)
     fetchCMSMock.mockResolvedValueOnce(topProducts)
     fetchCMSMock.mockResolvedValueOnce(productsForDemand)
-    fetchCMSMock.mockResolvedValueOnce(null)
     fetchCMSMock.mockResolvedValueOnce(storeRows)
 
     const token = jwt.sign(
       {id: 't', email: 'admin', role: 'ORG_ADMIN'},
       process.env.JWT_SECRET || 'dev-secret',
     )
-  const res = await withAdminCookies(appRequest().get('/api/admin/analytics/overview'), token)
+    const res = await withAdminCookies(appRequest().get('/api/admin/analytics/overview'), token)
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('topArticles')
     expect(res.body).toHaveProperty('topFaqs')
@@ -185,5 +185,88 @@ describe('GET /api/admin/analytics/overview', () => {
     const pd = res.body.productDemand
     expect(pd.find((d: any) => d.slug === 'p1')).toBeTruthy()
     expect(pd.find((d: any) => d.slug === 'p2')).toBeTruthy()
+  })
+
+  it('falls back to persisted overview payload when live aggregation is unavailable', async () => {
+    const persistedPayload = {
+      topArticles: [{contentSlug: 'persisted-article', views: 5, clickThroughs: 1}],
+      topFaqs: [],
+      topProducts: [],
+      storeEngagement: [],
+      productDemand: [],
+      productSeries: [],
+    }
+    fetchCMSMock.mockResolvedValueOnce({
+      payload: JSON.stringify(persistedPayload),
+      ts: new Date().toISOString(),
+    })
+
+    const token = jwt.sign(
+      {id: 't', email: 'admin', role: 'ORG_ADMIN'},
+      process.env.JWT_SECRET || 'dev-secret',
+    )
+    const res = await withAdminCookies(
+      appRequest().get('/api/admin/analytics/overview').query({cacheBust: 'persisted'}),
+      token,
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers['x-analytics-overview-cache']).toBe('PERSISTED')
+    expect(res.body.topArticles[0].contentSlug).toBe('persisted-article')
+    expect(fetchCMSMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Analytics summary endpoints', () => {
+  it('returns metadata from persisted cache on GET /summary', async () => {
+    const payload = {
+      topArticles: [],
+      topFaqs: [],
+      topProducts: [],
+      storeEngagement: [],
+      productDemand: [],
+      productSeries: [],
+    }
+    fetchCMSMock.mockResolvedValueOnce({payload: JSON.stringify(payload), ts: new Date().toISOString()})
+
+    const token = jwt.sign(
+      {id: 'viewer', email: 'viewer@example.com', role: 'VIEWER'},
+      process.env.JWT_SECRET || 'dev-secret',
+    )
+    const res = await withAdminCookies(
+      appRequest().get('/api/admin/analytics/summary').query({segment: 'summaryTest'}),
+      token,
+    )
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty('lastRefreshedAt')
+    expect(res.body).toHaveProperty('source', 'PERSISTED')
+    expect(res.body).toHaveProperty('ttlMs')
+  })
+
+  it('forces a fresh aggregation on POST /summary', async () => {
+    const now = new Date().toISOString()
+    const topArticles = [{contentSlug: 'a1', views: 10, clickThroughs: 2, lastUpdated: now}]
+  const topFaqs: any[] = []
+    const topProducts = [{contentSlug: 'p1', views: 5, clickThroughs: 3, lastUpdated: now}]
+    const productsForDemand = [{contentSlug: 'p1', views: 5, clickThroughs: 3, date: now}]
+    const storeRows = [{storeSlug: 's1', views: 5, clickThroughs: 1}]
+
+    // forceRefresh skips persisted cache, so order is: settings + 5 data queries
+    fetchCMSMock.mockResolvedValueOnce(null)
+    fetchCMSMock.mockResolvedValueOnce(topArticles)
+    fetchCMSMock.mockResolvedValueOnce(topFaqs)
+    fetchCMSMock.mockResolvedValueOnce(topProducts)
+    fetchCMSMock.mockResolvedValueOnce(productsForDemand)
+    fetchCMSMock.mockResolvedValueOnce(storeRows)
+
+    const token = jwt.sign(
+      {id: 'org', email: 'org-admin@example.com', role: 'ORG_ADMIN'},
+      process.env.JWT_SECRET || 'dev-secret',
+    )
+    const res = await withAdminCookies(appRequest().post('/api/admin/analytics/summary'), token)
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty('ok', true)
+    expect(res.body).toHaveProperty('lastRefreshedAt')
+    expect(res.body.preview.topArticles.length).toBe(1)
+    expect(res.body.preview.topProducts.length).toBe(1)
   })
 })

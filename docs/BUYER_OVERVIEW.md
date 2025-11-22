@@ -52,4 +52,4 @@ This is a concise summary you can hand to a buyer evaluating the CMS.
 - Run `npm install`, `npm run build:api`, `npm run build:admin`.
 - Deploy `server/dist` or build and run Docker image `server/Dockerfile`.
 - Provide analytics ingest keys to trusted clients (mobile/web) and rotate them during handoff.
-- (Optional) Enable the compliance snapshot scheduler by setting `COMPLIANCE_SNAPSHOT_ENABLED=true` and ensuring the runbook in `docs/DEPLOYMENT.md` is followed.
+- (Optional) Enable the compliance snapshot scheduler by setting `ENABLE_COMPLIANCE_SCHEDULER=true` on exactly one instance and following the runbook in `docs/DEPLOYMENT.md`.

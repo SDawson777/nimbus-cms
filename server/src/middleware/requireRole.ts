@@ -23,6 +23,36 @@ export function requireRole(minRole: AdminRole) {
   }
 }
 
+export function canAccessBrand(admin: any, brandSlug?: string | null) {
+  if (!admin || !brandSlug) return false
+  const userRole = admin.role as AdminRole
+  if (!userRole) return false
+  if (userRole === 'OWNER' || userRole === 'ORG_ADMIN') return true
+  if (admin.brandSlug && admin.brandSlug === brandSlug) return true
+  if (userRole === 'BRAND_ADMIN' && !admin.brandSlug) return true
+  return false
+}
+
+export function canAccessStore(
+  admin: any,
+  storeSlug?: string | null,
+  storeBrandSlug?: string | null,
+) {
+  if (!admin || !storeSlug) return false
+  const userRole = admin.role as AdminRole
+  if (!userRole) return false
+  if (userRole === 'OWNER' || userRole === 'ORG_ADMIN') return true
+  if (userRole === 'BRAND_ADMIN') {
+    if (!admin.brandSlug || !storeBrandSlug || admin.brandSlug === storeBrandSlug) return true
+    return false
+  }
+  if (storeBrandSlug && admin.brandSlug && admin.brandSlug === storeBrandSlug) {
+    if (userRole === 'EDITOR') return true
+  }
+  if (admin.storeSlug && admin.storeSlug === storeSlug) return true
+  return false
+}
+
 // Helper: require that the admin has access to the given brand (slug) or is high-privilege
 export function requireBrandAccess(getBrandSlug?: (req: Request) => string | undefined) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -34,7 +64,7 @@ export function requireBrandAccess(getBrandSlug?: (req: Request) => string | und
       ? getBrandSlug(req)
       : (req.params as any).brand || (req.query as any).brand
     if (!required) return res.status(403).json({error: 'FORBIDDEN'})
-    if (admin.brandSlug && admin.brandSlug === required) return next()
+    if (canAccessBrand(admin, required)) return next()
     return res.status(403).json({error: 'FORBIDDEN'})
   }
 }
@@ -50,7 +80,7 @@ export function requireStoreAccess(getStoreSlug?: (req: Request) => string | und
       ? getStoreSlug(req)
       : (req.params as any).store || (req.query as any).store
     if (!required) return res.status(403).json({error: 'FORBIDDEN'})
-    if (admin.storeSlug && admin.storeSlug === required) return next()
+    if (canAccessStore(admin, required)) return next()
     return res.status(403).json({error: 'FORBIDDEN'})
   }
 }

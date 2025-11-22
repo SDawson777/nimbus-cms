@@ -1,11 +1,13 @@
 import React, {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
+import {useAdmin} from '../lib/adminContext'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const nav = useNavigate()
+  const {refresh: refreshAdmin} = useAdmin()
 
   async function submit(e) {
     e.preventDefault()
@@ -22,8 +24,7 @@ export default function Login() {
         setError(body.error || 'Login failed')
         return
       }
-      // fetch /admin/me to bootstrap user
-      await fetch('/admin/me', {credentials: 'include'})
+  await refreshAdmin()
       nav('/dashboard')
     } catch (err) {
       setError('Network error')

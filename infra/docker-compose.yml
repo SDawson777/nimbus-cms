@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  cms-api:
+    image: jars-cms:latest
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    ports:
+      - "4010:4010"
+    env_file:
+      - ../.env
+    depends_on: []

@@ -4,12 +4,18 @@ import {fetchCMS} from '../../lib/cms'
 
 export const copyRouter = Router()
 
+const contextOptions = ['onboarding', 'emptyStates', 'awards', 'accessibility', 'dataTransparency'] as const
+
+const querySchema = z.object({
+  context: z.enum(contextOptions),
+})
+
 copyRouter.get('/', async (req, res) => {
-  const {context} = z
-    .object({
-      context: z.enum(['onboarding', 'emptyStates', 'awards', 'accessibility', 'dataTransparency']),
-    })
-    .parse(req.query)
+  const parsed = querySchema.safeParse(req.query || {})
+  if (!parsed.success) {
+    return res.status(400).json({error: 'INVALID_COPY_CONTEXT', details: parsed.error.issues})
+  }
+  const {context} = parsed.data
   const items = await fetchCMS('*[_type=="appCopy" && context==$ctx]{key,text}[0...100]', {
     ctx: context,
   })

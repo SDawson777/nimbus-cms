@@ -178,8 +178,8 @@ npm run cms:promote -- --force
 
 The server now supports additional environment variables to harden runtime behavior. These should be set in your deployment environment (not committed to source control).
 
-- `CORS_ORIGINS` (comma-separated list) — when set, the API will only accept requests from the listed origins. Example: `https://app.example.com,https://studio.example.com`. If not set, a safe development default of `http://localhost:3000,http://localhost:5173` is used.
-- `JWT_SECRET` — secret used to sign admin session tokens. Must be provided in production and rotated regularly.
+- `CORS_ORIGINS` (comma-separated list) — required in production. The API rejects boot if the variable is missing or empty outside local development. Example: `https://app.example.com,https://studio.example.com`. Locally the server falls back to `http://localhost:3000,http://localhost:5173` for convenience.
+- `JWT_SECRET` — secret used to sign admin session tokens. Must be ≥32 random characters; production boot now fails if the secret is weak or missing. Rotate regularly.
 - `PREVIEW_SECRET` — secret compared against the `X-Preview-Secret` header or `?secret=` query param before draft content is returned. Required when preview mode is exposed.
 - `ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS` & `ADMIN_LOGIN_RATE_LIMIT_MAX` — configure the admin login rate limiter window (ms) and max requests per window. Defaults: `60000` (1 minute) and `8` respectively.
 - `ANALYTICS_RATE_LIMIT_WINDOW_MS` & `ANALYTICS_RATE_LIMIT_MAX` — configure rate limiting for analytics event ingestion. Defaults: `60000` (1 minute) and `60` respectively.
@@ -187,7 +187,14 @@ The server now supports additional environment variables to harden runtime behav
 - `ANALYTICS_INGEST_KEY` — comma-separated list of shared secrets. Clients must send `X-Analytics-Key` and `X-Analytics-Signature` (HMAC-SHA256 raw body) with every `/analytics/event` POST.
 - `MAX_LOGO_BYTES` — maximum allowed bytes for logo uploads (defaults to 2 MB). The Admin SPA enforces the same limit client-side. Adjust if you expect larger SVGs and ensure `JSON_BODY_LIMIT` comfortably exceeds the encoded payload size.
 - `JSON_BODY_LIMIT` — override the limit used by `express.json` (default `4mb`). Increase if you allow larger base64 uploads.
-- `COMPLIANCE_SNAPSHOT_ENABLED` — set to `true` to run the scheduled compliance snapshot job on boot. Requires write access to Sanity and should only run in one instance at a time.
+- `ENABLE_COMPLIANCE_SCHEDULER` — set to `true` on exactly one instance to run the scheduled compliance snapshot job on boot. Requires write access to Sanity; leave `false` (or unset) on all other replicas to avoid duplicate runs.
+- `COMPLIANCE_OVERVIEW_CACHE_TTL_MS` — optional override for the admin compliance overview cache TTL (default `60000`).
+
+### Running the compliance scheduler safely
+
+- Choose a single "leader" instance (for example: the first ECS task, a specific Kubernetes StatefulSet ordinal, or a singleton worker) and set `ENABLE_COMPLIANCE_SCHEDULER=true` only there. All other replicas should omit the flag so they don't start duplicate snapshot jobs.
+- Surface an `INSTANCE_ID` (or rely on `HOSTNAME`) so logs show which node is running the scheduler. The API now logs this value on boot when the scheduler starts.
+- Wire your monitoring/alerting to watch for `admin.compliance.snapshot_run` logs or the `complianceMonitor` Sanity document so you can confirm the single instance is executing snapshots as expected.
 - `LOG_LEVEL` — optional; set to `debug` to include debug-level logs. Defaults to emitting info/warn/error only.
 
 Analytics tuning
