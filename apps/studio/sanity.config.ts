@@ -8,7 +8,7 @@ const projectId =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || 'ygbu28p2'
 
 const dataset =
-  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'main'
+  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'production'
 
 export default defineConfig({
   name: 'nimbus-studio',

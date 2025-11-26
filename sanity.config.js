@@ -8,7 +8,7 @@ export default defineConfig({
   title: 'Nimbus Cannabis OS CMS',
 
   projectId: process.env.SANITY_PROJECT_ID || 'ygbu28p2',
-  dataset: process.env.SANITY_DATASET || 'main',
+  dataset: process.env.SANITY_DATASET || 'production',
 
   api: {
     token: process.env.SANITY_AUTH_TOKEN,
