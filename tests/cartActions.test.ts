@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest'
-import {applyAction} from '../jars-cms/backend/routes/cart'
+import {applyAction} from '../legacy/jars-cms/backend/routes/cart'
 
 describe('applyAction', () => {
   it('adds new items to the cart', () => {

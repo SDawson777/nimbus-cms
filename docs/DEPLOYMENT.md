@@ -98,13 +98,13 @@ Notes:
 From repository root (after `npm run build:api`):
 
 ```bash
-docker build -f server/Dockerfile -t jars-cms-server:latest .
+docker build -f server/Dockerfile -t nimbus-cms-server:latest .
 ```
 
 If you want to test the Docker image locally:
 
 ```bash
-docker run -p 4010:4010 --env-file .env jars-cms-server:latest
+docker run -p 4010:4010 --env-file .env nimbus-cms-server:latest
 ```
 
 ## Export / Import / Promote scripts

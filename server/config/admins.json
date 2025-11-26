@@ -5,16 +5,16 @@
       "email": "owner@example.com",
       "passwordHash": "",
       "role": "OWNER",
-      "organizationSlug": "jars-org",
-      "brandSlug": "jars",
-      "storeSlug": "jars-main"
+      "organizationSlug": "nimbus-org",
+      "brandSlug": "nimbus",
+      "storeSlug": "nimbus-main"
     },
     {
       "id": "2",
       "email": "editor@example.com",
       "passwordHash": "",
       "role": "EDITOR",
-      "brandSlug": "jars"
+      "brandSlug": "nimbus"
     }
   ]
 }

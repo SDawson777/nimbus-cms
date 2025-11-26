@@ -1,4 +1,4 @@
-# Releasing Jars CMS
+# Releasing Nimbus Cannabis OS CMS
 
 This guide describes how to cut a new versioned release, update release notes, and tag the repository.
 
@@ -39,7 +39,7 @@ git commit -m "chore(release): v1.2.0"
 5. Tag the release:
 
 ```bash
-git tag -a v1.2.0 -m "Jars CMS v1.2.0"
+git tag -a v1.2.0 -m "Nimbus Cannabis OS CMS v1.2.0"
 ```
 
 6. Push commits and tags:

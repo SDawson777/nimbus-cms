@@ -18,24 +18,24 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build production image
-        run: docker build -f server/Dockerfile -t jars-cms-test .
+        run: docker build -f server/Dockerfile -t nimbus-cms-test .
 
       - name: Extract and validate admin-dist
         run: |
           set -euo pipefail
-          docker create --name jars-cms-test-container jars-cms-test
-          docker cp jars-cms-test-container:/app/server/admin-dist ./admin-dist
+          docker create --name nimbus-cms-test-container nimbus-cms-test
+          docker cp nimbus-cms-test-container:/app/server/admin-dist ./admin-dist
           if [ ! -d "./admin-dist" ]; then
             echo "::error ::admin-dist directory was not copied from the container"
-            docker rm jars-cms-test-container >/dev/null 2>&1 || true
+            docker rm nimbus-cms-test-container >/dev/null 2>&1 || true
             exit 1
           fi
           if [ -z "$(ls -A ./admin-dist)" ]; then
             echo "::error ::admin-dist directory is empty after extraction"
-            docker rm jars-cms-test-container >/dev/null 2>&1 || true
+            docker rm nimbus-cms-test-container >/dev/null 2>&1 || true
             exit 1
           fi
-          docker rm jars-cms-test-container >/dev/null 2>&1
+          docker rm nimbus-cms-test-container >/dev/null 2>&1
 
       - name: Docker build result
         run: echo "Docker build passed ✔"

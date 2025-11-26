@@ -1,9 +1,9 @@
-<!-- Acquisition handoff playbook for prospective buyers evaluating JARS CMS -->
+<!-- Acquisition handoff playbook for prospective buyers evaluating Nimbus Cannabis OS CMS -->
 
 # Acquisition Handoff
 
 ## 1. Executive Summary
-- JARS CMS is a production-ready, multi-tenant content platform built on Sanity Studio, an Express API, and a hardened Admin SPA.
+- Nimbus Cannabis OS CMS is a production-ready, multi-tenant content platform built on Sanity Studio, an Express API, and a hardened Admin SPA.
 - It powers cannabis retail use cases (articles, deals, compliance assets) while preserving strict API compatibility with the mobile app contract documented in `docs/MOBILE_CONTRACT.md`.
 - The codebase now ships with verifiable Docker + CI workflows so buyers can prove builds, assets, and API behavior before closing.
 
@@ -27,7 +27,7 @@
 ## 4. Deployment Methods (Vercel + Railway + Docker)
 - **Vercel:** Deploy `apps/studio` via `sanity deploy` or `npm run studio:deploy`. Preview callbacks route through `sanity.config.ts`.
 - **Railway:** Use the new three-stage `server/Dockerfile` with `node:20-slim` runtime. Railway automatically builds the Docker image and runs `node server/dist/server.js` on port 4010.
-- **Docker Anywhere:** `docker build -t jars-cms-prod .` emits a runtime image where `/app/server/admin-dist` ships inside the API container for easy static hosting. `docker run -p 4010:4010 jars-cms-prod` exposes the API.
+- **Docker Anywhere:** `docker build -t nimbus-cms-prod .` emits a runtime image where `/app/server/admin-dist` ships inside the API container for easy static hosting. `docker run -p 4010:4010 nimbus-cms-prod` exposes the API.
 
 ## 5. CI/CD Validation Overview
 - `.github/workflows/docker-build.yml` runs on pushes/PRs to `main`.
@@ -81,8 +81,8 @@
 1. `npm install` → `npm run test` (Vitest) to ensure unit coverage.
 2. `npm run build:admin` and confirm `apps/admin/dist` exists.
 3. `npm run studio:build` to validate schema wiring.
-4. `docker build -t jars-cms-prod .` and check `/app/server/admin-dist` inside the image.
-5. Hit `/status` and `/content/articles` after `docker run -p 4010:4010 jars-cms-prod`.
+4. `docker build -t nimbus-cms-prod .` and check `/app/server/admin-dist` inside the image.
+5. Hit `/status` and `/content/articles` after `docker run -p 4010:4010 nimbus-cms-prod`.
 6. Review docs: `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, `docs/MOBILE_CONTRACT.md`.
 
 ## 14. Recommended Long-Term Enhancements

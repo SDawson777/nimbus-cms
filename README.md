@@ -71,8 +71,8 @@ Here are the important scripts (root `package.json`):
 Buyers can run the same checks locally before promotion:
 
 ```bash
-docker build -t jars-cms-prod .
-docker run -p 4010:4010 jars-cms-prod
+docker build -t nimbus-cms-prod .
+docker run -p 4010:4010 nimbus-cms-prod
 ```
 
 ## Analytics ingestion security

@@ -79,6 +79,6 @@ jobs:
           context: .
           file: server/Dockerfile
           push: false
-          tags: jars-cms-server:latest
+          tags: nimbus-cms-server:latest
 
   # Optional: you can add further jobs for lint, integration tests, or publish steps.

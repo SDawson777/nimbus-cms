@@ -11,8 +11,8 @@
   "include": [
     "server/src/**/*",
     "apps/**/*",
-    "jars-cms/**/*",
-    "jars-cms-api/src/**/*",
+    "legacy/jars-cms/**/*",
+    "legacy/jars-cms-api/src/**/*",
     "core-api/src/**/*",
     "**/*.ts",
     "**/*.tsx",
