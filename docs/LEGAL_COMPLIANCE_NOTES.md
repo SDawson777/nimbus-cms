@@ -1,6 +1,6 @@
 # Legal and compliance scope
 
-This document clarifies what the Jars CMS compliance features cover, and what remains the responsibility of the buyer and their legal counsel.
+This document clarifies what the Nimbus Cannabis OS CMS compliance features cover, and what remains the responsibility of the buyer and their legal counsel.
 
 ## What the CMS provides
 

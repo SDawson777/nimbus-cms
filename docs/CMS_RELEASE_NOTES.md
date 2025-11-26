@@ -1,4 +1,4 @@
-# JARS CMS — Release Notes (Phases 1–5)
+# Nimbus Cannabis OS CMS — Release Notes (Phases 1–5)
 
 This drop completes the "FINAL HARDEN + POLISH" blueprint across all phases. Highlights and migration notes below.
 

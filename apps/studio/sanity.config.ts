@@ -8,11 +8,11 @@ const projectId =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || 'ygbu28p2'
 
 const dataset =
-  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'staging'
+  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'main'
 
 export default defineConfig({
-  name: 'jars-studio',
-  title: 'JARS CMS',
+  name: 'nimbus-studio',
+  title: 'Nimbus Cannabis OS CMS',
   projectId,
   dataset,
   plugins: [deskTool(), visionTool()],

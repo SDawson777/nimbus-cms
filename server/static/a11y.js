@@ -1,7 +1,7 @@
 /* eslint-env browser */
 /* global window, document, localStorage */
 ;(function () {
-  const STORAGE_KEY = 'jars_a11y_prefs'
+  const STORAGE_KEY = 'nimbus_a11y_prefs'
   const defaults = {contrast: false, large: false, dyslexic: false, reduceMotion: false}
 
   function load() {
@@ -58,7 +58,7 @@
   }
 
   // expose a tiny API for programmatic control from other admin pages
-  window.JARS_A11Y = {
+  window.NIMBUS_A11Y = {
     getPrefs,
     setPrefs,
     reset,

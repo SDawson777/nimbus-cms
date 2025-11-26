@@ -16,12 +16,15 @@ export default [
     ],
   },
   {
-    files: ['apps/admin/**'],
+    files: ['apps/admin/src/**'],
     languageOptions: {
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: 'module',
         ecmaFeatures: {jsx: true},
+        project: ['./tsconfig.eslint.admin.json'],
+        tsconfigRootDir: process.cwd(),
       },
       globals: {
         window: 'readonly',
@@ -41,7 +44,7 @@ export default [
     },
   },
   {
-    files: ['server/**', 'core-api/**', 'jars-cms/**'],
+    files: ['server/**', 'core-api/**'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

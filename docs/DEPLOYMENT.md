@@ -79,13 +79,13 @@ npm run start:admin
 From repository root you can build a Docker image for the compiled server:
 
 ```bash
-docker build -f server/Dockerfile -t jars-cms-server:latest .
+docker build -f server/Dockerfile -t nimbus-cms-server:latest .
 ```
 
 Run with env file:
 
 ```bash
-docker run -p 4010:4010 --env-file .env jars-cms-server:latest
+docker run -p 4010:4010 --env-file .env nimbus-cms-server:latest
 ```
 
 Notes:

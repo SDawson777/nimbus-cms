@@ -1,15 +1,14 @@
 import {defineConfig} from 'sanity'
-import dotenv from 'dotenv'
 import {deskTool} from 'sanity/desk'
 import {visionTool} from '@sanity/vision'
-import {schemaTypes} from './jars-cms/sanity/schema'
+import schemaTypes from './schemaTypes'
 
 export default defineConfig({
-  name: 'default',
-  title: 'JARS CMS',
+  name: 'nimbus-root-studio',
+  title: 'Nimbus Cannabis OS CMS',
 
-  projectId: 'ygbu28p2',
-  dataset: 'staging',
+  projectId: process.env.SANITY_PROJECT_ID || 'ygbu28p2',
+  dataset: process.env.SANITY_DATASET || 'main',
 
   api: {
     token: process.env.SANITY_AUTH_TOKEN,

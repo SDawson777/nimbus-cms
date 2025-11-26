@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jars-cms
+  name: nimbus-cms
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: jars-cms
+      app: nimbus-cms
   template:
     metadata:
       labels:
-        app: jars-cms
+        app: nimbus-cms
     spec:
       containers:
         - name: cms-api
-          image: your-registry/jars-cms:latest
+          image: your-registry/nimbus-cms:latest
           ports:
             - containerPort: 4010
           envFrom:
             - secretRef:
-                name: jars-cms-secrets
+                name: nimbus-cms-secrets
             - configMapRef:
-                name: jars-cms-config
+                name: nimbus-cms-config
           readinessProbe:
             httpGet:
               path: /status

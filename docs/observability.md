@@ -144,7 +144,7 @@ Tips:
 
 - Configure your collector to treat each line as a full JSON object (no multi-line parsing needed).
 - Preserve fields like `requestId`, `method`, `path`, and `statusCode` as first-class attributes for easier querying.
-- Use `service` / `env` tags (for example: `service=jars-cms`, `env=production`) so you can slice metrics by environment.
+- Use `service` / `env` tags (for example: `service=nimbus-cms`, `env=production`) so you can slice metrics by environment.
 
 ## Troubleshooting high latency and errors
 

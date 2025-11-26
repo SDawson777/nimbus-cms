@@ -1,4 +1,4 @@
-# Jars CMS (Sanity + Express)
+# Nimbus Cannabis OS CMS (Sanity + Express)
 
 A multi-tenant, cannabis-focused CMS tailored for mobile and web apps. Provides a Sanity-backed content API, Admin SPA, and Studio for editorial workflows.
 
@@ -12,7 +12,7 @@ Multi-tenant CMS with Sanity at its core, offering brand and store scoping, lega
 
 ```bash
 git clone <repo-url>
-cd jars-cms
+cd nimbus-cms
 ```
 
 2. Copy env and install:

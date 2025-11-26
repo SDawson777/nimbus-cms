@@ -4,7 +4,7 @@ Date: 2025-11-18
 
 Summary
 
-This release prepares the Jars CMS repository for buyer handoff. It includes dependency security updates, build fixes for the Studio, and restores expected API behavior. All automated tests pass locally (Vitest: 36/36) and the API TypeScript build is clean.
+This release prepares the Nimbus Cannabis OS CMS repository for buyer handoff. It includes dependency security updates, build fixes for the Studio, and restores expected API behavior. All automated tests pass locally (Vitest: 36/36) and the API TypeScript build is clean.
 
 High-level changes
 
@@ -35,7 +35,7 @@ Developer & deployment notes
   - Ensure `@sanity/vision` and `sanity` versions are compatible (this repo pins `^4.16.0`).
 
 - Docker
-  - `server/Dockerfile` is multi-stage; to build locally: `docker build -f server/Dockerfile -t jars-cms-server:latest .`.
+  - `server/Dockerfile` is multi-stage; to build locally: `docker build -f server/Dockerfile -t nimbus-cms-server:latest .`.
 
 Known limitations & follow-ups
 

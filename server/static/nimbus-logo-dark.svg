@@ -1,0 +1,15 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Nimbus Cannabis OS CMS Logo - Dark Version -->
+  <rect width="180" height="48" fill="transparent"/>
+  
+  <!-- Icon: Cloud with cannabis leaf -->
+  <g transform="translate(8, 12)">
+    <!-- Cloud shape -->
+    <path d="M20 8C17.79 8 16 9.79 16 12C16 12.34 16.04 12.67 16.11 12.99C14.33 13.04 13 14.39 13 16C13 17.66 14.34 19 16 19H24C26.21 19 28 17.21 28 15C28 12.79 26.21 11 24 11C24 9.34 22.66 8 21 8C20.45 8 19.94 8.15 19.5 8.42C19.05 8.16 18.53 8 18 8Z" fill="#A4D96C"/>
+    <!-- Cannabis leaf silhouette -->
+    <path d="M20 10L19.5 14L20 18L20.5 14L20 10ZM18.5 11L18 13.5L19 15.5L18.5 11ZM21.5 11L22 13.5L21 15.5L21.5 11Z" fill="#F8F8F8"/>
+  </g>
+  
+  <!-- Text: Nimbus -->
+  <text x="44" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#F8F8F8">Nimbus CMS</text>
+</svg>

@@ -1,4 +1,4 @@
-# Server Dockerfile for JARS CMS API and Admin console
+# Server Dockerfile for Nimbus Cannabis OS CMS API and Admin console
 # Purpose: build the Admin SPA, compile the Express API, and package both for production use
 
 #############################################################

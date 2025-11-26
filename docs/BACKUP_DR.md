@@ -1,6 +1,6 @@
 # Backup and disaster recovery
 
-This guide describes how to back up and restore the Jars CMS datasets and configuration, and how to think about recovery objectives (RPO/RTO).
+This guide describes how to back up and restore the Nimbus Cannabis OS CMS datasets and configuration, and how to think about recovery objectives (RPO/RTO).
 
 ## What needs to be backed up
 

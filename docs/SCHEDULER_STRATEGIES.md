@@ -12,7 +12,7 @@ For most buyers, the simplest and safest approach is to run the scheduler on exa
 
 Examples:
 
-- **Kubernetes** – use a separate Deployment or a dedicated pod (e.g., `jars-cms-scheduler`) with the flag set.
+- **Kubernetes** – use a separate Deployment or a dedicated pod (e.g., `nimbus-cms-scheduler`) with the flag set.
 - **ECS/Fargate** – run a small scheduled task or a single-service task definition with the flag set.
 
 ## Leader-election (advanced)

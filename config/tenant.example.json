@@ -1,0 +1,41 @@
+{
+  "orgSlug": "example-org",
+  "displayName": "Example Organization",
+  "contactEmail": "support@example.com",
+  "brands": [
+    {
+      "slug": "example-brand",
+      "displayName": "Example Brand",
+      "theme": {
+        "primaryColor": "#1B5E3A",
+        "secondaryColor": "#A4D96C",
+        "accentColor": "#4BAF75",
+        "backgroundLight": "#F8F8F8",
+        "backgroundDark": "#121212",
+        "textPrimary": "#FFFFFF",
+        "textSecondary": "#E0E0E0",
+        "fontFamily": "system-ui, -apple-system, sans-serif"
+      },
+      "stores": [
+        {
+          "slug": "store-01",
+          "displayName": "Store 01 - Downtown",
+          "address": "123 Main Street, City, State 12345",
+          "phone": "+1 (555) 123-4567",
+          "email": "store01@example.com",
+          "hours": "Mon-Fri 9AM-9PM, Sat-Sun 10AM-8PM",
+          "timezone": "America/Denver"
+        },
+        {
+          "slug": "store-02",
+          "displayName": "Store 02 - Uptown",
+          "address": "456 Oak Avenue, City, State 12345",
+          "phone": "+1 (555) 987-6543",
+          "email": "store02@example.com",
+          "hours": "Mon-Sun 10AM-8PM",
+          "timezone": "America/Denver"
+        }
+      ]
+    }
+  ]
+}

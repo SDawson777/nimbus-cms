@@ -1,3 +1,6 @@
+// Lightweight CSRF helper for Admin SPA fetch calls
+// Uses browser fetch types; in non-DOM contexts this file should be excluded.
+
 export function getCsrfToken(): string | null {
   if (typeof document === 'undefined') return null
   const match = document.cookie

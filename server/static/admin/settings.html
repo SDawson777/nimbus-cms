@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Accessibility Settings — Jars CMS</title>
+    <title>Accessibility Settings — Nimbus Cannabis OS CMS</title>
     <link rel="stylesheet" href="/styles.css" />
     <style>
       .settings {
@@ -44,8 +44,8 @@
     <div class="container">
       <div class="site-top">
         <div class="brand">
-          <img class="logo" src="/logo.png" alt="Jars CMS logo" />
-          <strong>Jars CMS</strong>
+          <img class="logo" src="/nimbus-logo.svg" alt="Nimbus Cannabis OS CMS logo" />
+          <strong>Nimbus Cannabis OS CMS</strong>
         </div>
         <div class="nav">
           <a class="card" href="/admin/dashboard">Dashboard</a>
@@ -131,7 +131,7 @@
 
         function loadUI() {
           const prefs =
-            (window.JARS_A11Y && window.JARS_A11Y.getPrefs && window.JARS_A11Y.getPrefs()) || {}
+            (window.NIMBUS_A11Y && window.NIMBUS_A11Y.getPrefs && window.NIMBUS_A11Y.getPrefs()) || {}
           $('contrast').checked = !!prefs.contrast
           $('large').checked = !!prefs.large
           $('dyslexic').checked = !!prefs.dyslexic
@@ -154,23 +154,23 @@
               dyslexic: $('dyslexic').checked,
               reduceMotion: $('reduceMotion').checked,
             }
-            if (window.JARS_A11Y && window.JARS_A11Y.setPrefs) window.JARS_A11Y.setPrefs(prefs)
+            if (window.NIMBUS_A11Y && window.NIMBUS_A11Y.setPrefs) window.NIMBUS_A11Y.setPrefs(prefs)
             writeOut(prefs)
           })
 
           $('reset').addEventListener('click', function () {
-            if (window.JARS_A11Y && window.JARS_A11Y.reset) window.JARS_A11Y.reset()
+            if (window.NIMBUS_A11Y && window.NIMBUS_A11Y.reset) window.NIMBUS_A11Y.reset()
             loadUI()
-            writeOut(window.JARS_A11Y.getPrefs())
+            writeOut(window.NIMBUS_A11Y.getPrefs())
           })
 
           $('export').addEventListener('click', function () {
-            const p = window.JARS_A11Y.getPrefs()
+            const p = window.NIMBUS_A11Y.getPrefs()
             const blob = new Blob([JSON.stringify(p, null, 2)], {type: 'application/json'})
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = 'jars-a11y-prefs.json'
+            a.download = 'nimbus-a11y-prefs.json'
             a.click()
             URL.revokeObjectURL(url)
           })
