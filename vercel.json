@@ -1,9 +1,8 @@
 {
-  "buildCommand": "npm run build:api",
-  "installCommand": "npm install",
-  "outputDirectory": "server/dist",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+  "functions": {
+    "api/server.ts": { "runtime": "nodejs20.x" }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "/api/server" }
   ]
 }
