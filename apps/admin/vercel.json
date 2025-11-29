@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "ignoreCommand": "echo Deploying Nimbus Admin"
+  "buildCommand": "cd apps/admin && npm run build",
+  "installCommand": "cd apps/admin && npm ci",
+  "outputDirectory": "apps/admin/dist",
+  "framework": "vite"
 }

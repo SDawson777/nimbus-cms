@@ -29,13 +29,13 @@ RUN test -d dist && test "$(ls -A dist)" || \
 FROM node:20 AS api-builder
 WORKDIR /app
 
-# Install root dependencies for API build
-COPY package.json package-lock.json ./
-RUN npm ci
+# Install server dependencies and build API
+COPY server/package.json server/package-lock.json ./server/
+RUN cd server && npm ci
 
-# Copy full repo and build API
-COPY . .
-RUN npm run build:api
+# Copy server source and build
+COPY server ./server
+RUN cd server && npm run build
 
 # Copy Admin SPA output into server + root dist locations
 RUN mkdir -p server/admin-dist dist
@@ -57,9 +57,9 @@ FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install production dependencies only
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Install production server dependencies only
+COPY server/package.json server/package-lock.json ./server/
+RUN cd server && npm ci --omit=dev
 
 # Copy compiled server + admin static assets from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist
@@ -70,4 +70,4 @@ COPY --from=api-builder /app/dist ./dist
 EXPOSE 4010
 
 # Launch the Express API
-CMD ["node", "server/dist/server.js"]
+CMD ["node", "server/dist/index.js"]

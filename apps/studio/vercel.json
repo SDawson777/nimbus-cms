@@ -1,5 +1,6 @@
 {
-  "buildCommand": "pnpm --filter studio build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd apps/studio && npm run build",
+  "installCommand": "cd apps/studio && npm ci",
+  "outputDirectory": "apps/studio/dist",
   "framework": null
 }
