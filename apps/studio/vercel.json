@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd apps/studio && npm run build",
-  "installCommand": "cd apps/studio && npm ci",
+  "buildCommand": "npm --prefix apps/studio run build",
+  "installCommand": "npm --prefix apps/studio ci",
   "outputDirectory": "apps/studio/dist",
   "framework": null
 }
