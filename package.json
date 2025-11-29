@@ -30,7 +30,7 @@
     "nodemon": "^3.1.10",
     "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.10"
   },
   "prettier": {
