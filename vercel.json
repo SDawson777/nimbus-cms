@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:server",
+  "buildCommand": "npm run build:api",
   "installCommand": "npm install",
   "outputDirectory": "server/dist",
   "rewrites": [
