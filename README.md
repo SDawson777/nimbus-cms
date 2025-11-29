@@ -1,3 +1,41 @@
+## Deployment Overview
+
+- API (Railway):
+	- Source: `server/`
+	- Build: `npm run build:api` (TypeScript compile to `server/dist`)
+	- Start: `node server/dist/server.js`
+	- Env (Railway):
+		- `JWT_SECRET` (>=24 chars, non-placeholder)
+		- `PREVIEW_SECRET`
+		- `CORS_ORIGINS` (comma-separated, e.g. `https://nimbus-cms-admin.vercel.app,https://nimbus-cms.vercel.app`)
+		- Optional: `JSON_BODY_LIMIT`, `ENABLE_COMPLIANCE_SCHEDULER`
+
+- Admin UI (Vercel + Vite):
+	- Root Directory: `apps/admin`
+	- Build Command: `npm run build`
+	- Output Directory: `dist`
+	- Env (Vercel Project):
+		- `VITE_NIMBUS_API_URL` → Railway API base (e.g. `https://<railway-app>.up.railway.app`)
+
+- CMS Studio (Vercel + Sanity):
+	- Root Directory: `apps/studio`
+	- Build Command: `sanity build --cwd apps/studio`
+	- Env (Vercel Project):
+		- `SANITY_STUDIO_PROJECT_ID` → `ygbu28p2`
+		- `SANITY_STUDIO_DATASET` → `production`
+
+## CORS and Integration
+
+- Set `CORS_ORIGINS` on Railway to include Admin and Studio Vercel domains.
+- Admin app uses `import.meta.env.VITE_NIMBUS_API_URL` for all API requests.
+- API exposes friendly landing at `/`, health at `/status`, and legacy at `/api/v1/status`.
+
+## Project Mapping
+
+- `server/` → Railway service (API)
+- `apps/admin/` → Vercel project (Admin UI)
+- `apps/studio/` → Vercel project (Sanity Studio)
+
 # Nimbus Cannabis OS CMS (Sanity + Express)
 
 A multi-tenant, cannabis-focused CMS tailored for mobile and web apps. Provides a Sanity-backed content API, Admin SPA, and Studio for editorial workflows.

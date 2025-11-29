@@ -67,6 +67,8 @@ export default function Dashboard() {
       mounted = false
     }
   }, [])
+  return (
+    <div style={{padding: 20}}><h1>Dashboard</h1>
 
       /* Metrics Overview */
       <div style={{
