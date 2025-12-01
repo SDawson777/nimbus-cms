@@ -58,7 +58,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install production server dependencies only
-COPY server/package.json server/package-lock.json ./server/
+COPY --from=api-builder /app/server/package.json ./server/package.json
+COPY --from=api-builder /app/server/package-lock.json ./server/package-lock.json
 RUN cd server && npm ci --omit=dev
 
 # Copy compiled server + admin static assets from api-builder
