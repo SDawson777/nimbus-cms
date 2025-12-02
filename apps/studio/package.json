@@ -9,12 +9,13 @@
     "deploy": "sanity deploy"
   },
   "dependencies": {
+    "@sanity/client": "^7.13.1",
+    "@sanity/icons": "^2.11.2",
     "@sanity/vision": "^4.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sanity": "^4.18.0",
-    "styled-components": "^6.1.19",
-    "@sanity/icons": "^2.11.2"
+    "styled-components": "^6.1.19"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
