@@ -18,12 +18,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Enable corepack and install pnpm
         run: |
-          npm ci
+          corepack enable
 
-      - name: Run npm audit (production only)
+      - name: Install dependencies (pnpm, non-blocking)
         run: |
-          # Run npm audit in production mode but do not fail the workflow.
-          # This avoids forcing breaking upgrades (e.g., major Sanity bumps) while still surfacing issues in logs.
-          npm audit --production || echo "npm audit reported issues. Review the log output above and plan upgrades as part of regular maintenance."
+          pnpm install --prefer-offline --frozen-lockfile || echo "pnpm install failed; audit job is advisory only."
+
+      - name: Run pnpm audit (production only, non-blocking)
+        run: |
+          # Run pnpm audit in production mode but do not fail the workflow.
+          # This surfaces issues in logs without breaking deployments.
+          pnpm audit --prod || echo "pnpm audit reported issues. Review logs and plan upgrades during regular maintenance."
