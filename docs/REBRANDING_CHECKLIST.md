@@ -79,7 +79,7 @@ Use this checklist when rebranding **Nimbus Cannabis OS CMS** for a new customer
 ### 7. Update environment variables
 
 - [ ] Set `SANITY_PROJECT_ID` to customer Sanity project
-- [ ] Set `SANITY_DATASET` to customer dataset (e.g., `main` or `brand-customer`)
+- [ ] Set `SANITY_DATASET` to customer dataset (e.g., `production` or `brand-customer`)
 - [ ] Set `SANITY_API_TOKEN` (write token for server-side mutations)
 - [ ] Set `SANITY_PREVIEW_TOKEN` (read token for preview mode)
 - [ ] Set `JWT_SECRET` (32+ random characters, keep secret)
