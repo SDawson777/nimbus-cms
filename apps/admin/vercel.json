@@ -1,6 +1,3 @@
 {
-  "buildCommand": "npm --prefix apps/admin run build",
-  "installCommand": "npm --prefix apps/admin ci",
-  "outputDirectory": "apps/admin/dist",
-  "framework": "vite"
+  "outputDirectory": "dist"
 }

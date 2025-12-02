@@ -5,9 +5,16 @@ import React from 'react'
  * - shadow: sm or md via token
  * - radius: lg
  */
-export default function Card({children}:{children:React.ReactNode}){
+export default function Card({children}: {children: React.ReactNode}) {
   return (
-    <div style={{padding:24, borderRadius:'var(--radius-lg)', boxShadow:'var(--elevation-sm)', background:'var(--color-surface)'}}>
+    <div
+      style={{
+        padding: 24,
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--elevation-sm)',
+        background: 'var(--color-surface)',
+      }}
+    >
       {children}
     </div>
   )

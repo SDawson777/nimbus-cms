@@ -26,11 +26,21 @@ export default function App() {
       >
         <div style={{fontWeight: 700, fontSize: 18}}>Nimbus Admin</div>
         <nav style={{display: 'grid', gap: 6}}>
-          <a href="#content" style={{color: '#fff', textDecoration: 'none'}}>Content</a>
-          <a href="#deals" style={{color: '#fff', textDecoration: 'none'}}>Deals</a>
-          <a href="#legal" style={{color: '#fff', textDecoration: 'none'}}>Legal</a>
-          <a href="#tenants" style={{color: '#fff', textDecoration: 'none'}}>Tenants</a>
-          <a href="#settings" style={{color: '#fff', textDecoration: 'none'}}>Settings</a>
+          <a href="#content" style={{color: '#fff', textDecoration: 'none'}}>
+            Content
+          </a>
+          <a href="#deals" style={{color: '#fff', textDecoration: 'none'}}>
+            Deals
+          </a>
+          <a href="#legal" style={{color: '#fff', textDecoration: 'none'}}>
+            Legal
+          </a>
+          <a href="#tenants" style={{color: '#fff', textDecoration: 'none'}}>
+            Tenants
+          </a>
+          <a href="#settings" style={{color: '#fff', textDecoration: 'none'}}>
+            Settings
+          </a>
         </nav>
         <div style={{marginTop: 'auto', fontSize: 12, opacity: 0.8}}>
           API: {NIMBUS_API_URL || 'VITE_NIMBUS_API_URL not set'}
@@ -49,11 +59,21 @@ export default function App() {
           <h1 style={{margin: 0}}>Dashboard</h1>
           <div style={{fontSize: 12, color: '#666'}}>Nimbus CMS</div>
         </header>
-        <section id="content"><Section title="Content" /></section>
-        <section id="deals"><Section title="Deals" /></section>
-        <section id="legal"><Section title="Legal" /></section>
-        <section id="tenants"><Section title="Tenants" /></section>
-        <section id="settings"><Section title="Settings" /></section>
+        <section id="content">
+          <Section title="Content" />
+        </section>
+        <section id="deals">
+          <Section title="Deals" />
+        </section>
+        <section id="legal">
+          <Section title="Legal" />
+        </section>
+        <section id="tenants">
+          <Section title="Tenants" />
+        </section>
+        <section id="settings">
+          <Section title="Settings" />
+        </section>
       </main>
     </div>
   )

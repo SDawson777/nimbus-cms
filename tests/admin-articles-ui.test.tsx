@@ -30,15 +30,26 @@ afterEach(() => {
 
 describe('Articles admin UI', () => {
   it('loads and updates when channel selector changes', async () => {
-    // helper to poll for a condition
-    async function waitFor(fn: () => boolean, timeout = 1000) {
+    // helper to poll for a condition without await-in-loop
+    function waitFor(fn: () => boolean, timeout = 1000) {
       const start = Date.now()
-      while (Date.now() - start < timeout) {
-        if (fn()) return
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => setTimeout(r, 10))
-      }
-      throw new Error('timed out waiting for condition')
+      const interval = 10
+
+      return new Promise<void>((resolve, reject) => {
+        function check() {
+          if (fn()) {
+            resolve()
+            return
+          }
+          if (Date.now() - start >= timeout) {
+            reject(new Error('timed out waiting for condition'))
+            return
+          }
+          setTimeout(check, interval)
+        }
+
+        check()
+      })
     }
 
     // initial (All) load

@@ -4,10 +4,9 @@ import {visionTool} from '@sanity/vision'
 import {PREVIEW_TOKEN_ENV} from './config/preview'
 import schemaTypes from './schemaTypes'
 
-const projectId =
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || 'ygbu28p2'
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID || 'ygbu28p2'
 
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'production'
+const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
 
 export default defineConfig({
   name: 'nimbus-studio',

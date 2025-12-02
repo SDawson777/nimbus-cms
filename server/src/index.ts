@@ -1,3 +1,4 @@
+import dotenv from 'dotenv'
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
@@ -22,7 +23,9 @@ import analyticsRouter from './routes/analytics'
 import aiRouter from './routes/ai'
 import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
 
-const requiredSecrets = ['JWT_SECRET', 'PREVIEW_SECRET'] as const
+dotenv.config()
+
+const requiredSecrets = ['JWT_SECRET'] as const
 const missingSecrets = requiredSecrets.filter((key) => !process.env[key])
 if (missingSecrets.length) {
   throw new Error(
@@ -87,22 +90,21 @@ app.use(requestLogger)
 
 // Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins.
 // Credentials (cookies) are only allowed when the origin is a specific allowlisted origin.
-const defaultDevOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3333',
-  'http://localhost:4010',
-  'http://localhost:5173',
-]
-if (!process.env.CORS_ORIGINS && isProduction) {
+const allowedOriginsRaw = process.env.CORS_ORIGINS || ''
+const allowedOrigins = allowedOriginsRaw
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+
+if (!allowedOrigins.length && isProduction) {
   throw new Error('CORS_ORIGINS must be configured in production (comma-separated list of origins)')
 }
-const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-  : defaultDevOrigins
 
 const isWildcard = allowedOrigins.length === 1 && allowedOrigins[0] === '*'
+
+logger.info('CORS configuration', {
+  origins: isWildcard ? ['*'] : allowedOrigins,
+})
 
 app.use(
   cors({

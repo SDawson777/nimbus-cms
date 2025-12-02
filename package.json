@@ -6,13 +6,10 @@
   "description": "Nimbus CMS monorepo: Studio (Vercel/Sanity), Admin SPA (Vercel/Vite), API (Railway/Express)",
   "author": "",
   "scripts": {
-     "build": "echo 'Root build noop. Use vercel-build-admin or vercel-build-studio when deploying from monorepo root.'",
+    "build": "pnpm --filter server build && pnpm --filter admin build && pnpm --filter studio build",
     "build:api": "pnpm --filter server build",
     "build:admin": "pnpm --filter admin build",
     "build:studio": "pnpm --filter studio build",
-     "vercel-build-admin": "npm --prefix apps/admin ci && npm --prefix apps/admin run build && rm -rf dist && mkdir -p dist && cp -R apps/admin/dist/* dist/",
-    "vercel-build-studio": "npm --prefix apps/studio install && npm --prefix apps/studio run build && rm -rf dist && mkdir -p dist && cp -R apps/studio/dist/* dist/",
-     "vercel-build-all": "npm run vercel-build-admin && npm run vercel-build-studio",
     "dev": "pnpm --filter server dev",
     "dev:api": "pnpm --filter server dev",
     "dev:admin": "pnpm --filter admin dev",
@@ -21,14 +18,25 @@
     "fmt": "prettier -w .",
     "lint": "eslint server/src apps/admin/src --ext .ts,.tsx,.js,.jsx"
   },
+  "engines": {
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
   "devDependencies": {
     "@types/node": "^20.2.5",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^4.0.0",
+    "cookie-parser": "^1.4.7",
     "eslint": "^9.28.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.10",
+    "pnpm": "^9.15.9",
     "prettier": "^3.3.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vitest": "^4.0.10"

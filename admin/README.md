@@ -13,6 +13,7 @@ Enterprise-grade admin panel for Nimbus CMS built with React + TypeScript + Vite
 ## Setup
 
 ### Prerequisites
+
 - Node.js 18+
 - Backend API running at `http://localhost:3000` (or configure via env)
 
@@ -74,28 +75,34 @@ admin/
 ## Features
 
 ### Multi-tenant Support
+
 - Tenant context with localStorage persistence
 - Tenant-aware API calls via `api.tenantGet(tenantId, endpoint)`
 - Workspace selector UI
 
 ### Design System
+
 - Token-based theming (colors, spacing, typography, elevation)
 - Light/dark mode ready (via `data-theme` attribute)
 - Consistent component library: Button, Input, Select, Tabs, Badge, Modal, Drawer, Tooltip, Dropdown, FormField, Skeleton, Card, Table
 
 ### Modules
+
 - **Dashboard**: KPI cards + Recharts (line, bar, area)
 - **Content**: Articles, Deals, Legal docs
 - **Tenants**: Tenant manager with create/switch
 - **Settings**: Theme settings, API keys, workspace config
 
 ### Icons
+
 Custom SVG icon set (20/24px, `stroke="currentColor"`):
+
 - Home, Settings, Users, Chart, Document, Alert, Plus, Search, Check, ChevronDown
 
 ## API Integration
 
 Base URL configured via `VITE_NIMBUS_API_URL`. Endpoints called:
+
 - `/api/v1/nimbus/content/deals`
 - `/admin/legal`
 - Additional routes as needed

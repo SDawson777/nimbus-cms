@@ -46,34 +46,30 @@ const router = express.Router()
  *       500:
  *         description: Server error
  */
-router.post(
-  '/chat',
-  requireRoleV2([Role.Admin, Role.Editor, Role.Viewer]),
-  async (req, res) => {
-    try {
-      const {message, context} = req.body
+router.post('/chat', requireRoleV2([Role.Admin, Role.Editor, Role.Viewer]), async (req, res) => {
+  try {
+    const {message, context} = req.body
 
-      if (!message || typeof message !== 'string') {
-        return res.status(400).json({
-          code: 'INVALID_MESSAGE',
-          message: 'Message is required and must be a string',
-        })
-      }
-
-      // Placeholder: OpenAI integration (requires OPENAI_API_KEY env)
-      // For now, return a static response to keep build working
-      const reply =
-        "I'm the Nimbus CMS AI assistant. I can help you with content management, scheduling, personalization, and compliance features. (OpenAI integration pending - set OPENAI_API_KEY environment variable)"
-
-      res.json({reply})
-    } catch (error: any) {
-      console.error('AI chat error:', error)
-      res.status(500).json({
-        code: 'AI_ERROR',
-        message: 'Failed to process AI request',
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({
+        code: 'INVALID_MESSAGE',
+        message: 'Message is required and must be a string',
       })
     }
-  },
-)
+
+    // Placeholder: OpenAI integration (requires OPENAI_API_KEY env)
+    // For now, return a static response to keep build working
+    const reply =
+      "I'm the Nimbus CMS AI assistant. I can help you with content management, scheduling, personalization, and compliance features. (OpenAI integration pending - set OPENAI_API_KEY environment variable)"
+
+    res.json({reply})
+  } catch (error: any) {
+    console.error('AI chat error:', error)
+    res.status(500).json({
+      code: 'AI_ERROR',
+      message: 'Failed to process AI request',
+    })
+  }
+})
 
 export default router

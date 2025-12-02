@@ -1,7 +1,7 @@
 import React from 'react'
 import Card from '@/design-system/ui/Card'
 
-export default function TenantsIndex(){
+export default function TenantsIndex() {
   return (
     <div>
       <h1>Tenants</h1>

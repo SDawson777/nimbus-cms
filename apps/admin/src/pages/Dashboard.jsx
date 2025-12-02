@@ -6,9 +6,7 @@ let ChartJS
 let Line
 try {
   // Optional runtime import so dev/test environments without deps don't crash
-  // eslint-disable-next-line global-require
   ChartJS = require('chart.js')
-  // eslint-disable-next-line global-require
   Line = require('react-chartjs-2').Line
 } catch (e) {
   ChartJS = null

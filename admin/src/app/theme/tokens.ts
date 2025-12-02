@@ -22,8 +22,15 @@ export const tokens = {
     danger: '#E54848',
     info: '#4AB3F4',
   },
-  radius: {xs:'3px', sm:'6px', md:'8px', lg:'12px', xl:'16px', full:'9999px'},
-  elevation: {sm:'0 1px 2px rgba(0,0,0,0.06)', md:'0 4px 8px rgba(0,0,0,0.12)', lg:'0 8px 24px rgba(0,0,0,0.16)'},
-  typography: {fontSans:'Inter, ui-sans-serif, system-ui', fontMono:'JetBrains Mono, ui-monospace'},
-  spacing: [2,4,6,8,12,16,20,24,32,48,64],
+  radius: {xs: '3px', sm: '6px', md: '8px', lg: '12px', xl: '16px', full: '9999px'},
+  elevation: {
+    sm: '0 1px 2px rgba(0,0,0,0.06)',
+    md: '0 4px 8px rgba(0,0,0,0.12)',
+    lg: '0 8px 24px rgba(0,0,0,0.16)',
+  },
+  typography: {
+    fontSans: 'Inter, ui-sans-serif, system-ui',
+    fontMono: 'JetBrains Mono, ui-monospace',
+  },
+  spacing: [2, 4, 6, 8, 12, 16, 20, 24, 32, 48, 64],
 } as const
