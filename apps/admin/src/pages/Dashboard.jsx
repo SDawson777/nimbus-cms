@@ -2,16 +2,19 @@ import {TrafficChart, SalesChart, EngagementChart} from '../components/Charts'
 import Card from '../design-system/Card'
 import Badge from '../design-system/Badge'
 import React, {useEffect, useState} from 'react'
-let ChartJS
-let Line
-try {
-  // Optional runtime import so dev/test environments without deps don't crash
-  ChartJS = require('chart.js')
-  Line = require('react-chartjs-2').Line
-} catch (e) {
-  ChartJS = null
-  Line = null
-}
+import {Line} from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export default function Dashboard() {
   const [data, setData] = useState(null)

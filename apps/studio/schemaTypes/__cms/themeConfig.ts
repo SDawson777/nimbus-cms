@@ -2,12 +2,14 @@ import {defineField, defineType} from 'sanity'
 // Note: Studio-time uniqueness validation uses the studio client. In some Studio
 // setups `part:@sanity/base/client` is available; if your Studio differs you may
 // need to adapt this import.
-let studioClient: any
-try {
-  studioClient = require('part:@sanity/base/client')
-} catch {
-  studioClient = null
-}
+// Sanity Studio v3+ client is imported via @sanity/client; avoid CommonJS require
+import {createClient} from '@sanity/client'
+
+const studioClient = createClient({
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID,
+  dataset: process.env.SANITY_STUDIO_DATASET,
+  useCdn: false,
+})
 
 export default defineType({
   name: 'themeConfig',

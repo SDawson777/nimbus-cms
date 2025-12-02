@@ -77,15 +77,12 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/faqs" element={<Faqs />} />
-            <Route path="/deals" element={React.createElement(require('./pages/Deals').default)} />
+              <Route path="/deals" element={<Deals />} />
             <Route path="/legal" element={<Legal />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/analytics/settings" element={<AnalyticsSettings />} />
             <Route path="/settings" element={<Settings />} />
-            <Route
-              path="/compliance"
-              element={React.createElement(require('./pages/Compliance').default)}
-            />
+              <Route path="/compliance" element={<Compliance />} />
             <Route path="/theme" element={<ThemePage />} />
             <Route path="/personalization" element={<Personalization />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
