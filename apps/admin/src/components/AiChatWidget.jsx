@@ -18,7 +18,7 @@ export function AiChatWidget() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_NIMBUS_API_URL || 'http://localhost:3001/api/v1/nimbus'}/ai/chat`,
+        `${import.meta.env.VITE_NIMBUS_API_URL}/ai/chat`,
         {
           method: 'POST',
           headers: {
