@@ -1,4 +1,4 @@
 packages:
-  - 'server'
-  - 'apps/admin'
-  - 'apps/studio'
+  - "apps/admin"
+  - "apps/studio"
+  - "server"

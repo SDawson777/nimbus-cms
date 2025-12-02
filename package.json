@@ -1,6 +1,5 @@
 {
-  "name": "nimbus-cms-monorepo",
-  "private": true,
+  "name": "nimbus-cms",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -8,49 +7,4 @@
     "apps/studio",
     "server"
   ]
-  "license": "UNLICENSED",
-  "description": "Nimbus CMS monorepo: Studio (Vercel/Sanity), Admin SPA (Vercel/Vite), API (Railway/Express)",
-  "author": "",
-  "scripts": {
-    "build": "pnpm --filter server build && pnpm --filter admin build && pnpm --filter studio build",
-    "build:api": "pnpm --filter server build",
-    "build:admin": "pnpm --filter admin build",
-    "build:studio": "pnpm --filter studio build",
-    "dev": "pnpm --filter server dev",
-    "dev:api": "pnpm --filter server dev",
-    "dev:admin": "pnpm --filter admin dev",
-    "dev:studio": "pnpm --filter studio dev",
-    "test": "vitest run",
-    "fmt": "prettier -w .",
-    "lint": "eslint server/src apps/admin/src --ext .ts,.tsx,.js,.jsx"
-  },
-  "engines": {
-    "pnpm": ">=9.0.0"
-  },
-  "packageManager": "pnpm@9.0.0",
-  "devDependencies": {
-    "@types/node": "^20.2.5",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@vitest/coverage-v8": "^4.0.0",
-    "cookie-parser": "^1.4.7",
-    "eslint": "^9.28.0",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "nodemon": "^3.1.10",
-    "pnpm": "^9.15.9",
-    "prettier": "^3.3.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "supertest": "^7.1.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "vitest": "^4.0.10"
-  },
-  "prettier": {
-    "semi": false,
-    "printWidth": 100,
-    "bracketSpacing": false,
-    "singleQuote": true
-  }
 }

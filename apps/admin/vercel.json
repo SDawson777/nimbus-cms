@@ -1,5 +1,5 @@
 {
   "buildCommand": "pnpm --filter admin build",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --filter ./... --workspace-root",
   "outputDirectory": "dist"
 }
