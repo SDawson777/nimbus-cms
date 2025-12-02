@@ -1,3 +1,5 @@
 {
+  "buildCommand": "pnpm --filter admin build",
+  "installCommand": "pnpm install",
   "outputDirectory": "dist"
 }
