@@ -19,6 +19,7 @@ import {AiChatWidget} from './components/AiChatWidget'
 import Deals from './pages/Deals'
 import Compliance from './pages/Compliance'
 import AppErrorBoundary from './components/AppErrorBoundary'
+import AppFooter from './components/AppFooter'
 
 function AppShell() {
   const {admin, loading} = useAdminGuard()
@@ -171,6 +172,7 @@ function AppShell() {
           </Routes>
         </main>
         <AiChatWidget />
+        <AppFooter />
       </div>
   )
 }

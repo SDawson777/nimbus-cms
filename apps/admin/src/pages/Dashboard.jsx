@@ -12,15 +12,84 @@ import TimeSlider from '../components/TimeSlider'
 import {apiJson, apiBaseUrl} from '../lib/api'
 
 const SAMPLE_OVERVIEW = {
-  traffic: [],
-  sales: [],
-  engagement: [],
-  topArticles: [],
-  topFaqs: [],
-  topProducts: [],
-  productSeries: [],
-  storeEngagement: [],
-  productDemand: [],
+  traffic: [
+    {timestamp: '08:00', visits: 320},
+    {timestamp: '10:00', visits: 540},
+    {timestamp: '12:00', visits: 680},
+    {timestamp: '14:00', visits: 720},
+    {timestamp: '16:00', visits: 610},
+  ],
+  sales: [
+    {timestamp: '08:00', value: 1800},
+    {timestamp: '10:00', value: 2400},
+    {timestamp: '12:00', value: 3100},
+    {timestamp: '14:00', value: 3600},
+    {timestamp: '16:00', value: 2900},
+  ],
+  engagement: [
+    {timestamp: 'Mon', depth: 5.4, retention: 62},
+    {timestamp: 'Tue', depth: 5.9, retention: 64},
+    {timestamp: 'Wed', depth: 6.4, retention: 67},
+    {timestamp: 'Thu', depth: 6.1, retention: 65},
+    {timestamp: 'Fri', depth: 6.7, retention: 70},
+  ],
+  topArticles: [
+    {contentSlug: 'ai-strategy-2025', views: 1820, clickThroughs: 420},
+    {contentSlug: 'compliance-fastlane', views: 1460, clickThroughs: 360},
+    {contentSlug: 'design-systems', views: 1210, clickThroughs: 310},
+  ],
+  topFaqs: [
+    {contentSlug: 'pricing', views: 980, clickThroughs: 250},
+    {contentSlug: 'security', views: 840, clickThroughs: 210},
+    {contentSlug: 'analytics', views: 720, clickThroughs: 180},
+  ],
+  topProducts: [
+    {contentSlug: 'aurora-os', views: 2100, clickThroughs: 640, sales: 74},
+    {contentSlug: 'halo-pay', views: 1860, clickThroughs: 520, sales: 58},
+    {contentSlug: 'atlas-ai', views: 1640, clickThroughs: 480, sales: 61},
+  ],
+  productSeries: [
+    {
+      slug: 'aurora-os',
+      series: [
+        {date: 'T0', views: 320},
+        {date: 'T1', views: 480},
+        {date: 'T2', views: 620},
+        {date: 'T3', views: 710},
+        {date: 'T4', views: 680},
+      ],
+    },
+    {
+      slug: 'halo-pay',
+      series: [
+        {date: 'T0', views: 280},
+        {date: 'T1', views: 340},
+        {date: 'T2', views: 420},
+        {date: 'T3', views: 510},
+        {date: 'T4', views: 470},
+      ],
+    },
+    {
+      slug: 'atlas-ai',
+      series: [
+        {date: 'T0', views: 260},
+        {date: 'T1', views: 330},
+        {date: 'T2', views: 410},
+        {date: 'T3', views: 560},
+        {date: 'T4', views: 520},
+      ],
+    },
+  ],
+  storeEngagement: [
+    {storeSlug: 'detroit-hq', longitude: -83.0458, latitude: 42.3314, engagement: 42, views: 980, clickThroughs: 240},
+    {storeSlug: 'chicago-loop', longitude: -87.6298, latitude: 41.8781, engagement: 37, views: 860, clickThroughs: 210},
+    {storeSlug: 'nyc-soho', longitude: -74.006, latitude: 40.7128, engagement: 55, views: 1120, clickThroughs: 310},
+  ],
+  productDemand: [
+    {slug: 'aurora-os', demandScore: 92, status: 'Hot'},
+    {slug: 'halo-pay', demandScore: 84, status: 'Watch'},
+    {slug: 'atlas-ai', demandScore: 76, status: 'Stable'},
+  ],
 }
 
 export default function Dashboard() {
@@ -28,8 +97,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   // Track number of recalled products; start at null until loaded.
   const [recalledCount, setRecalledCount] = useState(null)
-  // Controls for 3D/4D mode and time slider.
-  const allow3D = import.meta.env.VITE_ENABLE_3D_ANALYTICS === 'true'
+  // Controls for 3D/4D mode and time slider (default to on for demos unless explicitly disabled).
+  const allow3D = import.meta.env.VITE_ENABLE_3D_ANALYTICS !== 'false'
   const [is3DView, setIs3DView] = useState(false)
   const [timeIndex, setTimeIndex] = useState(0)
 
@@ -88,12 +157,12 @@ export default function Dashboard() {
 
   if (loading) return <div style={{padding: 20}}>Loading...</div>
 
-  const topArticles = (data && data.topArticles) || []
-  const topFaqs = (data && data.topFaqs) || []
-  const topProducts = (data && data.topProducts) || []
-  const productSeries = (data && data.productSeries) || []
-  const stores = (data && data.storeEngagement) || []
-  const demand = (data && data.productDemand) || []
+  const topArticles = (data && data.topArticles) || SAMPLE_OVERVIEW.topArticles
+  const topFaqs = (data && data.topFaqs) || SAMPLE_OVERVIEW.topFaqs
+  const topProducts = (data && data.topProducts) || SAMPLE_OVERVIEW.topProducts
+  const productSeries = (data && data.productSeries) || SAMPLE_OVERVIEW.productSeries
+  const stores = (data && data.storeEngagement) || SAMPLE_OVERVIEW.storeEngagement
+  const demand = (data && data.productDemand) || SAMPLE_OVERVIEW.productDemand
   const maxSeriesLength = productSeries.reduce(
     (max, series) => Math.max(max, (series.series || []).length),
     0,

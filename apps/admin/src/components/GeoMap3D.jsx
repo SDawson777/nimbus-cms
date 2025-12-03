@@ -15,8 +15,10 @@ export default function GeoMap3D({
   zoom = 4,
   pitch = 45,
   bearing = -27,
+  mapboxToken,
 }) {
-  const mapboxToken =
+  const token =
+    mapboxToken ||
     import.meta.env.VITE_MAPBOX_TOKEN ||
     import.meta.env.REACT_APP_MAPBOX_TOKEN ||
     import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
@@ -42,7 +44,7 @@ export default function GeoMap3D({
     [data],
   )
 
-  if (!mapboxToken) {
+  if (!token) {
     return (
       <div className="map-placeholder" style={{padding: '1rem'}}>
         <p style={{margin: 0, color: 'var(--muted)'}}>
@@ -61,7 +63,7 @@ export default function GeoMap3D({
       >
         <Map
           mapStyle="mapbox://styles/mapbox/light-v10"
-          mapboxAccessToken={mapboxToken}
+          mapboxAccessToken={token}
           reuseMaps
           preventStyleDiffing
           style={{position: 'absolute', inset: 0}}
