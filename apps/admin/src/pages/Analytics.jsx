@@ -1,6 +1,7 @@
 import React, {useEffect, useState, useCallback} from 'react'
 import {useAdmin} from '../lib/adminContext'
 import {csrfFetch} from '../lib/csrf'
+import {safeJson} from '../lib/safeJson'
 
 export default function Analytics() {
   const [metrics, setMetrics] = useState([])
@@ -21,7 +22,7 @@ export default function Analytics() {
         const text = await res.text().catch(() => 'Failed to load metrics')
         throw new Error(text || 'Failed to load metrics')
       }
-      const data = await res.json()
+      const data = await safeJson(res, [])
       setMetrics(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error(err)
@@ -40,7 +41,7 @@ export default function Analytics() {
         const text = await res.text().catch(() => 'Failed to load summary')
         throw new Error(text || 'Failed to load summary')
       }
-      const data = await res.json()
+      const data = await safeJson(res, null)
       setSummary(data)
     } catch (err) {
       console.error(err)

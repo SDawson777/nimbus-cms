@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import {safeJson} from '../lib/safeJson'
 
 const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
 
@@ -14,8 +15,8 @@ export default function Faqs() {
           : '/api/admin/faqs'
         const res = await fetch(q, {credentials: 'include'})
         if (res.ok) {
-          const j = await res.json()
-          setGroups(j)
+          const j = await safeJson(res, [])
+          setGroups(Array.isArray(j) ? j : [])
         }
       } catch (err) {
         console.error(err)

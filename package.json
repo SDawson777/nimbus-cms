@@ -2,6 +2,9 @@
   "name": "nimbus-cms",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "studio:build": "rm -rf dist && pnpm -C apps/studio build && cp -r apps/studio/dist dist"
+  },
   "workspaces": [
     "apps/admin",
     "apps/studio",

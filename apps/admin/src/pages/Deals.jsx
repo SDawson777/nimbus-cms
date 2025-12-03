@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import {safeJson} from '../lib/safeJson'
 
 const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
 
@@ -15,8 +16,8 @@ export default function Deals() {
           : '/api/v1/nimbus/content/deals?limit=50'
         const res = await fetch(q, {credentials: 'include'})
         if (res.ok) {
-          const j = await res.json()
-          setItems(j)
+          const j = await safeJson(res, [])
+          setItems(Array.isArray(j) ? j : [])
         }
       } catch (err) {
         console.error(err)

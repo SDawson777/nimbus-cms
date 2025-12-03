@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useAdmin} from '../lib/adminContext'
+import {safeJson} from '../lib/safeJson'
 
 export default function Personalization() {
   const {capabilities} = useAdmin()
@@ -28,7 +29,7 @@ export default function Personalization() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Failed to load rules')
       }
-      const payload = await res.json()
+      const payload = await safeJson(res, [])
       setRules(Array.isArray(payload) ? payload : [])
     } catch (err) {
       console.error('load rules failed', err)
@@ -63,7 +64,7 @@ export default function Personalization() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Simulation failed')
       }
-      const j = await res.json()
+      const j = await safeJson(res, {})
       setResult(j)
     } catch (err) {
       console.error('simulate failed', err)

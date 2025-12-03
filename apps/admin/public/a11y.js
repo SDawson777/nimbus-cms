@@ -27,9 +27,30 @@
     const btnContrast = document.getElementById('a11y-contrast')
     const btnLarge = document.getElementById('a11y-large')
     const btnDys = document.getElementById('a11y-dyslexic')
-    if (btnContrast) btnContrast.setAttribute('aria-pressed', !!prefs.contrast)
-    if (btnLarge) btnLarge.setAttribute('aria-pressed', !!prefs.large)
-    if (btnDys) btnDys.setAttribute('aria-pressed', !!prefs.dyslexic)
+    const btnMotion = document.getElementById('a11y-motion')
+    if (btnContrast) {
+      btnContrast.setAttribute('aria-pressed', !!prefs.contrast)
+      btnContrast.classList.toggle('is-active', !!prefs.contrast)
+    }
+    if (btnLarge) {
+      btnLarge.setAttribute('aria-pressed', !!prefs.large)
+      btnLarge.classList.toggle('is-active', !!prefs.large)
+    }
+    if (btnDys) {
+      btnDys.setAttribute('aria-pressed', !!prefs.dyslexic)
+      btnDys.classList.toggle('is-active', !!prefs.dyslexic)
+    }
+    if (btnMotion) {
+      btnMotion.setAttribute('aria-pressed', !!prefs.reduceMotion)
+      btnMotion.classList.toggle('is-active', !!prefs.reduceMotion)
+    }
+  }
+
+  function hapticPulse() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!prefersReduced && navigator?.vibrate) {
+      navigator.vibrate(12)
+    }
   }
 
   function setPrefs(newPrefs) {
@@ -70,20 +91,62 @@
     const prefs = load()
     apply(prefs)
 
+    const toggleBtn = document.getElementById('a11y-toggle')
+    const menu = document.getElementById('a11y-menu')
+    function setMenu(open) {
+      if (!menu || !toggleBtn) return
+      if (open) {
+        menu.removeAttribute('hidden')
+        toggleBtn.setAttribute('aria-expanded', 'true')
+      } else {
+        menu.setAttribute('hidden', 'true')
+        toggleBtn.setAttribute('aria-expanded', 'false')
+      }
+    }
+
+    if (toggleBtn && menu) {
+      setMenu(false)
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true'
+        setMenu(!isOpen)
+      })
+
+      document.addEventListener('click', (e) => {
+        if (menu.contains(e.target) || toggleBtn.contains(e.target)) return
+        setMenu(false)
+      })
+    }
+
     const btnContrast = document.getElementById('a11y-contrast')
     const btnLarge = document.getElementById('a11y-large')
     const btnDys = document.getElementById('a11y-dyslexic')
+    const btnMotion = document.getElementById('a11y-motion')
+    const btnReset = document.getElementById('a11y-reset')
     if (btnContrast)
       btnContrast.addEventListener('click', function () {
         toggle('contrast')
+        hapticPulse()
       })
     if (btnLarge)
       btnLarge.addEventListener('click', function () {
         toggle('large')
+        hapticPulse()
       })
     if (btnDys)
       btnDys.addEventListener('click', function () {
         toggle('dyslexic')
+        hapticPulse()
+      })
+    if (btnMotion)
+      btnMotion.addEventListener('click', function () {
+        toggle('reduceMotion')
+        hapticPulse()
+      })
+    if (btnReset)
+      btnReset.addEventListener('click', function () {
+        reset()
+        hapticPulse()
       })
   })
 })()

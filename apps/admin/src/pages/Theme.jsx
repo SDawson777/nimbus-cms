@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {csrfFetch} from '../lib/csrf'
 import {useAdmin} from '../lib/adminContext'
+import {safeJson} from '../lib/safeJson'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024
 const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
@@ -112,7 +113,7 @@ export default function ThemePage() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Theme not found for this brand')
       }
-      const j = await res.json()
+      const j = await safeJson(res, {})
       setTheme(j)
       if (!editing) {
         setForm((prev) => ({
@@ -169,7 +170,7 @@ export default function ThemePage() {
           const text = await res.text().catch(() => '')
           throw new Error(text || 'Failed to load configs')
         }
-        const j = await res.json()
+        const j = await safeJson(res, {})
         setConfigsPage({
           items: Array.isArray(j.items) ? j.items : [],
           total: j.total || 0,
@@ -218,13 +219,13 @@ export default function ThemePage() {
         body: JSON.stringify(payload),
       })
       if (res.ok) {
-        const j = await res.json()
+        const j = await safeJson(res, {})
         setTheme(j.theme || j)
         setEditing(false)
         await loadTheme()
         await loadConfigs({page: configsPage.page, perPage: configsPage.perPage})
       } else {
-        const err = await res.json().catch(() => ({}))
+        const err = await safeJson(res, {})
         setErrors({_global: err.error || 'Failed to save'})
       }
     } catch (e) {
@@ -402,7 +403,7 @@ export default function ThemePage() {
             body: fd,
           })
           if (res.ok) {
-            const j = await res.json()
+            const j = await safeJson(res, {})
             if (j.assetId)
               setForm((prev) => ({...prev, logoUrl: j.url || prev.logoUrl, logoAssetId: j.assetId}))
             clearLogoError()
@@ -440,11 +441,11 @@ export default function ThemePage() {
         body: JSON.stringify({filename, data: dataStr}),
       })
       if (!res2.ok) {
-        const err = await res2.json().catch(() => ({}))
+        const err = await safeJson(res2, {})
         setLogoError(friendlyUploadError(err.error))
         return null
       }
-      const j2 = await res2.json()
+      const j2 = await safeJson(res2, {})
       if (j2.assetId)
         setForm((prev) => ({...prev, logoUrl: j2.url || prev.logoUrl, logoAssetId: j2.assetId}))
       clearLogoError()

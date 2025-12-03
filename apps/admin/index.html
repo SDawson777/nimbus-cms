@@ -8,23 +8,28 @@
   </head>
   <body>
     <a class="skip-link" href="#root">Skip to main content</a>
-    <div
-      class="a11y-widget"
-      aria-hidden="false"
-      style="position: fixed; right: 12px; bottom: 12px; z-index: 999"
-    >
-      <button id="a11y-contrast" title="Toggle high contrast" aria-pressed="false">Contrast</button>
-      <button id="a11y-large" title="Toggle large text" aria-pressed="false">Large text</button>
-      <button id="a11y-dyslexic" title="Toggle dyslexia-friendly font" aria-pressed="false">
-        Dyslexic
-      </button>
+    <div class="a11y-widget" aria-hidden="false" style="z-index: 999">
       <button
-        id="a11y-reset"
-        title="Reset accessibility settings"
-        onclick="window.NIMBUS_A11Y && window.NIMBUS_A11Y.reset()"
+        id="a11y-toggle"
+        class="a11y-toggle"
+        aria-expanded="false"
+        aria-controls="a11y-menu"
+        aria-label="Accessibility controls"
       >
-        Reset
+        ☰
       </button>
+      <div id="a11y-menu" class="a11y-menu" hidden>
+        <p class="a11y-menu__title">Accessibility</p>
+        <button id="a11y-contrast" title="Toggle high contrast" aria-pressed="false">
+          Contrast
+        </button>
+        <button id="a11y-dyslexic" title="Toggle dyslexia-friendly font" aria-pressed="false">
+          Dyslexic
+        </button>
+        <button id="a11y-large" title="Toggle large text" aria-pressed="false">Large text</button>
+        <button id="a11y-motion" title="Reduce motion" aria-pressed="false">Reduce motion</button>
+        <button id="a11y-reset" title="Reset accessibility settings">Reset</button>
+      </div>
     </div>
 
     <div id="root"></div>

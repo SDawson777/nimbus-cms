@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {csrfFetch} from '../lib/csrf'
 import {useAdmin} from '../lib/adminContext'
+import {safeJson} from '../lib/safeJson'
 
 function formatSnapshotLabel(ts) {
   if (!ts) return 'Live (no snapshot)'
@@ -61,7 +62,7 @@ export default function Compliance() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Failed to load compliance overview')
       }
-      const data = await res.json()
+      const data = await safeJson(res, {})
       const resultRows = Array.isArray(data) ? data : data?.results || []
       if (!isMounted.current) return
       setRows(resultRows)
@@ -89,7 +90,7 @@ export default function Compliance() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Failed to load history')
       }
-      const data = await res.json()
+      const data = await safeJson(res, [])
       if (!isMounted.current) return
       setHistory(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -111,7 +112,7 @@ export default function Compliance() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Failed to load brands')
       }
-      const data = await res.json()
+      const data = await safeJson(res, [])
       if (!isMounted.current) return
       setBrands(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -176,7 +177,7 @@ export default function Compliance() {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Snapshot failed')
       }
-      const data = await res.json()
+      const data = await safeJson(res, {})
       if (data?.ts) setSnapshotTs(data.ts)
       if (data?.studioUrl) window.open(data.studioUrl, '_blank')
       await Promise.all([loadOverview(), loadHistory()])

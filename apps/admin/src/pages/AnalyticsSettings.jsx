@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import {csrfFetch} from '../lib/csrf'
+import {safeJson} from '../lib/safeJson'
 
 export default function AnalyticsSettings() {
   const [loading, setLoading] = useState(true)
@@ -24,7 +25,7 @@ export default function AnalyticsSettings() {
           credentials: 'include',
         })
         if (!res.ok) throw new Error('failed')
-        const json = await res.json()
+        const json = await safeJson(res, {})
         if (mounted && json) setSettings((s) => ({...s, ...json}))
       } catch (err) {
         // ignore, keep defaults
@@ -72,7 +73,7 @@ export default function AnalyticsSettings() {
         body: JSON.stringify(settings),
       })
       if (!res.ok) throw new Error('save failed')
-      const json = await res.json()
+      const json = await safeJson(res, {settings})
       alert('Saved')
       setSettings((s) => ({...s, ...json.settings}))
     } catch (err) {
