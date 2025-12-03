@@ -27,13 +27,15 @@ function App() {
             <div
               className="logo"
               style={{
-                width: '140px',
+                width: '160px',
                 height: 'var(--logo-height)',
-                background: 'linear-gradient(90deg, var(--accent), #3b82f6)',
+                background: 'var(--accent)',
+                borderRadius: '999px',
+                boxShadow: '0 0 40px rgba(124, 58, 237, 0.45)',
               }}
             />
           </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: 16, marginRight: 16}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end'}}>
             <WorkspaceSelector />
           </div>
           <nav className="nav" aria-label="Main navigation">
