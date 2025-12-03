@@ -20,6 +20,8 @@ import Deals from './pages/Deals'
 import Compliance from './pages/Compliance'
 import AppErrorBoundary from './components/AppErrorBoundary'
 import AppFooter from './components/AppFooter'
+import AdminBanner from './components/AdminBanner'
+import {NotificationProvider} from './components/NotificationCenter'
 
 function AppShell() {
   const {admin, loading} = useAdminGuard()
@@ -112,6 +114,7 @@ function AppShell() {
           </div>
         </div>
       </div>
+      <AdminBanner />
         <main style={{flex: 1}}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -207,7 +210,9 @@ createRoot(document.getElementById('root')).render(
   <AdminProvider>
     <TenantProvider>
       <DatasetProvider>
-        <App />
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
       </DatasetProvider>
     </TenantProvider>
   </AdminProvider>,

@@ -5,6 +5,7 @@ import Input from '../design-system/Input'
 import Select from '../design-system/Select'
 import Button from '../design-system/Button'
 import {useDatasetConfig} from '../lib/datasetContext'
+import {fetchNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS} from '../lib/preferences'
 
 const UI_STORAGE_KEY = 'nimbus_admin_ui'
 const DEFAULT_UI = {
@@ -296,6 +297,42 @@ function WorkspaceSettings() {
   const [workspaceName, setWorkspaceName] = useState('Nimbus HQ')
   const [language, setLanguage] = useState('en')
   const [timezone, setTimezone] = useState('UTC')
+  const [notificationPrefs, setNotificationPrefs] = useState(DEFAULT_NOTIFICATION_PREFS)
+  const [notifStatus, setNotifStatus] = useState('')
+
+  useEffect(() => {
+    async function loadPrefs() {
+      const {preferences} = await fetchNotificationPrefs()
+      setNotificationPrefs(preferences)
+    }
+    loadPrefs()
+  }, [])
+
+  const toggleChannel = (key) => {
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      channels: {...prev.channels, [key]: !prev.channels[key]},
+    }))
+  }
+
+  const setFrequency = (value) => {
+    setNotificationPrefs((prev) => ({...prev, frequency: value}))
+  }
+
+  const toggleTrigger = (trigger) => {
+    setNotificationPrefs((prev) => {
+      const set = new Set(prev.triggers)
+      if (set.has(trigger)) set.delete(trigger)
+      else set.add(trigger)
+      return {...prev, triggers: Array.from(set)}
+    })
+  }
+
+  const saveNotifications = async () => {
+    const {ok} = await saveNotificationPrefs(notificationPrefs)
+    setNotifStatus(ok ? 'Saved' : 'Unable to save')
+    setTimeout(() => setNotifStatus(''), 2600)
+  }
 
   return (
     <div className="settings-grid">
@@ -334,6 +371,64 @@ function WorkspaceSettings() {
             {value: 'America/Los_Angeles', label: 'Pacific Time'},
           ]}
         />
+
+        <div className="divider" />
+
+        <h4>Alerts & notifications</h4>
+        <p className="subdued">
+          Choose how buyers and ops leads get notified. Favorites on the dashboard drive in-app alerts;
+          SMS/email wiring can be connected later.
+        </p>
+
+        <div className="field-row">
+          {['sms', 'email', 'inApp'].map((channel) => (
+            <label key={channel} className="field checkbox">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.channels[channel]}
+                onChange={() => toggleChannel(channel)}
+              />
+              <span className="field-label">{channel.toUpperCase()}</span>
+            </label>
+          ))}
+        </div>
+
+        <Select
+          label="Frequency"
+          value={notificationPrefs.frequency}
+          onChange={(e) => setFrequency(e.target.value)}
+          options={[
+            {value: 'realtime', label: 'Real-time'},
+            {value: 'hourly', label: 'Hourly digest'},
+            {value: 'daily', label: 'Daily digest'},
+            {value: 'weekly', label: 'Weekly'},
+          ]}
+        />
+
+        <div className="trigger-grid">
+          {[
+            {id: 'revenue_spike', label: 'Revenue spike'},
+            {id: 'error_rate', label: 'Error rate'},
+            {id: 'store_offline', label: 'Store offline'},
+            {id: 'active_users_drop', label: 'Active users drop'},
+          ].map((trigger) => (
+            <label key={trigger.id} className="field checkbox">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.triggers.includes(trigger.id)}
+                onChange={() => toggleTrigger(trigger.id)}
+              />
+              <span className="field-label">{trigger.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="action-row">
+          <Button variant="primary" onClick={saveNotifications}>
+            Save alerts
+          </Button>
+          {notifStatus && <span className="status-chip">{notifStatus}</span>}
+        </div>
 
         <div className="action-row">
           <Button variant="primary">Save Configuration</Button>

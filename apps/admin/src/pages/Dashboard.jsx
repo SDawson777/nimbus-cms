@@ -1,15 +1,13 @@
+import React, {useEffect, useMemo, useState} from 'react'
 import {TrafficChart, SalesChart, EngagementChart} from '../components/Charts'
 import Badge from '../design-system/Badge'
 import Card from '../design-system/Card'
-import React, {useEffect, useState} from 'react'
-// Use ESM imports so Vite can bundle Chart.js and react-chartjs-2 correctly.
 import ChartJS from 'chart.js/auto'
 import {Line} from 'react-chartjs-2'
-import ThreeBarChart from '../components/ThreeBarChart'
-import NetworkGraph3D from '../components/NetworkGraph3D'
-import GeoMap3D from '../components/GeoMap3D'
-import TimeSlider from '../components/TimeSlider'
 import {apiJson, apiBaseUrl} from '../lib/api'
+import Heatmap2D from '../components/Heatmap2D'
+import {fetchDashboardLayout, saveDashboardLayout, DEFAULT_LAYOUT} from '../lib/preferences'
+import {useNotify} from '../components/NotificationCenter'
 
 const SAMPLE_OVERVIEW = {
   traffic: [
@@ -92,15 +90,25 @@ const SAMPLE_OVERVIEW = {
   ],
 }
 
+const CARD_COPY = {
+  traffic: 'Traffic momentum across web and app surfaces.',
+  revenue: 'Revenue pulse in real time across SKUs.',
+  engagement: 'Engagement depth and retention by week.',
+  demand: 'Product demand and risk signals.',
+  products: 'Top products with sparklines by velocity.',
+  faqs: 'Knowledge base deflection and FAQ traction.',
+  stores: 'Store by store engagement rollup.',
+  heatmap: 'Multi-location heatmap for regional ops.',
+}
+
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  // Track number of recalled products; start at null until loaded.
   const [recalledCount, setRecalledCount] = useState(null)
-  // Controls for 3D/4D mode and time slider (default to on for demos unless explicitly disabled).
-  const allow3D = import.meta.env.VITE_ENABLE_3D_ANALYTICS !== 'false'
-  const [is3DView, setIs3DView] = useState(allow3D)
-  const [timeIndex, setTimeIndex] = useState(0)
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT)
+  const [customizing, setCustomizing] = useState(false)
+  const [savingLayout, setSavingLayout] = useState(false)
+  const notify = useNotify()
 
   useEffect(() => {
     let mounted = true
@@ -110,56 +118,49 @@ export default function Dashboard() {
           setRecalledCount(0)
           return
         }
-        // use lightweight cached endpoint that returns recalled product count
         const {ok, data} = await apiJson('/api/admin/products/recalled-count', {}, null)
         if (mounted && ok && data)
           setRecalledCount(typeof data.count === 'number' ? data.count : 0)
       } catch (e) {
-        // ignore
+        if (mounted) setRecalledCount(0)
       }
     }
-    loadRecalled()
-    return () => {
-      mounted = false
+    async function loadLayout() {
+      const {layout} = await fetchDashboardLayout()
+      if (mounted && layout) setLayout(layout)
     }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    async function load() {
+    async function loadOverview() {
       try {
         if (!apiBaseUrl()) {
           setData(SAMPLE_OVERVIEW)
           return
         }
         const {ok, data} = await apiJson('/api/admin/analytics/overview', {}, null)
-        if (mounted && ok && data) {
-          setData(data)
-        } else if (mounted) {
-          setData(SAMPLE_OVERVIEW)
-        }
+        if (mounted) setData(ok && data ? data : SAMPLE_OVERVIEW)
       } catch (err) {
-        console.error(err)
         if (mounted) setData(SAMPLE_OVERVIEW)
       } finally {
         if (mounted) setLoading(false)
       }
     }
-    load()
+    loadRecalled()
+    loadLayout()
+    loadOverview()
     return () => {
       mounted = false
     }
   }, [])
 
   useEffect(() => {
-    const maxLen = (data?.productSeries || []).reduce(
-      (max, series) => Math.max(max, (series.series || []).length),
-      0,
-    )
-    setTimeIndex((idx) => Math.min(idx, Math.max(0, maxLen - 1)))
-  }, [data])
-
-  if (loading) return <div style={{padding: 20}}>Loading...</div>
+    if (!customizing && layout?.favorites?.length) {
+      notify({
+        title: 'Alerts armed',
+        body: 'Dashboard alerts will mirror your favorites. Adjust in Settings > Alerts.',
+        tone: 'info',
+        ttl: 3800,
+      })
+    }
+  }, [customizing, layout, notify])
 
   const topArticles = (data && data.topArticles) || SAMPLE_OVERVIEW.topArticles
   const topFaqs = (data && data.topFaqs) || SAMPLE_OVERVIEW.topFaqs
@@ -167,22 +168,225 @@ export default function Dashboard() {
   const productSeries = (data && data.productSeries) || SAMPLE_OVERVIEW.productSeries
   const stores = (data && data.storeEngagement) || SAMPLE_OVERVIEW.storeEngagement
   const demand = (data && data.productDemand) || SAMPLE_OVERVIEW.productDemand
-  const maxSeriesLength = productSeries.reduce(
-    (max, series) => Math.max(max, (series.series || []).length),
-    0,
+  const heatmapToken = import.meta.env.VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN || null
+
+  const visibleCards = useMemo(
+    () => layout.order.filter((id) => !layout.hidden.includes(id)),
+    [layout],
   )
-  const maxTimeIndex = Math.max(0, maxSeriesLength - 1)
+  const favorites = useMemo(() => new Set(layout.favorites || []), [layout])
+
+  if (loading) return <div style={{padding: 20}}>Loading...</div>
+
   const productSnapshot = topProducts.map((p, idx) => {
     const ps = productSeries.find((s) => s.slug === p.contentSlug)
     const series = ps?.series || []
-    const safeIdx = Math.min(timeIndex, Math.max(series.length - 1, 0))
-    const point = series.length ? series[safeIdx] : null
+    const point = series.length ? series[series.length - 1] : null
     const value = point?.views ?? point?.value ?? p.views ?? p.clickThroughs ?? 0
     return {
       label: p.contentSlug || p.name || `Product ${idx + 1}`,
       value,
     }
   })
+
+  const saveLayout = async (next) => {
+    setLayout(next)
+    setSavingLayout(true)
+    await saveDashboardLayout(next)
+    setSavingLayout(false)
+  }
+
+  const toggleCard = (id) => {
+    const hidden = new Set(layout.hidden)
+    if (hidden.has(id)) hidden.delete(id)
+    else hidden.add(id)
+    saveLayout({...layout, hidden: Array.from(hidden)})
+  }
+
+  const toggleFavorite = (id) => {
+    const favs = new Set(layout.favorites)
+    if (favs.has(id)) favs.delete(id)
+    else favs.add(id)
+    saveLayout({...layout, favorites: Array.from(favs)})
+  }
+
+  const moveCard = (id, dir) => {
+    const order = [...layout.order]
+    const idx = order.indexOf(id)
+    const swap = idx + dir
+    if (idx === -1 || swap < 0 || swap >= order.length) return
+    ;[order[idx], order[swap]] = [order[swap], order[idx]]
+    saveLayout({...layout, order})
+  }
+
+  const renderSpark = (series) => {
+    if (!Line || !ChartJS) return null
+    const labels = series.map((s) => s.date)
+    const values = series.map((s) => s.views || s.value || 0)
+    const data = {labels, datasets: [{data: values, borderColor: '#22d3ee', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0}]}
+    const opts = {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {x: {display: false}, y: {display: false}}}
+    return (
+      <div className="sparkline">
+        <Line data={data} options={opts} />
+      </div>
+    )
+  }
+
+  const cardRenderers = {
+    traffic: (
+      <div className="panel-card">
+        <div className="panel-header">
+          <h2 className="section-title">Traffic momentum</h2>
+          <span className="pill">Web &amp; in-app</span>
+        </div>
+        <p className="section-note">{CARD_COPY.traffic}</p>
+        <TrafficChart data={data?.traffic} />
+      </div>
+    ),
+    revenue: (
+      <div className="panel-card">
+        <div className="panel-header">
+          <h2 className="section-title">Revenue pulse</h2>
+          <span className="pill">Real-time</span>
+        </div>
+        <p className="section-note">{CARD_COPY.revenue}</p>
+        <SalesChart data={data?.sales} />
+      </div>
+    ),
+    engagement: (
+      <div className="panel-card">
+        <div className="panel-header">
+          <h2 className="section-title">Engagement depth</h2>
+          <span className="pill">Retention</span>
+        </div>
+        <p className="section-note">{CARD_COPY.engagement}</p>
+        <EngagementChart data={data?.engagement} />
+      </div>
+    ),
+    demand: (
+      <div className="table-card">
+        <div className="panel-header" style={{marginBottom: 4}}>
+          <h2 className="section-title">Product demand insights</h2>
+          <span className="pill">Signal</span>
+        </div>
+        <p className="section-note">{CARD_COPY.demand}</p>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Score</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {demand.map((d) => (
+              <tr key={d.slug}>
+                <td>{d.slug}</td>
+                <td>{Math.round(d.demandScore)}</td>
+                <td>
+                  <span
+                    className={
+                      d.status?.toLowerCase().includes('watch')
+                        ? 'status-warn'
+                        : d.status?.toLowerCase().includes('risk')
+                          ? 'status-danger'
+                          : 'status-positive'
+                    }
+                  >
+                    {d.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ),
+    products: (
+      <div className="table-card">
+        <div className="panel-header">
+          <h2 className="section-title">Top products</h2>
+          <span className="pill">Velocity</span>
+        </div>
+        <p className="section-note">{CARD_COPY.products}</p>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Views</th>
+              <th>Clicks</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topProducts.map((p) => {
+              const series = productSeries.find((s) => s.slug === p.contentSlug)?.series || []
+              return (
+                <tr key={p.contentSlug}>
+                  <td>{p.contentSlug}</td>
+                  <td>{p.views}</td>
+                  <td>{p.clickThroughs}</td>
+                  <td style={{minWidth: 110}}>{series.length ? renderSpark(series) : <span className="metric-subtle">n/a</span>}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    ),
+    faqs: (
+      <div className="table-card">
+        <div className="panel-header">
+          <h2 className="section-title">Knowledge base fuel</h2>
+          <span className="pill">Service quality</span>
+        </div>
+        <p className="section-note">{CARD_COPY.faqs}</p>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>FAQ</th>
+              <th>Views</th>
+              <th>Clicks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topFaqs.map((faq) => (
+              <tr key={faq.contentSlug}>
+                <td>{faq.contentSlug}</td>
+                <td>{faq.views}</td>
+                <td>{faq.clickThroughs}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ),
+    stores: (
+      <div className="table-card">
+        <div className="panel-header" style={{marginBottom: 4}}>
+          <h2 className="section-title">Stores by engagement</h2>
+          <span className="pill">Regional</span>
+        </div>
+        <p className="section-note">{CARD_COPY.stores}</p>
+        <ul className="list-muted">
+          {stores.map((s) => (
+            <li key={s.storeSlug} style={{marginBottom: 8}}>
+              <strong style={{color: '#fff'}}>{s.storeSlug}</strong> — {s.views} views · {s.clickThroughs}
+              &nbsp;clicks
+            </li>
+          ))}
+        </ul>
+      </div>
+    ),
+    heatmap: stores.length > 1 && heatmapToken ? (
+      <div>
+        <h2 className="section-title">Location heatmap</h2>
+        <p className="section-note">{CARD_COPY.heatmap}</p>
+        <Heatmap2D stores={stores} token={heatmapToken} />
+      </div>
+    ) : null,
+  }
+
   return (
     <div className="dashboard-shell" style={{padding: 8}}>
       <div className="hero-banner">
@@ -215,60 +419,51 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div
-        className="dashboard-toolbar"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 12,
-          margin: '12px 0 16px',
-        }}
-      >
+      <div className="dashboard-toolbar" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, margin: '12px 0 16px'}}>
         <div>
           <p className="section-note" style={{margin: 0}}>
-            Immersive mode highlights spatial demand (map), content influence (graph), and SKU lift
-            over time (3D bars) so ops teams can replay launches or incidents with investors and CX.
+            Curate your view: reorder, favorite, and hide cards. Favorites also power alerting.
           </p>
-          {is3DView && (
-            <p className="metric-subtle" style={{margin: 0}}>
-              Use the scrubber to move through drop windows, promos, and regional waves.
-            </p>
-          )}
+          <p className="metric-subtle" style={{margin: 0}}>2D analytics only—fast, animated, and ready for production demos.</p>
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
-          {allow3D && is3DView && (
-            <TimeSlider
-              min={0}
-              max={maxTimeIndex}
-              value={timeIndex}
-              onChange={setTimeIndex}
-            />
-          )}
-          {allow3D ? (
-            <button
-              onClick={() => setIs3DView((v) => !v)}
-              style={{
-                background: is3DView
-                  ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
-                  : 'rgba(255,255,255,0.08)',
-                color: is3DView ? '#fff' : '#e5e7eb',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '0.9rem',
-                border: '1px solid rgba(255,255,255,0.25)',
-                cursor: 'pointer',
-                boxShadow: is3DView ? '0 12px 30px rgba(59,130,246,0.35)' : 'none',
-              }}
-            >
-              {is3DView ? 'Switch to 2D' : 'Enter 3D/4D mode'}
-            </button>
-          ) : (
-            <span style={{color: '#94a3b8', fontSize: 13}}>
-              Toggle 3D mode by setting VITE_ENABLE_3D_ANALYTICS=true in your environment.
-            </span>
-          )}
+          <button
+            onClick={() => setCustomizing((v) => !v)}
+            className="ghost"
+            style={{padding: '0.6rem 1.2rem', borderRadius: '0.9rem', border: '1px solid rgba(255,255,255,0.25)'}}
+          >
+            {customizing ? 'Done' : 'Customize dashboard'}
+          </button>
+          {savingLayout && <span className="metric-subtle">Saving…</span>}
         </div>
       </div>
+
+      {customizing && (
+        <div className="customizer">
+          {layout.order.map((id) => (
+            <div key={id} className="customizer-row">
+              <div>
+                <strong>{id}</strong>
+                <p className="section-note" style={{margin: 0}}>{CARD_COPY[id]}</p>
+              </div>
+              <div className="customizer-actions">
+                <button className="ghost" onClick={() => moveCard(id, -1)} aria-label={`Move ${id} up`}>
+                  ↑
+                </button>
+                <button className="ghost" onClick={() => moveCard(id, 1)} aria-label={`Move ${id} down`}>
+                  ↓
+                </button>
+                <button className="ghost" onClick={() => toggleCard(id)} aria-pressed={!layout.hidden.includes(id)}>
+                  {layout.hidden.includes(id) ? 'Show' : 'Hide'}
+                </button>
+                <button className="ghost" onClick={() => toggleFavorite(id)} aria-pressed={favorites.has(id)}>
+                  {favorites.has(id) ? '★ Favorite' : '☆ Favorite'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="metric-grid">
         <div className="metric-card">
@@ -291,10 +486,7 @@ export default function Dashboard() {
         </div>
         <div className="metric-card">
           <div className="metric-label">Recalled products</div>
-          <div
-            className="metric-value"
-            style={{color: recalledCount && recalledCount > 0 ? '#f87171' : '#34d399'}}
-          >
+          <div className="metric-value" style={{color: recalledCount && recalledCount > 0 ? '#f87171' : '#34d399'}}>
             {recalledCount === null ? 'Loading…' : recalledCount}
           </div>
           {recalledCount !== null && (
@@ -306,244 +498,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {allow3D && is3DView ? (
-        <div
-          className="charts-grid"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 16,
-          }}
-        >
-          <Card>
-            <h2 style={{fontSize: '1.25rem', marginBottom: 8}}>Top Products (3D)</h2>
-            <ThreeBarChart data={productSnapshot} />
-          </Card>
-
-          <Card>
-            <h2 style={{fontSize: '1.25rem', marginBottom: 8}}>Article Relationships (3D)</h2>
-            <NetworkGraph3D
-              graphData={{
-                nodes: topArticles.map((a, i) => ({
-                  id: i + 1,
-                  name: a.title || a.contentSlug,
-                  group: 1,
-                })),
-                links: topArticles.slice(1).map((_, i) => ({
-                  source: 1,
-                  target: i + 2,
-                })),
-              }}
-            />
-          </Card>
-
-          <Card>
-            <h2 style={{fontSize: '1.25rem', marginBottom: 8}}>Store Engagement Map</h2>
-            <GeoMap3D
-              data={stores.map((s) => ({
-                coordinates: [s.longitude ?? 0, s.latitude ?? 0],
-                value: s.engagement ?? s.views ?? 0,
-              }))}
-            />
-          </Card>
-        </div>
-      ) : (
-        <div className="panel-grid">
-          <div className="panel-card">
-            <div className="panel-header">
-              <h2 className="section-title">Traffic momentum</h2>
-              <span className="pill">Web &amp; in-app</span>
+      <div className="panel-grid">
+        {visibleCards.map((id) => (
+          <Card key={id}>
+            <div className="card-header">
+              <div className="card-title-row">
+                <h3 style={{margin: 0, fontSize: 16}}>{id.replace(/\b\w/g, (l) => l.toUpperCase())}</h3>
+                {favorites.has(id) && <span className="pill">Favorite</span>}
+              </div>
+              <p className="section-note" style={{margin: 0}}>{CARD_COPY[id]}</p>
             </div>
-            <TrafficChart />
-          </div>
-          <div className="panel-card">
-            <div className="panel-header">
-              <h2 className="section-title">Revenue pulse</h2>
-              <span className="pill">Real-time</span>
-            </div>
-            <SalesChart />
-          </div>
-          <div className="panel-card" style={{gridColumn: '1 / -1'}}>
-            <div className="panel-header">
-              <h2 className="section-title">Engagement &amp; retention</h2>
-              <span className="pill">Cohorts</span>
-            </div>
-            <EngagementChart />
-          </div>
-        </div>
-      )}
-
-      <div className="grid-split">
-        <div className="table-card">
-          <div className="panel-header" style={{marginBottom: 4}}>
-            <h2 className="section-title">Top performing content</h2>
-            <span className="pill">Stories · Guides · FAQs</span>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Article</th>
-                <th>Views</th>
-                <th>Clicks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topArticles.map((a) => (
-                <tr key={a.contentSlug}>
-                  <td>{a.contentSlug}</td>
-                  <td>{a.views}</td>
-                  <td>{a.clickThroughs}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <h2 className="section-title" style={{marginTop: 18}}>Top products</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Views</th>
-                <th>Clicks</th>
-                <th>Trend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topProducts.map((p) => (
-                <tr key={p.contentSlug}>
-                  <td>{p.contentSlug}</td>
-                  <td>{p.views}</td>
-                  <td>{p.clickThroughs}</td>
-                  <td style={{minWidth: 110}}>
-                    {(() => {
-                      const ps = productSeries.find((s) => s.slug === p.contentSlug)
-                      if (!ps) return <span className="metric-subtle">n/a</span>
-                      const values = ps.series.map((s) => s.views || 0)
-                      if (Line && ChartJS) {
-                        const labels = ps.series.map((s) => s.date)
-                        const data = {
-                          labels,
-                          datasets: [
-                            {
-                              data: values,
-                              borderColor: '#22d3ee',
-                              backgroundColor: 'transparent',
-                              tension: 0.3,
-                              pointRadius: 0,
-                            },
-                          ],
-                        }
-                        const opts = {
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          elements: {line: {borderWidth: 2}},
-                          plugins: {legend: {display: false}, tooltip: {enabled: true}},
-                          scales: {x: {display: false}, y: {display: false}},
-                        }
-                        return (
-                          <div className="sparkline">
-                            <Line data={data} options={opts} />
-                          </div>
-                        )
-                      }
-                      const max = Math.max(...values, 1)
-                      const points = values
-                        .map((v, i) => {
-                          const x = (i / Math.max(values.length - 1, 1)) * 100
-                          const y = 100 - (v / max) * 100
-                          return `${x},${y}`
-                        })
-                        .join(' ')
-                      return (
-                        <svg className="sparkline" viewBox="0 0 100 100" preserveAspectRatio="none">
-                          <polyline fill="none" stroke="#22d3ee" strokeWidth="2" points={points} />
-                        </svg>
-                      )
-                    })()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-card">
-          <div className="panel-header" style={{marginBottom: 4}}>
-            <h2 className="section-title">Stores by engagement</h2>
-            <span className="pill">Regional detail</span>
-          </div>
-          <ul className="list-muted">
-            {stores.map((s) => (
-              <li key={s.storeSlug} style={{marginBottom: 8}}>
-                <strong style={{color: '#fff'}}>{s.storeSlug}</strong> — {s.views} views · {s.clickThroughs}
-                &nbsp;clicks
-              </li>
-            ))}
-          </ul>
-
-          <h2 className="section-title" style={{marginTop: 18}}>Product demand insights</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Score</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {demand.map((d) => (
-                <tr key={d.slug}>
-                  <td>{d.slug}</td>
-                  <td>{Math.round(d.demandScore)}</td>
-                  <td>
-                    <span
-                      className={
-                        d.status?.toLowerCase().includes('watch')
-                          ? 'status-warn'
-                          : d.status?.toLowerCase().includes('risk')
-                            ? 'status-danger'
-                            : 'status-positive'
-                      }
-                    >
-                      {d.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="panel-card">
-        <div className="panel-header">
-          <h2 className="section-title">Knowledge base fuel</h2>
-          <span className="pill">Service quality</span>
-        </div>
-        <div className="pill-row" style={{marginBottom: 8}}>
-          <span className="pill-badge">FAQs resolved {topFaqs.length}</span>
-          <span className="pill-badge">Fresh updates weekly</span>
-          <span className="pill-badge">Chatbot deflection live</span>
-        </div>
-        <p className="section-note">Top FAQs by volume</p>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>FAQ</th>
-              <th>Views</th>
-              <th>Clicks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topFaqs.map((faq) => (
-              <tr key={faq.contentSlug}>
-                <td>{faq.contentSlug}</td>
-                <td>{faq.views}</td>
-                <td>{faq.clickThroughs}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {cardRenderers[id] || <p className="metric-subtle">Coming soon</p>}
+          </Card>
+        ))}
       </div>
     </div>
   )

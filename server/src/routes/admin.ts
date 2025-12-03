@@ -6,6 +6,13 @@ import {z} from 'zod'
 import {requireRole, canAccessBrand, canAccessStore} from '../middleware/requireRole'
 import {portableTextToHtml} from '../lib/portableText'
 import {logger} from '../lib/logger'
+import {
+  getDashboardLayout,
+  saveDashboardLayout,
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  getDefaults,
+} from '../lib/preferencesStore'
 
 // helper to build tenant filters based on admin scope
 function buildScopeFilter(admin: any) {
@@ -1841,5 +1848,93 @@ adminRouter.post(
     }
   },
 )
+
+// Lightweight banner data for the admin chrome (welcome, weather, ticker)
+adminRouter.get('/banner', (req: any, res) => {
+  const admin = req.admin || {}
+  const fetchFn: any = (globalThis as any).fetch
+  const weatherApiUrl = process.env.WEATHER_API_URL
+  const weatherApiKey = process.env.WEATHER_API_KEY
+  const fallback = {
+    adminName: admin.email || 'Nimbus Admin',
+    weather: {tempF: 72, condition: 'Partly Cloudy', icon: '⛅️'},
+    ticker: [
+      {label: 'Active users', value: '1,204', delta: 12, direction: 'up'},
+      {label: 'Conversion', value: '4.8%', delta: -3, direction: 'down'},
+      {label: 'Top store', value: 'Detroit – 8 Mile', delta: 19, direction: 'up'},
+    ],
+    serverTime: new Date().toISOString(),
+  }
+
+  if (!weatherApiUrl || !weatherApiKey || !fetchFn) {
+    return res.json(fallback)
+  }
+
+  ;(async () => {
+    try {
+      const url = `${weatherApiUrl}?appid=${encodeURIComponent(weatherApiKey)}&units=imperial`
+      const response = await fetchFn(url)
+      if (!response?.ok) return res.json(fallback)
+      const json = await response.json()
+      const tempF = Math.round(json?.main?.temp ?? 72)
+      const condition = json?.weather?.[0]?.main || 'Clear'
+      const icon = '☁️'
+      res.json({
+        adminName: admin.email || 'Nimbus Admin',
+        weather: {tempF, condition, icon},
+        ticker: fallback.ticker,
+        serverTime: new Date().toISOString(),
+      })
+    } catch (err) {
+      req.log.warn('banner.weather_fallback', err)
+      res.json(fallback)
+    }
+  })()
+})
+
+// Dashboard layout preferences per admin
+const layoutSchema = z.object({
+  order: z.array(z.string()),
+  hidden: z.array(z.string()),
+  favorites: z.array(z.string()),
+})
+
+adminRouter.get('/preferences/dashboard', (req: any, res) => {
+  const admin = req.admin || null
+  const layout = getDashboardLayout(admin?.id)
+  const defaults = getDefaults().defaultLayout
+  res.json({layout, defaults})
+})
+
+adminRouter.post('/preferences/dashboard', (req: any, res) => {
+  const admin = req.admin || null
+  const parsed = layoutSchema.safeParse(req.body || {})
+  if (!parsed.success) return res.status(400).json({error: 'INVALID_LAYOUT', details: parsed.error.issues})
+  saveDashboardLayout(admin?.id, parsed.data)
+  res.json({ok: true, layout: parsed.data})
+})
+
+// Notification preferences per admin
+const notificationSchema = z.object({
+  channels: z.object({sms: z.boolean(), email: z.boolean(), inApp: z.boolean()}),
+  frequency: z.enum(['realtime', 'hourly', 'daily', 'weekly']),
+  triggers: z.array(z.string()),
+})
+
+adminRouter.get('/preferences/notifications', (req: any, res) => {
+  const admin = req.admin || null
+  const prefs = getNotificationPreferences(admin?.id)
+  const defaults = getDefaults().defaultNotifications
+  res.json({preferences: prefs, defaults})
+})
+
+adminRouter.post('/preferences/notifications', (req: any, res) => {
+  const admin = req.admin || null
+  const parsed = notificationSchema.safeParse(req.body || {})
+  if (!parsed.success)
+    return res.status(400).json({error: 'INVALID_NOTIFICATION_PREFS', details: parsed.error.issues})
+  saveNotificationPreferences(admin?.id, parsed.data)
+  res.json({ok: true, preferences: parsed.data})
+})
 
 export default adminRouter

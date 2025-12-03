@@ -1,7 +1,7 @@
 # Architecture
 
 ## Modules
-- **Admin SPA (`apps/admin`)**: React 18 + Vite 7, secured routes, dataset/workspace selectors, analytics (2D by default, 3D/4D when `VITE_ENABLE_3D_ANALYTICS=true`), AI concierge, accessibility controls, and global error boundary.
+- **Admin SPA (`apps/admin`)**: React 18 + Vite 7, secured routes, dataset/workspace selectors, 2D analytics with motion, AI concierge, accessibility controls, and global error boundary.
 - **Sanity Studio (`apps/studio`)**: Sanity v4 config (`sanity.config.ts`), authors content/legal/personalization rules.
 - **API Server (`server`)**: Express 5 + TypeScript. Middleware stack: Helmet, rate limiting, compression, cookie-parser, CORS allowlist, CSRF protection for admin routes, structured logging.
 
@@ -26,5 +26,5 @@
 
 ## Integrations
 - **Sanity**: `SANITY_PROJECT_ID`, `SANITY_DATASET`, and `SANITY_API_TOKEN` required for content/analytics writes.
-- **Mapbox (optional)**: `VITE_MAPBOX_TOKEN` enables 3D map visualization; without it the map component renders a placeholder.
+- **Mapbox (optional)**: `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN` enables 2D static heatmap overlays; without it the heatmap hides gracefully.
 - **AI provider (optional)**: `OPENAI_API_KEY` can back `/api/v1/nimbus/ai/chat` when implemented.
