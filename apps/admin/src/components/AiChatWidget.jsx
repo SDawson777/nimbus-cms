@@ -4,7 +4,7 @@ import Input from '../design-system/Input'
 import {safeJson} from '../lib/safeJson'
 
 export function AiChatWidget() {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -90,28 +90,10 @@ export function AiChatWidget() {
       {/* Floating button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7c3aed, #22d3ee)',
-          color: 'white',
-          border: 'none',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-          cursor: 'pointer',
-          fontSize: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          transition: 'transform 0.2s, box-shadow 0.2s',
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-        onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        className="ai-launcher"
         aria-label="Open AI chat"
+        aria-expanded={isOpen}
+        aria-controls="ai-chat-panel"
       >
         💬
       </button>
@@ -133,6 +115,7 @@ export function AiChatWidget() {
             display: 'flex',
             flexDirection: 'column',
           }}
+          id="ai-chat-panel"
         >
           {/* Header */}
           <div

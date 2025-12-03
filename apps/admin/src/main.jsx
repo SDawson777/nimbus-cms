@@ -14,6 +14,7 @@ import ThemePage from './pages/Theme'
 import Personalization from './pages/Personalization'
 import {AdminProvider} from './lib/adminContext'
 import {TenantProvider, WorkspaceSelector} from './lib/tenantContext'
+import {DatasetProvider, DatasetSelector} from './lib/datasetContext'
 import {AiChatWidget} from './components/AiChatWidget'
 import Deals from './pages/Deals'
 import Compliance from './pages/Compliance'
@@ -51,7 +52,8 @@ function AppShell() {
               }}
             />
           </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end'}}>
+            <DatasetSelector />
             <WorkspaceSelector />
           </div>
           <nav className="nav" aria-label="Main navigation">
@@ -105,7 +107,9 @@ function App() {
 createRoot(document.getElementById('root')).render(
   <AdminProvider>
     <TenantProvider>
-      <App />
+      <DatasetProvider>
+        <App />
+      </DatasetProvider>
     </TenantProvider>
   </AdminProvider>,
 );
