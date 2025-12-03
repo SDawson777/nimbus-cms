@@ -2,8 +2,25 @@ import {safeJson} from './safeJson'
 import {getCsrfToken} from './csrf'
 
 // Normalize API base so preview envs that include trailing API segments don't double-prefix routes.
-const RAW_API_BASE = (import.meta.env.VITE_NIMBUS_API_URL || '').replace(/\/$/, '')
-const API_BASE = RAW_API_BASE.replace(/\/api(?:\/v1)?\/nimbus$/i, '')
+// If a full path like https://host/api/v1/nimbus is provided, we collapse to the origin to avoid
+// generating /api/v1/nimbus/api/... URLs that break CORS and auth handshakes.
+const RAW_API_BASE = (import.meta.env.VITE_NIMBUS_API_URL || '').trim()
+
+function normalizeApiBase(raw) {
+  if (!raw) return ''
+  try {
+    const url = new URL(raw)
+    const pathname = url.pathname.replace(/\/$/, '')
+    // If the path already starts with /api, prefer the origin to avoid double prefixes; otherwise keep path.
+    const safePath = pathname.startsWith('/api') ? '' : pathname
+    return `${url.origin}${safePath}`
+  } catch (err) {
+    // Fallback: strip common API suffixes when the URL constructor fails (unlikely)
+    return raw.replace(/\/$/, '').replace(/\/api(?:\/v\d+)?(?:\/nimbus)?$/i, '')
+  }
+}
+
+const API_BASE = normalizeApiBase(RAW_API_BASE)
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 function buildUrl(path = '') {
