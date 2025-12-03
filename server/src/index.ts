@@ -104,15 +104,20 @@ const envOrigins = [
   process.env.CMS_ORIGIN,
 ].filter(Boolean)
 
-const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174']
 const previewSuffix = process.env.CORS_PREVIEW_SUFFIX || '.vercel.app'
 const allowPreview = process.env.ALLOW_PREVIEW_CORS !== 'false'
+const previewFallbacks = allowPreview
+  ? ['https://nimbus-cms-admin.vercel.app', 'https://nimbus-cms-studio.vercel.app']
+  : []
+const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174']
 
-let allowedOrigins = Array.from(new Set([...configuredOrigins, ...envOrigins]))
+let allowedOrigins = Array.from(new Set([...configuredOrigins, ...envOrigins, ...previewFallbacks]))
 
 // Provide sensible defaults for previews and local runs instead of failing hard.
 if (!allowedOrigins.length) {
-  allowedOrigins = isProduction ? envOrigins : Array.from(new Set([...envOrigins, ...defaultDevOrigins]))
+  allowedOrigins = isProduction
+    ? [...envOrigins, ...previewFallbacks]
+    : Array.from(new Set([...envOrigins, ...previewFallbacks, ...defaultDevOrigins]))
 }
 
 let isWildcard = allowedOrigins.includes('*') || process.env.ALLOW_CORS_ALL === 'true'
@@ -132,11 +137,14 @@ app.use(
     origin: (origin: any, callback: any) => {
       // Allow requests with no origin (server-to-server, curl)
       if (!origin) return callback(null, true)
-      if (isWildcard) return callback(null, true)
-      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
-      if (allowPreview && origin.endsWith(previewSuffix)) return callback(null, true)
+      const normalizedOrigin = origin.replace(/\/$/, '')
+
+      if (isWildcard) return callback(null, normalizedOrigin)
+      if (allowedOrigins.includes(normalizedOrigin)) return callback(null, normalizedOrigin)
+      if (allowPreview && normalizedOrigin.endsWith(previewSuffix)) return callback(null, normalizedOrigin)
       // Allow any Vercel preview/admin domain to keep demos unblocked
-      if (origin.includes('vercel.app')) return callback(null, true)
+      if (normalizedOrigin.includes('vercel.app')) return callback(null, normalizedOrigin)
+
       logger.warn('CORS origin denied', {origin})
       return callback(new Error('CORS origin denied'))
     },

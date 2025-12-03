@@ -97,7 +97,7 @@ export default function AdminBanner() {
       mounted = false
       clearInterval(id)
     }
-  }, [admin])
+  }, [admin, openWeatherUrl])
 
   function normalizeCondition(condition) {
     const text = String(condition || '').toLowerCase()
