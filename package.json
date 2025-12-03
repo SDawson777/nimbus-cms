@@ -20,5 +20,8 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^7.13.0",
     "eslint": "^8.57.1"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.25"
   }
 }

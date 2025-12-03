@@ -1,7 +1,9 @@
 import {safeJson} from './safeJson'
 import {getCsrfToken} from './csrf'
 
-const API_BASE = (import.meta.env.VITE_NIMBUS_API_URL || '').replace(/\/$/, '')
+// Normalize API base so preview envs that include trailing API segments don't double-prefix routes.
+const RAW_API_BASE = (import.meta.env.VITE_NIMBUS_API_URL || '').replace(/\/$/, '')
+const API_BASE = RAW_API_BASE.replace(/\/api(?:\/v1)?\/nimbus$/i, '')
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 function buildUrl(path = '') {

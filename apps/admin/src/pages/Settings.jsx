@@ -25,6 +25,9 @@ const DEFAULT_UI = {
   shadow: 'balanced',
   font: 'inter',
   headingScale: 'md',
+  border: 'hairline',
+  surfaceTint: '#0f172a',
+  glow: 'soft',
 }
 
 function loadUiPrefs() {
@@ -49,10 +52,12 @@ function applyUiTokens(prefs) {
   root.style.setProperty('--accent-solid', prefs.accent)
   root.style.setProperty('--accent', `linear-gradient(135deg, ${prefs.accent} 0%, #22d3ee 100%)`)
   root.style.setProperty('--card', prefs.surfaces === 'glass' ? 'rgba(12, 20, 36, 0.85)' : '#0c1424')
+  root.style.setProperty('--surface-tint', prefs.surfaceTint || '#0f172a')
   root.style.setProperty('--panel-padding', prefs.density === 'compact' ? '12px 12px' : prefs.density === 'spacious' ? '18px 20px' : '14px 16px')
   root.style.setProperty('--section-gap', prefs.density === 'compact' ? '12px' : prefs.density === 'spacious' ? '20px' : '16px')
   root.style.setProperty('--radius', `${prefs.radius || 14}px`)
   root.style.setProperty('--chrome-blur', `${prefs.blur || 16}px`)
+  root.style.setProperty('--border-weight', prefs.border === 'bold' ? '1.5px' : prefs.border === 'none' ? '0px' : '1px')
   root.style.setProperty(
     '--shadow',
     prefs.shadow === 'soft'
@@ -60,6 +65,14 @@ function applyUiTokens(prefs) {
       : prefs.shadow === 'bold'
         ? '0 28px 80px rgba(0,0,0,0.48)'
         : '0 24px 64px rgba(0,0,0,0.38)',
+  )
+  root.style.setProperty(
+    '--glow',
+    prefs.glow === 'bold'
+      ? '0 0 22px rgba(124, 58, 237, 0.35)'
+      : prefs.glow === 'minimal'
+        ? '0 0 8px rgba(34, 211, 238, 0.14)'
+        : '0 0 14px rgba(124, 58, 237, 0.22)',
   )
   const fontFamily =
     prefs.font === 'serif'
@@ -262,15 +275,37 @@ function ExperienceSettings() {
 
         <div className="field-row">
           <Select
-            label="Typography"
-            value={uiPrefs.font}
-            onChange={(e) => update('font', e.target.value)}
+            label="Border weight"
+            value={uiPrefs.border}
+            onChange={(e) => update('border', e.target.value)}
             options={[
-              {value: 'inter', label: 'Sans (Inter)'},
-              {value: 'serif', label: 'Serif'},
-              {value: 'mono', label: 'Mono'},
+              {value: 'none', label: 'None'},
+              {value: 'hairline', label: 'Hairline'},
+              {value: 'bold', label: 'Bold'},
             ]}
           />
+          <Select
+            label="Glow"
+            value={uiPrefs.glow}
+            onChange={(e) => update('glow', e.target.value)}
+            options={[
+              {value: 'minimal', label: 'Minimal'},
+              {value: 'soft', label: 'Soft'},
+              {value: 'bold', label: 'Bold'},
+            ]}
+          />
+        </div>
+
+        <div className="field-row">
+          <label className="field" style={{flex: 1}}>
+            <span className="field-label">Surface tint</span>
+            <input
+              type="color"
+              value={uiPrefs.surfaceTint}
+              onChange={(e) => update('surfaceTint', e.target.value)}
+              style={{height: 42, width: 90, borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)'}}
+            />
+          </label>
           <Select
             label="Heading scale"
             value={uiPrefs.headingScale}
@@ -279,6 +314,19 @@ function ExperienceSettings() {
               {value: 'sm', label: 'Tight'},
               {value: 'md', label: 'Balanced'},
               {value: 'lg', label: 'Large'},
+            ]}
+          />
+        </div>
+
+        <div className="field-row">
+          <Select
+            label="Typography"
+            value={uiPrefs.font}
+            onChange={(e) => update('font', e.target.value)}
+            options={[
+              {value: 'inter', label: 'Sans (Inter)'},
+              {value: 'serif', label: 'Serif'},
+              {value: 'mono', label: 'Mono'},
             ]}
           />
         </div>

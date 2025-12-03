@@ -23,17 +23,37 @@ export default function AdminBanner() {
   const [banner, setBanner] = useState(FALLBACK_BANNER)
   const [clockFormat, setClockFormat] = useState('24h')
   const [now, setNow] = useState(() => new Date())
+  const [geo, setGeo] = useState(null)
   const tickerItems = useMemo(() => banner.ticker || FALLBACK_BANNER.ticker, [banner])
 
   const openWeatherToken = import.meta.env.VITE_OPENWEATHER_API_TOKEN
   const openWeatherCity = import.meta.env.VITE_OPENWEATHER_CITY || 'Detroit,US'
-  const openWeatherUrl =
-    import.meta.env.VITE_OPENWEATHER_API_URL ||
-    `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(openWeatherCity)}&units=imperial&appid=${encodeURIComponent(
-      openWeatherToken || '',
-    )}`
+  const openWeatherUrl = useMemo(() => {
+    if (geo?.lat && geo?.lon) {
+      return (
+        import.meta.env.VITE_OPENWEATHER_API_URL ||
+        `https://api.openweathermap.org/data/2.5/weather?lat=${geo.lat}&lon=${geo.lon}&units=imperial&appid=${encodeURIComponent(
+          openWeatherToken || '',
+        )}`
+      )
+    }
+    return (
+      import.meta.env.VITE_OPENWEATHER_API_URL ||
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(openWeatherCity)}&units=imperial&appid=${encodeURIComponent(
+        openWeatherToken || '',
+      )}`
+    )
+  }, [geo, openWeatherCity, openWeatherToken])
 
   useEffect(() => {
+    if (navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setGeo({lat: pos.coords.latitude, lon: pos.coords.longitude}),
+        () => setGeo(null),
+        {enableHighAccuracy: false, timeout: 4000},
+      )
+    }
+
     let mounted = true
     async function load() {
       try {

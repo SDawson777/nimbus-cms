@@ -23,6 +23,7 @@ import AppFooter from './components/AppFooter'
 import AdminBanner from './components/AdminBanner'
 import {NotificationProvider} from './components/NotificationCenter'
 import HeatmapPage from './pages/Heatmap'
+import {AnimatePresence, motion} from 'framer-motion'
 
 function AppShell() {
   const {admin, loading, signOut} = useAdminGuard()
@@ -135,69 +136,76 @@ function AppShell() {
           <AdminBanner />
         </div>
       )}
-        <main style={{flex: 1}}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/dashboard"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Dashboard />} />}
-            />
-            <Route
-              path="/products"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Products />} />}
-            />
-            <Route
-              path="/articles"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Articles />} />}
-            />
-            <Route
-              path="/faqs"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Faqs />} />}
-            />
-            {/* Use statically imported components for Deals and Compliance to avoid require() */}
-            <Route
-              path="/deals"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Deals />} />}
-            />
-            <Route
-              path="/compliance"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Compliance />} />}
-            />
-            <Route
-              path="/legal"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Legal />} />}
-            />
-            <Route
-              path="/analytics"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Analytics />} />}
-            />
-            <Route
-              path="/heatmap"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<HeatmapPage />} />}
-            />
-            <Route
-              path="/analytics/settings"
-              element={
-                <ProtectedRoute admin={admin} loading={loading} element={<AnalyticsSettings />} />
-              }
-            />
-            <Route
-              path="/settings"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<Settings />} />}
-            />
-            <Route
-              path="/theme"
-              element={<ProtectedRoute admin={admin} loading={loading} element={<ThemePage />} />}
-            />
-            <Route
-              path="/personalization"
-              element={
-                <ProtectedRoute admin={admin} loading={loading} element={<Personalization />} />
-              }
-            />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </main>
+      <main style={{flex: 1}}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            exit={{opacity: 0}}
+            transition={{duration: 0.25, ease: 'easeOut'}}
+            style={{height: '100%'}}
+          >
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Dashboard />} />}
+              />
+              <Route
+                path="/products"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Products />} />}
+              />
+              <Route
+                path="/articles"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Articles />} />}
+              />
+              <Route
+                path="/faqs"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Faqs />} />}
+              />
+              {/* Use statically imported components for Deals and Compliance to avoid require() */}
+              <Route
+                path="/deals"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Deals />} />}
+              />
+              <Route
+                path="/compliance"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Compliance />} />}
+              />
+              <Route
+                path="/legal"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Legal />} />}
+              />
+              <Route
+                path="/analytics"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Analytics />} />}
+              />
+              <Route
+                path="/heatmap"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<HeatmapPage />} />}
+              />
+              <Route
+                path="/analytics/settings"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<AnalyticsSettings />} />}
+              />
+              <Route
+                path="/settings"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Settings />} />}
+              />
+              <Route
+                path="/theme"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<ThemePage />} />}
+              />
+              <Route
+                path="/personalization"
+                element={<ProtectedRoute admin={admin} loading={loading} element={<Personalization />} />}
+              />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </main>
         <AiChatWidget />
         <AppFooter />
       </div>

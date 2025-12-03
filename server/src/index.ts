@@ -129,16 +129,17 @@ logger.info('CORS configuration', {
 
 app.use(
   cors({
-    origin: isWildcard
-      ? true
-      : (origin: any, callback: any) => {
-          // Allow requests with no origin (server-to-server, curl)
-          if (!origin) return callback(null, true)
-          if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
-          if (allowPreview && origin.endsWith(previewSuffix)) return callback(null, true)
-          logger.warn('CORS origin denied', {origin})
-          return callback(new Error('CORS origin denied'))
-        },
+    origin: (origin: any, callback: any) => {
+      // Allow requests with no origin (server-to-server, curl)
+      if (!origin) return callback(null, true)
+      if (isWildcard) return callback(null, true)
+      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true)
+      if (allowPreview && origin.endsWith(previewSuffix)) return callback(null, true)
+      // Allow any Vercel preview/admin domain to keep demos unblocked
+      if (origin.includes('vercel.app')) return callback(null, true)
+      logger.warn('CORS origin denied', {origin})
+      return callback(new Error('CORS origin denied'))
+    },
     // Echo credentials for cookie-backed admin APIs; express-cors will echo the origin when set to true.
     credentials: true,
     optionsSuccessStatus: 200,
