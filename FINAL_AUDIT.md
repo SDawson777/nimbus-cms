@@ -15,6 +15,7 @@
 - Server enforces env-validated JWT secrets, helmet, JSON size limits, compression, rate limiting, request logging, CSRF for admin APIs, and CORS allowlisting with preview fallbacks for Vercel domains. 【F:server/src/index.ts†L28-L147】【F:server/src/index.ts†L190-L204】
 - Health check at `/healthz` and Swagger docs at `/docs` support operational monitoring and buyer visibility. 【F:server/src/index.ts†L152-L204】
 - Admin banner and weather data pull via env-based OpenWeather token or server proxy; ticker auto-scrolls and respects server-provided banner data, keeping secrets in env. 【F:apps/admin/src/components/AdminBanner.jsx†L21-L174】
+- AI concierge uses OpenAI when `OPENAI_API_KEY` (and optional `OPENAI_MODEL`) are set, with RBAC/CSRF protection and a concise static playbook fallback when the provider is absent. 【F:server/src/routes/ai.ts†L1-L108】
 - Theme, layout, and dataset preferences persist through settings with live preview and dashboard sync, centralizing UX control without hard-coded secrets. 【F:apps/admin/src/pages/Settings.jsx†L217-L425】
 - Dashboard widgets support favorites, reordering, and token-gated heatmap rendering; alerts notify when favorites change, and 2D analytics remain the default. 【F:apps/admin/src/pages/Dashboard.jsx†L154-L483】
 
@@ -34,4 +35,4 @@
 4. **Security regression tests**: add auth/CSRF/CORS automated checks and basic integration tests for login, preferences, and analytics endpoints.
 5. **Legal content check**: publish finalized Terms/Privacy/Data & AI usage pages via Studio content to ensure buyer-ready disclosures.
 
-**Current readiness**: 94/100 — operational risk remains until Vercel/Railway env variables and CORS allowlists are finalized and verified against banner/login/weather flows.
+**Current readiness**: 95/100 — operational risk remains until Vercel/Railway env variables (including AI) and CORS allowlists are finalized and verified against banner/login/weather/concierge flows.

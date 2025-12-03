@@ -19,6 +19,7 @@
 - `SANITY_PROJECT_ID` / `SANITY_DATASET` / `SANITY_API_TOKEN` – Required for content + analytics writes.
 - `ANALYTICS_INGEST_KEY` – Comma-separated keys for `/analytics/event` HMAC verification.
 - `OPENAI_API_KEY` – Optional; enables AI concierge/insights endpoints.
+- `OPENAI_MODEL` – Optional; overrides the concierge model (default `gpt-4o-mini`).
 - `JSON_BODY_LIMIT` – Optional body size limit (default `4mb`).
 - `ADMIN_LOGIN_RATE_LIMIT_MAX` / `ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS` – Optional overrides for login throttling.
 - `WEATHER_API_URL` / `WEATHER_API_KEY` – Optional; used by the admin banner endpoint to proxy weather without exposing keys.
