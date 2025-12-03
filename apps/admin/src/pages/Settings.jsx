@@ -20,6 +20,11 @@ const DEFAULT_UI = {
   accent: '#8b5cf6',
   density: 'balanced',
   surfaces: 'glass',
+  radius: 14,
+  blur: 16,
+  shadow: 'balanced',
+  font: 'inter',
+  headingScale: 'md',
 }
 
 function loadUiPrefs() {
@@ -46,6 +51,25 @@ function applyUiTokens(prefs) {
   root.style.setProperty('--card', prefs.surfaces === 'glass' ? 'rgba(12, 20, 36, 0.85)' : '#0c1424')
   root.style.setProperty('--panel-padding', prefs.density === 'compact' ? '12px 12px' : prefs.density === 'spacious' ? '18px 20px' : '14px 16px')
   root.style.setProperty('--section-gap', prefs.density === 'compact' ? '12px' : prefs.density === 'spacious' ? '20px' : '16px')
+  root.style.setProperty('--radius', `${prefs.radius || 14}px`)
+  root.style.setProperty('--chrome-blur', `${prefs.blur || 16}px`)
+  root.style.setProperty(
+    '--shadow',
+    prefs.shadow === 'soft'
+      ? '0 18px 38px rgba(0,0,0,0.28)'
+      : prefs.shadow === 'bold'
+        ? '0 28px 80px rgba(0,0,0,0.48)'
+        : '0 24px 64px rgba(0,0,0,0.38)',
+  )
+  const fontFamily =
+    prefs.font === 'serif'
+      ? '"Source Serif Pro", "Georgia", serif'
+      : prefs.font === 'mono'
+        ? '"JetBrains Mono", "SFMono-Regular", monospace'
+        : 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+  root.style.setProperty('--font-body', fontFamily)
+  const headingScale = prefs.headingScale === 'lg' ? 1.08 : prefs.headingScale === 'sm' ? 0.94 : 1
+  root.style.setProperty('--heading-scale', headingScale)
 }
 
 export default function Settings() {
@@ -200,6 +224,65 @@ function ExperienceSettings() {
           />
         </div>
 
+        <div className="field-row">
+          <label className="field" style={{flex: 1}}>
+            <span className="field-label">Corner radius</span>
+            <input
+              type="range"
+              min="8"
+              max="22"
+              value={uiPrefs.radius}
+              onChange={(e) => update('radius', Number(e.target.value))}
+            />
+            <span className="metric-subtle">{uiPrefs.radius}px</span>
+          </label>
+          <label className="field" style={{flex: 1}}>
+            <span className="field-label">Surface blur</span>
+            <input
+              type="range"
+              min="8"
+              max="28"
+              value={uiPrefs.blur}
+              onChange={(e) => update('blur', Number(e.target.value))}
+            />
+            <span className="metric-subtle">{uiPrefs.blur}px</span>
+          </label>
+        </div>
+
+        <Select
+          label="Shadow style"
+          value={uiPrefs.shadow}
+          onChange={(e) => update('shadow', e.target.value)}
+          options={[
+            {value: 'soft', label: 'Soft'},
+            {value: 'balanced', label: 'Balanced'},
+            {value: 'bold', label: 'Bold'},
+          ]}
+        />
+
+        <div className="field-row">
+          <Select
+            label="Typography"
+            value={uiPrefs.font}
+            onChange={(e) => update('font', e.target.value)}
+            options={[
+              {value: 'inter', label: 'Sans (Inter)'},
+              {value: 'serif', label: 'Serif'},
+              {value: 'mono', label: 'Mono'},
+            ]}
+          />
+          <Select
+            label="Heading scale"
+            value={uiPrefs.headingScale}
+            onChange={(e) => update('headingScale', e.target.value)}
+            options={[
+              {value: 'sm', label: 'Tight'},
+              {value: 'md', label: 'Balanced'},
+              {value: 'lg', label: 'Large'},
+            ]}
+          />
+        </div>
+
         <Select
           label="Surface style"
           value={uiPrefs.surfaces}
@@ -277,6 +360,19 @@ function ExperienceSettings() {
             <div className="preview-pill">AI concierge</div>
             <div className="preview-pill">Compliance</div>
             <div className="preview-pill">Analytics</div>
+          </div>
+          <div className="preview-panel" style={{borderRadius: `calc(${uiPrefs.radius}px)`}}>
+            <div className="preview-panel__header">Buttons & cards</div>
+            <div className="preview-panel__body">
+              <button className="primary" style={{boxShadow: 'none'}}>Primary</button>
+              <button className="ghost" style={{marginLeft: 8}}>Ghost</button>
+              <div className="preview-card-mini" style={{marginTop: 12}}>
+                <p className="metric-subtle" style={{margin: 0}}>
+                  Blur {uiPrefs.blur}px · Radius {uiPrefs.radius}px · {uiPrefs.font}
+                </p>
+                <strong>Live preview</strong>
+              </div>
+            </div>
           </div>
         </div>
       </div>

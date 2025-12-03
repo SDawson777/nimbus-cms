@@ -102,7 +102,10 @@ export default function AdminBanner() {
   }
 
   return (
-    <div
+    <motion.div
+      initial={{opacity: 0, y: -10}}
+      animate={{opacity: 1, y: 0}}
+      transition={{duration: 0.4}}
       className={`admin-banner ${banner.weather?.mood ? `weather-${banner.weather.mood}` : ''}`}
       role="banner"
       aria-label="Admin welcome and system status"
@@ -147,6 +150,6 @@ export default function AdminBanner() {
           {clockFormat === '24h' ? '24h' : '12h'} · {formatTime(now, clockFormat)}
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }

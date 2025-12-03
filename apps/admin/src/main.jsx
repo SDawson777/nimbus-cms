@@ -1,6 +1,6 @@
 import React, {useMemo, useState, useEffect, useRef} from 'react'
 import {createRoot} from 'react-dom/client'
-import {BrowserRouter, Routes, Route, Navigate, Link, useLocation} from 'react-router-dom'
+import {BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate} from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
@@ -25,8 +25,9 @@ import {NotificationProvider} from './components/NotificationCenter'
 import HeatmapPage from './pages/Heatmap'
 
 function AppShell() {
-  const {admin, loading} = useAdminGuard()
+  const {admin, loading, signOut} = useAdminGuard()
   const {pathname} = useLocation()
+  const navigate = useNavigate()
   const [navOpen, setNavOpen] = useState(false)
   const navRef = useRef(null)
   const navItems = useMemo(
@@ -62,6 +63,13 @@ function AppShell() {
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
+  const isLogin = pathname === '/login'
+
+  const handleLogout = () => {
+    signOut()
+    navigate('/login', {replace: true})
+  }
+
   return (
     <div className="container" style={{minHeight: '100vh', paddingTop: 8}}>
       <div className="site-top site-header">
@@ -78,45 +86,55 @@ function AppShell() {
           />
           <div className="brand-meta">
             <p className="brand-kicker">Nimbus CMS Suite</p>
-            <p className="brand-sub">Enterprise control | real-time content | AI concierge</p>
           </div>
         </div>
-        <div className="header-actions">
-          <DatasetSelector />
-          <WorkspaceSelector />
-          <div className="nav-menu" ref={navRef}>
-            <button
-              className="nav-menu__trigger"
-              aria-haspopup="true"
-              aria-expanded={navOpen}
-              onClick={() => setNavOpen((v) => !v)}
-            >
-              Suite Map
-              <span aria-hidden="true">⌄</span>
-            </button>
-            <div className={`nav-menu__panel ${navOpen ? 'is-open' : ''}`} role="menu">
-              <div className="nav-menu__grid">
-                {navItems.map((item) => {
-                  const active = pathname.startsWith(item.path)
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`nav-menu__item ${active ? 'is-active' : ''}`}
-                      aria-current={active ? 'page' : undefined}
-                      role="menuitem"
-                    >
-                      <span className="nav-menu__label">{item.label}</span>
-                      <span className="nav-menu__hint">Navigate</span>
-                    </Link>
-                  )
-                })}
+        {!isLogin && (
+          <div className="header-actions">
+            <DatasetSelector />
+            <WorkspaceSelector />
+            <div className="nav-menu" ref={navRef}>
+              <button
+                className="nav-menu__trigger"
+                aria-haspopup="true"
+                aria-expanded={navOpen}
+                onClick={() => setNavOpen((v) => !v)}
+              >
+                Suite Map
+                <span aria-hidden="true">⌄</span>
+              </button>
+              <div className={`nav-menu__panel ${navOpen ? 'is-open' : ''}`} role="menu">
+                <div className="nav-menu__grid">
+                  {navItems.map((item) => {
+                    const active = pathname.startsWith(item.path)
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`nav-menu__item ${active ? 'is-active' : ''}`}
+                        aria-current={active ? 'page' : undefined}
+                        role="menuitem"
+                      >
+                        <span className="nav-menu__label">{item.label}</span>
+                        <span className="nav-menu__hint">Navigate</span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
             </div>
+            {admin && (
+              <button className="ghost" onClick={handleLogout} aria-label="Log out">
+                Log out
+              </button>
+            )}
           </div>
-        </div>
+        )}
       </div>
-      <AdminBanner />
+      {!isLogin && admin && (
+        <div className="banner-shell" aria-live="polite">
+          <AdminBanner />
+        </div>
+      )}
         <main style={{flex: 1}}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -187,8 +205,8 @@ function AppShell() {
 }
 
 function useAdminGuard() {
-  const {admin, loading} = useAdmin()
-  return {admin, loading}
+  const {admin, loading, signOut} = useAdmin()
+  return {admin, loading, signOut}
 }
 
 function ProtectedRoute({element, admin, loading}) {
