@@ -9,6 +9,11 @@ export function AiChatWidget() {
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
+  const haptic = () => {
+    if (document.body.classList.contains('a11y-reduce-motion')) return
+    if (navigator?.vibrate) navigator.vibrate(10)
+  }
+
   useEffect(() => {
     setMessages([
       {
@@ -89,7 +94,10 @@ export function AiChatWidget() {
     <>
       {/* Floating button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          haptic()
+          setIsOpen(!isOpen)
+        }}
         className="ai-launcher"
         aria-label="Open AI chat"
         aria-expanded={isOpen}

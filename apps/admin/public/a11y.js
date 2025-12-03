@@ -27,9 +27,30 @@
     const btnContrast = document.getElementById('a11y-contrast')
     const btnLarge = document.getElementById('a11y-large')
     const btnDys = document.getElementById('a11y-dyslexic')
-    if (btnContrast) btnContrast.setAttribute('aria-pressed', !!prefs.contrast)
-    if (btnLarge) btnLarge.setAttribute('aria-pressed', !!prefs.large)
-    if (btnDys) btnDys.setAttribute('aria-pressed', !!prefs.dyslexic)
+    const btnMotion = document.getElementById('a11y-motion')
+    if (btnContrast) {
+      btnContrast.setAttribute('aria-pressed', !!prefs.contrast)
+      btnContrast.classList.toggle('is-active', !!prefs.contrast)
+    }
+    if (btnLarge) {
+      btnLarge.setAttribute('aria-pressed', !!prefs.large)
+      btnLarge.classList.toggle('is-active', !!prefs.large)
+    }
+    if (btnDys) {
+      btnDys.setAttribute('aria-pressed', !!prefs.dyslexic)
+      btnDys.classList.toggle('is-active', !!prefs.dyslexic)
+    }
+    if (btnMotion) {
+      btnMotion.setAttribute('aria-pressed', !!prefs.reduceMotion)
+      btnMotion.classList.toggle('is-active', !!prefs.reduceMotion)
+    }
+  }
+
+  function hapticPulse() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!prefersReduced && navigator?.vibrate) {
+      navigator.vibrate(12)
+    }
   }
 
   function setPrefs(newPrefs) {
@@ -100,22 +121,32 @@
     const btnContrast = document.getElementById('a11y-contrast')
     const btnLarge = document.getElementById('a11y-large')
     const btnDys = document.getElementById('a11y-dyslexic')
+    const btnMotion = document.getElementById('a11y-motion')
     const btnReset = document.getElementById('a11y-reset')
     if (btnContrast)
       btnContrast.addEventListener('click', function () {
         toggle('contrast')
+        hapticPulse()
       })
     if (btnLarge)
       btnLarge.addEventListener('click', function () {
         toggle('large')
+        hapticPulse()
       })
     if (btnDys)
       btnDys.addEventListener('click', function () {
         toggle('dyslexic')
+        hapticPulse()
+      })
+    if (btnMotion)
+      btnMotion.addEventListener('click', function () {
+        toggle('reduceMotion')
+        hapticPulse()
       })
     if (btnReset)
       btnReset.addEventListener('click', function () {
         reset()
+        hapticPulse()
       })
   })
 })()

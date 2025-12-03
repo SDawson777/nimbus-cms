@@ -12,7 +12,7 @@ import AnalyticsSettings from './pages/AnalyticsSettings'
 import Settings from './pages/Settings'
 import ThemePage from './pages/Theme'
 import Personalization from './pages/Personalization'
-import {AdminProvider} from './lib/adminContext'
+import {AdminProvider, useAdmin} from './lib/adminContext'
 import {TenantProvider, WorkspaceSelector} from './lib/tenantContext'
 import {DatasetProvider, DatasetSelector} from './lib/datasetContext'
 import {AiChatWidget} from './components/AiChatWidget'
@@ -20,6 +20,7 @@ import Deals from './pages/Deals'
 import Compliance from './pages/Compliance'
 
 function AppShell() {
+  const {admin, loading} = useAdminGuard()
   const {pathname} = useLocation()
   const navItems = useMemo(
     () => [
@@ -75,25 +76,81 @@ function AppShell() {
         <main style={{flex: 1}}>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/articles" element={<Articles />} />
-            <Route path="/faqs" element={<Faqs />} />
+            <Route
+              path="/dashboard"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Dashboard />} />}
+            />
+            <Route
+              path="/products"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Products />} />}
+            />
+            <Route
+              path="/articles"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Articles />} />}
+            />
+            <Route
+              path="/faqs"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Faqs />} />}
+            />
             {/* Use statically imported components for Deals and Compliance to avoid require() */}
-            <Route path="/deals" element={<Deals />} />
-            <Route path="/compliance" element={<Compliance />} />
-            <Route path="/legal" element={<Legal />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/analytics/settings" element={<AnalyticsSettings />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/theme" element={<ThemePage />} />
-            <Route path="/personalization" element={<Personalization />} />
+            <Route
+              path="/deals"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Deals />} />}
+            />
+            <Route
+              path="/compliance"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Compliance />} />}
+            />
+            <Route
+              path="/legal"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Legal />} />}
+            />
+            <Route
+              path="/analytics"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Analytics />} />}
+            />
+            <Route
+              path="/analytics/settings"
+              element={
+                <ProtectedRoute admin={admin} loading={loading} element={<AnalyticsSettings />} />
+              }
+            />
+            <Route
+              path="/settings"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<Settings />} />}
+            />
+            <Route
+              path="/theme"
+              element={<ProtectedRoute admin={admin} loading={loading} element={<ThemePage />} />}
+            />
+            <Route
+              path="/personalization"
+              element={
+                <ProtectedRoute admin={admin} loading={loading} element={<Personalization />} />
+              }
+            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
         <AiChatWidget />
       </div>
   )
+}
+
+function useAdminGuard() {
+  const {admin, loading} = useAdmin()
+  return {admin, loading}
+}
+
+function ProtectedRoute({element, admin, loading}) {
+  const location = useLocation()
+  if (loading) {
+    return <div className="card" style={{margin: '2rem auto', maxWidth: 520}}>Loading…</div>
+  }
+  if (!admin) {
+    return <Navigate to="/login" replace state={{from: location.pathname}} />
+  }
+  return element
 }
 
 function App() {
