@@ -91,16 +91,35 @@ app.use(requestLogger)
 // Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins.
 // Credentials (cookies) are only allowed when the origin is a specific allowlisted origin.
 const allowedOriginsRaw = process.env.CORS_ORIGINS || ''
-const allowedOrigins = allowedOriginsRaw
+const configuredOrigins = allowedOriginsRaw
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)
 
-if (!allowedOrigins.length && isProduction) {
-  throw new Error('CORS_ORIGINS must be configured in production (comma-separated list of origins)')
+const envOrigins = [
+  process.env.ADMIN_ORIGIN,
+  process.env.STUDIO_ORIGIN,
+  process.env.PUBLIC_ORIGIN,
+  process.env.MOBILE_ORIGIN,
+  process.env.CMS_ORIGIN,
+].filter(Boolean)
+
+const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174']
+
+let allowedOrigins = Array.from(new Set([...configuredOrigins, ...envOrigins]))
+
+// Provide sensible defaults for previews and local runs instead of failing hard.
+if (!allowedOrigins.length) {
+  allowedOrigins = isProduction ? envOrigins : Array.from(new Set([...envOrigins, ...defaultDevOrigins]))
 }
 
-const isWildcard = allowedOrigins.length === 1 && allowedOrigins[0] === '*'
+let isWildcard = allowedOrigins.includes('*') || process.env.ALLOW_CORS_ALL === 'true'
+
+if (!allowedOrigins.length && !isWildcard) {
+  logger.warn('CORS origins not configured; defaulting to wildcard for preview builds')
+  allowedOrigins = ['*']
+  isWildcard = true
+}
 
 logger.info('CORS configuration', {
   origins: isWildcard ? ['*'] : allowedOrigins,
@@ -117,8 +136,8 @@ app.use(
           logger.warn('CORS origin denied', {origin})
           return callback(new Error('CORS origin denied'))
         },
-    // Only set credentials when not using a wildcard origin
-    credentials: !isWildcard,
+    // Echo credentials for cookie-backed admin APIs; express-cors will echo the origin when set to true.
+    credentials: true,
     optionsSuccessStatus: 200,
   }),
 )

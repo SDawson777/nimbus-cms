@@ -27,7 +27,8 @@
     "chart.js": "^4.5.1",
     "react-chartjs-2": "^5.3.1",
     "recharts": "^2.10.0",
-    "three": "^0.181.2"
+    "three": "^0.181.2",
+    "mapbox-gl": "^3.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
