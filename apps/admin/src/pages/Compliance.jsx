@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {csrfFetch} from '../lib/csrf'
 import {useAdmin} from '../lib/adminContext'
+import {apiFetch, apiJson} from '../lib/api'
 
 function formatSnapshotLabel(ts) {
   if (!ts) return 'Live (no snapshot)'
@@ -56,12 +56,11 @@ export default function Compliance() {
       const qs = new URLSearchParams()
       if (normalizedBrandFilter) qs.set('brand', normalizedBrandFilter)
       const url = `/api/admin/compliance/overview${qs.toString() ? `?${qs}` : ''}`
-      const res = await fetch(url, {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
+      const {ok, data, response} = await apiJson(url, {}, {})
+      if (!ok) {
+        const text = await response.text().catch(() => '')
         throw new Error(text || 'Failed to load compliance overview')
       }
-      const data = await res.json()
       const resultRows = Array.isArray(data) ? data : data?.results || []
       if (!isMounted.current) return
       setRows(resultRows)
@@ -84,12 +83,11 @@ export default function Compliance() {
       const qs = new URLSearchParams()
       if (normalizedBrandFilter) qs.set('brand', normalizedBrandFilter)
       const url = `/api/admin/compliance/history${qs.toString() ? `?${qs}` : ''}`
-      const res = await fetch(url, {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
+      const {ok, data, response} = await apiJson(url, {}, [])
+      if (!ok) {
+        const text = await response.text().catch(() => '')
         throw new Error(text || 'Failed to load history')
       }
-      const data = await res.json()
       if (!isMounted.current) return
       setHistory(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -106,12 +104,11 @@ export default function Compliance() {
     setBrandsLoading(true)
     setBrandsError(null)
     try {
-      const res = await fetch('/api/admin/brands', {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
+      const {ok, data, response} = await apiJson('/api/admin/brands', {}, [])
+      if (!ok) {
+        const text = await response.text().catch(() => '')
         throw new Error(text || 'Failed to load brands')
       }
-      const data = await res.json()
       if (!isMounted.current) return
       setBrands(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -167,16 +164,15 @@ export default function Compliance() {
     if (!canRunSnapshot) return
     setSnapshotLoading(true)
     try {
-      const res = await csrfFetch('/api/admin/compliance/snapshot', {
+      const res = await apiFetch('/api/admin/compliance/snapshot', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({brand: normalizedBrandFilter || undefined}),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Snapshot failed')
       }
-      const data = await res.json()
+      const data = await safeJson(res, {})
       if (data?.ts) setSnapshotTs(data.ts)
       if (data?.studioUrl) window.open(data.studioUrl, '_blank')
       await Promise.all([loadOverview(), loadHistory()])

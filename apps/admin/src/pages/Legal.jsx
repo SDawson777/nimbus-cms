@@ -1,14 +1,14 @@
 import React, {useEffect, useState} from 'react'
+import {apiJson} from '../lib/api'
 
 export default function Legal() {
   const [items, setItems] = useState([])
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/admin/legal', {credentials: 'include'})
-        if (res.ok) {
-          const j = await res.json()
-          setItems(j)
+        const {ok, data} = await apiJson('/api/admin/legal', {}, [])
+        if (ok) {
+          setItems(Array.isArray(data) ? data : [])
         }
       } catch (err) {
         console.error(err)
@@ -20,6 +20,18 @@ export default function Legal() {
   return (
     <div style={{padding: 20}}>
       <h1>Legal Documents</h1>
+      <div className="card" style={{marginBottom: 16}}>
+        <h3 style={{marginTop: 0}}>Data &amp; AI Usage</h3>
+        <p style={{margin: '4px 0'}}>
+          Nimbus surfaces optional AI assistance for admins. Inputs are limited to the prompts you
+          provide, and no training or retention occurs server-side unless the API backend enables it via
+          environment flags. Buyers should review their own data handling policies before enabling
+          production AI endpoints.
+        </p>
+        <p style={{margin: '4px 0'}}>
+          For privacy requests or data export, reach the team at <a href="mailto:privacy@nimbus.app">privacy@nimbus.app</a>.
+        </p>
+      </div>
       <table style={{width: '100%', borderCollapse: 'collapse'}}>
         <thead>
           <tr>

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "sanity dev",
     "build": "sanity build --no-auto-update",
-    "deploy": "sanity deploy"
+    "deploy": "sanity deploy",
+    "lint": "echo \"Sanity lint handled via Studio tooling\"",
+    "test": "echo \"No studio tests defined\""
   },
   "dependencies": {
     "@sanity/client": "^7.13.1",

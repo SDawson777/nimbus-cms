@@ -1,12 +1,29 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import Button from '../design-system/Button'
 import Input from '../design-system/Input'
+import {apiBaseUrl, apiFetch} from '../lib/api'
+import {safeJson} from '../lib/safeJson'
 
 export function AiChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+
+  const haptic = () => {
+    if (document.body.classList.contains('a11y-reduce-motion')) return
+    if (navigator?.vibrate) navigator.vibrate(10)
+  }
+
+  useEffect(() => {
+    setMessages([
+      {
+        role: 'assistant',
+        content:
+          'Welcome to Nimbus Concierge. I can summarize performance, suggest optimizations, or walk you through workflows.',
+      },
+    ])
+  }, [])
 
   const handleSend = async () => {
     if (!message.trim() || isLoading) return
@@ -16,32 +33,46 @@ export function AiChatWidget() {
     setMessages((prev) => [...prev, {role: 'user', content: userMessage}])
     setIsLoading(true)
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_NIMBUS_API_URL}/ai/chat`,
+    const endpoint = apiBaseUrl()
+    if (!endpoint) {
+      setMessages((prev) => [
+        ...prev,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({message: userMessage}),
+          role: 'assistant',
+          content:
+            "I'm running in preview mode. Connect the Nimbus API URL to enable live answers. Meanwhile, I can summarize dashboards, outline workflows, or prep rollout checklists.",
         },
-      )
+      ])
+      setIsLoading(false)
+      return
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to send message')
-      }
+    try {
+      const response = await apiFetch('/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({message: userMessage}),
+      })
 
-      const data = await response.json()
-      setMessages((prev) => [...prev, {role: 'assistant', content: data.reply}])
+      const data = await safeJson(response, {})
+      const reply = data?.reply
+      const friendlyFallback =
+        'I’m on it. If you need quick wins: review analytics > pipeline health, confirm compliance attestations, and refresh personalization to boost conversions.'
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: reply || friendlyFallback,
+        },
+      ])
     } catch (error) {
       console.error('AI chat error:', error)
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again or contact support.',
+          content:
+            'I hit a snag talking to the concierge service. Try again shortly—here’s a quick playbook: check today’s metrics, review open deals, and publish any pending content.',
         },
       ])
     } finally {
@@ -60,29 +91,14 @@ export function AiChatWidget() {
     <>
       {/* Floating button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          backgroundColor: '#3F7AFC',
-          color: 'white',
-          border: 'none',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          cursor: 'pointer',
-          fontSize: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          transition: 'transform 0.2s',
+        onClick={() => {
+          haptic()
+          setIsOpen(!isOpen)
         }}
-        onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-        onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        className="ai-launcher"
         aria-label="Open AI chat"
+        aria-expanded={isOpen}
+        aria-controls="ai-chat-panel"
       >
         💬
       </button>
@@ -94,24 +110,26 @@ export function AiChatWidget() {
             position: 'fixed',
             bottom: '92px',
             right: '24px',
-            width: '400px',
+            width: '420px',
             height: '600px',
             zIndex: 9998,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-            borderRadius: '12px',
+            boxShadow: '0 22px 60px rgba(4, 6, 20, 0.5)',
+            borderRadius: '16px',
             overflow: 'hidden',
-            backgroundColor: 'white',
+            background: 'linear-gradient(180deg, rgba(9,14,28,0.92), rgba(7,11,22,0.96))',
             display: 'flex',
             flexDirection: 'column',
           }}
+          id="ai-chat-panel"
         >
           {/* Header */}
           <div
             style={{
-              backgroundColor: '#3F7AFC',
+              background: 'linear-gradient(135deg, #312e81 0%, #0ea5e9 100%)',
               color: 'white',
               padding: '16px',
-              fontWeight: 600,
+              fontWeight: 700,
+              letterSpacing: '0.01em',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -140,14 +158,14 @@ export function AiChatWidget() {
               flex: 1,
               overflowY: 'auto',
               padding: '16px',
-              backgroundColor: '#F9FAFB',
+              background: 'radial-gradient(circle at 20% 20%, rgba(124,58,237,0.12), transparent 35%), rgba(4,7,15,0.85)',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
             }}
           >
             {messages.length === 0 && (
-              <div style={{textAlign: 'center', color: '#6B7280', marginTop: '40px'}}>
+              <div style={{textAlign: 'center', color: '#a5b4fc', marginTop: '40px'}}>
                 <p style={{fontSize: '18px', marginBottom: '8px'}}>👋 Hello!</p>
                 <p>I'm your Nimbus CMS assistant. Ask me anything about managing your content.</p>
               </div>
@@ -164,9 +182,14 @@ export function AiChatWidget() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '12px',
-                    backgroundColor: msg.role === 'user' ? '#3F7AFC' : '#E5E7EB',
-                    color: msg.role === 'user' ? 'white' : '#111827',
+                    background: msg.role === 'user'
+                      ? 'linear-gradient(135deg, #7c3aed, #22d3ee)'
+                      : 'rgba(255,255,255,0.08)',
+                    color: msg.role === 'user' ? 'white' : '#e5e7eb',
                     wordWrap: 'break-word',
+                    border: msg.role === 'user'
+                      ? '1px solid rgba(255,255,255,0.18)'
+                      : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   {msg.content}
@@ -179,8 +202,8 @@ export function AiChatWidget() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '12px',
-                    backgroundColor: '#E5E7EB',
-                    color: '#6B7280',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    color: '#c7d2fe',
                   }}
                 >
                   Typing...
@@ -193,8 +216,8 @@ export function AiChatWidget() {
           <div
             style={{
               padding: '16px',
-              borderTop: '1px solid #E5E7EB',
-              backgroundColor: 'white',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(8,12,20,0.96)',
               display: 'flex',
               gap: '8px',
             }}

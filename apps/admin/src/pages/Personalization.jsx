@@ -1,5 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useAdmin} from '../lib/adminContext'
+import {apiFetch, apiJson} from '../lib/api'
+import {safeJson} from '../lib/safeJson'
 
 export default function Personalization() {
   const {capabilities} = useAdmin()
@@ -23,13 +25,12 @@ export default function Personalization() {
     setRulesLoading(true)
     setRulesError(null)
     try {
-      const res = await fetch('/api/admin/personalization/rules', {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
+      const {ok, data, response} = await apiJson('/api/admin/personalization/rules', {}, [])
+      if (!ok) {
+        const text = await response.text().catch(() => '')
         throw new Error(text || 'Failed to load rules')
       }
-      const payload = await res.json()
-      setRules(Array.isArray(payload) ? payload : [])
+      setRules(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('load rules failed', err)
       setRules([])
@@ -54,16 +55,15 @@ export default function Personalization() {
         context: {...simCtx, lastPurchaseDaysAgo: Number(simCtx.lastPurchaseDaysAgo || 0)},
         contentType: 'article',
       }
-      const res = await fetch('/personalization/apply', {
+      const res = await apiFetch('/personalization/apply', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(text || 'Simulation failed')
       }
-      const j = await res.json()
+      const j = await safeJson(res, {})
       setResult(j)
     } catch (err) {
       console.error('simulate failed', err)

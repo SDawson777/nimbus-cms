@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import {apiJson} from '../lib/api'
 
 const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
 
@@ -12,10 +13,9 @@ export default function Faqs() {
         const q = channel
           ? `/api/admin/faqs?channel=${encodeURIComponent(channel)}`
           : '/api/admin/faqs'
-        const res = await fetch(q, {credentials: 'include'})
-        if (res.ok) {
-          const j = await res.json()
-          setGroups(j)
+        const {ok, data} = await apiJson(q, {}, [])
+        if (ok) {
+          setGroups(Array.isArray(data) ? data : [])
         }
       } catch (err) {
         console.error(err)

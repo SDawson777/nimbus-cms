@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import {apiJson} from '../lib/api'
 
 const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
 
@@ -13,10 +14,9 @@ export default function Deals() {
         const q = channel
           ? `/api/v1/nimbus/content/deals?limit=50&channel=${encodeURIComponent(channel)}`
           : '/api/v1/nimbus/content/deals?limit=50'
-        const res = await fetch(q, {credentials: 'include'})
-        if (res.ok) {
-          const j = await res.json()
-          setItems(j)
+        const {ok, data} = await apiJson(q, {}, [])
+        if (ok) {
+          setItems(Array.isArray(data) ? data : [])
         }
       } catch (err) {
         console.error(err)

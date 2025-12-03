@@ -2,9 +2,26 @@
   "name": "nimbus-cms",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "admin:dev": "pnpm -C apps/admin dev",
+    "admin:build": "pnpm -C apps/admin build",
+    "studio:dev": "pnpm -C apps/studio dev",
+    "studio:build": "rm -rf dist && pnpm -C apps/studio build && cp -r apps/studio/dist dist",
+    "server:dev": "pnpm -C server dev",
+    "server:build": "pnpm -C server build",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "test": "echo \"No root test suite defined\""
+  },
   "workspaces": [
     "apps/admin",
     "apps/studio",
     "server"
-  ]
+  ],
+  "devDependencies": {
+    "@typescript-eslint/parser": "^7.13.0",
+    "eslint": "^8.57.1"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.25"
+  }
 }

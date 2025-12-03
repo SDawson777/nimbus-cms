@@ -5,20 +5,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - run: pnpm install
-      - run: pnpm --filter server build
+          version: 10.11.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Enable corepack and verify pnpm
+        run: |
+          corepack enable
+          pnpm -v
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter admin build
       - run: pnpm --filter studio build
-        if: ${{ env.BUILD_DOCKER == 'true' }}
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: server/Dockerfile
-          push: false
-          tags: nimbus-cms-server:latest
+      - run: pnpm --filter server build
 
   # Optional: you can add further jobs for lint, integration tests, or publish steps.

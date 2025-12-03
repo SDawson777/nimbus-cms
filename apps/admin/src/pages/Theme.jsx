@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {csrfFetch} from '../lib/csrf'
 import {useAdmin} from '../lib/adminContext'
+import {apiFetch, apiJson} from '../lib/api'
+import {safeJson} from '../lib/safeJson'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024
 const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
@@ -107,12 +108,16 @@ export default function ThemePage() {
     setThemeLoading(true)
     setThemeError(null)
     try {
-      const res = await fetch(`/content/theme?brand=${encodeURIComponent(scopedBrand)}`)
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
+      const {ok, data, response} = await apiJson(
+        `/content/theme?brand=${encodeURIComponent(scopedBrand)}`,
+        {},
+        {},
+      )
+      if (!ok) {
+        const text = await response.text().catch(() => '')
         throw new Error(text || 'Theme not found for this brand')
       }
-      const j = await res.json()
+      const j = data || {}
       setTheme(j)
       if (!editing) {
         setForm((prev) => ({
@@ -162,14 +167,16 @@ export default function ThemePage() {
         qs.set('perPage', String(perPage))
         qs.set('brand', brandFilter)
         if (storeFilterOpt) qs.set('store', storeFilterOpt)
-        const res = await fetch(`/api/admin/theme/configs?${qs.toString()}`, {
-          credentials: 'include',
-        })
-        if (!res.ok) {
-          const text = await res.text().catch(() => '')
+        const {ok, data, response} = await apiJson(
+          `/api/admin/theme/configs?${qs.toString()}`,
+          {},
+          {},
+        )
+        if (!ok) {
+          const text = await response.text().catch(() => '')
           throw new Error(text || 'Failed to load configs')
         }
-        const j = await res.json()
+        const j = data || {}
         setConfigsPage({
           items: Array.isArray(j.items) ? j.items : [],
           total: j.total || 0,
@@ -212,19 +219,18 @@ export default function ThemePage() {
     try {
       const payload = {...form}
       if (!payload.brand) payload.brand = brandScope || brand
-      const res = await csrfFetch('/api/admin/theme/config', {
+      const res = await apiFetch('/api/admin/theme/config', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       })
       if (res.ok) {
-        const j = await res.json()
+        const j = await safeJson(res, {})
         setTheme(j.theme || j)
         setEditing(false)
         await loadTheme()
         await loadConfigs({page: configsPage.page, perPage: configsPage.perPage})
       } else {
-        const err = await res.json().catch(() => ({}))
+        const err = await safeJson(res, {})
         setErrors({_global: err.error || 'Failed to save'})
       }
     } catch (e) {
@@ -334,7 +340,7 @@ export default function ThemePage() {
     if (!id || !canDeleteThemeConfig) return
     if (!confirm('Delete this theme config?')) return
     try {
-      const res = await csrfFetch(`/api/admin/theme/config/${encodeURIComponent(id)}`, {
+      const res = await apiFetch(`/api/admin/theme/config/${encodeURIComponent(id)}`, {
         method: 'DELETE',
       })
       if (res.ok) {
@@ -397,12 +403,12 @@ export default function ThemePage() {
         try {
           const fd = new FormData()
           fd.append('file', dataUrl, filename)
-          const res = await csrfFetch('/api/admin/upload-logo-multipart', {
+          const res = await apiFetch('/api/admin/upload-logo-multipart', {
             method: 'POST',
             body: fd,
           })
           if (res.ok) {
-            const j = await res.json()
+            const j = await safeJson(res, {})
             if (j.assetId)
               setForm((prev) => ({...prev, logoUrl: j.url || prev.logoUrl, logoAssetId: j.assetId}))
             clearLogoError()
@@ -434,17 +440,16 @@ export default function ThemePage() {
         })
       }
 
-      const res2 = await csrfFetch('/api/admin/upload-logo', {
+      const res2 = await apiFetch('/api/admin/upload-logo', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({filename, data: dataStr}),
       })
       if (!res2.ok) {
-        const err = await res2.json().catch(() => ({}))
+        const err = await safeJson(res2, {})
         setLogoError(friendlyUploadError(err.error))
         return null
       }
-      const j2 = await res2.json()
+      const j2 = await safeJson(res2, {})
       if (j2.assetId)
         setForm((prev) => ({...prev, logoUrl: j2.url || prev.logoUrl, logoAssetId: j2.assetId}))
       clearLogoError()

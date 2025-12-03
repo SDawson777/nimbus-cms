@@ -1,6 +1,6 @@
 import React, {useEffect, useState, useCallback} from 'react'
 import {useAdmin} from '../lib/adminContext'
-import {csrfFetch} from '../lib/csrf'
+import {apiFetch, apiJson} from '../lib/api'
 
 export default function Analytics() {
   const [metrics, setMetrics] = useState([])
@@ -16,12 +16,11 @@ export default function Analytics() {
     setMetricsLoading(true)
     setMetricsError(null)
     try {
-      const res = await fetch('/api/admin/analytics/content-metrics', {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => 'Failed to load metrics')
+      const {ok, data, response} = await apiJson('/api/admin/analytics/content-metrics', {}, [])
+      if (!ok) {
+        const text = await response.text().catch(() => 'Failed to load metrics')
         throw new Error(text || 'Failed to load metrics')
       }
-      const data = await res.json()
       setMetrics(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error(err)
@@ -35,12 +34,11 @@ export default function Analytics() {
     setSummaryLoading(true)
     setSummaryError(null)
     try {
-      const res = await fetch('/api/admin/analytics/summary', {credentials: 'include'})
-      if (!res.ok) {
-        const text = await res.text().catch(() => 'Failed to load summary')
+      const {ok, data, response} = await apiJson('/api/admin/analytics/summary', {}, null)
+      if (!ok) {
+        const text = await response.text().catch(() => 'Failed to load summary')
         throw new Error(text || 'Failed to load summary')
       }
-      const data = await res.json()
       setSummary(data)
     } catch (err) {
       console.error(err)
@@ -60,9 +58,8 @@ export default function Analytics() {
     if (!capabilities?.canRefreshAnalytics) return
     setRefreshing(true)
     try {
-      const res = await csrfFetch('/api/admin/analytics/summary', {
+      const res = await apiFetch('/api/admin/analytics/summary', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({query: {}}),
       })
       if (!res.ok) {

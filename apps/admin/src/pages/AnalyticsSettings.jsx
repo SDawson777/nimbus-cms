@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
-import {csrfFetch} from '../lib/csrf'
+import {apiFetch, apiJson} from '../lib/api'
+import {safeJson} from '../lib/safeJson'
 
 export default function AnalyticsSettings() {
   const [loading, setLoading] = useState(true)
@@ -20,12 +21,9 @@ export default function AnalyticsSettings() {
     let mounted = true
     async function load() {
       try {
-        const res = await fetch('/api/admin/analytics/settings', {
-          credentials: 'include',
-        })
-        if (!res.ok) throw new Error('failed')
-        const json = await res.json()
-        if (mounted && json) setSettings((s) => ({...s, ...json}))
+        const {ok, data} = await apiJson('/api/admin/analytics/settings', {}, {})
+        if (!ok) throw new Error('failed')
+        if (mounted && data) setSettings((s) => ({...s, ...data}))
       } catch (err) {
         // ignore, keep defaults
       } finally {
@@ -66,13 +64,12 @@ export default function AnalyticsSettings() {
   async function save() {
     setSaving(true)
     try {
-      const res = await csrfFetch('/api/admin/analytics/settings', {
+      const res = await apiFetch('/api/admin/analytics/settings', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(settings),
       })
       if (!res.ok) throw new Error('save failed')
-      const json = await res.json()
+      const json = await safeJson(res, {settings})
       alert('Saved')
       setSettings((s) => ({...s, ...json.settings}))
     } catch (err) {

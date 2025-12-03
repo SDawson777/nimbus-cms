@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react'
+import {apiJson} from '../lib/api'
 
 export default function Products() {
   const [items, setItems] = useState([])
@@ -8,10 +9,9 @@ export default function Products() {
     async function load() {
       try {
         const q = showRecalled ? '/api/admin/products?includeRecalled=true' : '/api/admin/products'
-        const res = await fetch(q, {credentials: 'include'})
-        if (res.ok) {
-          const j = await res.json()
-          setItems(j)
+        const {data, ok} = await apiJson(q, {}, [])
+        if (ok) {
+          setItems(Array.isArray(data) ? data : [])
         }
       } catch (err) {
         console.error(err)
