@@ -9,7 +9,19 @@ import ThreeBarChart from '../components/ThreeBarChart'
 import NetworkGraph3D from '../components/NetworkGraph3D'
 import GeoMap3D from '../components/GeoMap3D'
 import TimeSlider from '../components/TimeSlider'
-import {apiJson} from '../lib/api'
+import {apiJson, apiBaseUrl} from '../lib/api'
+
+const SAMPLE_OVERVIEW = {
+  traffic: [],
+  sales: [],
+  engagement: [],
+  topArticles: [],
+  topFaqs: [],
+  topProducts: [],
+  productSeries: [],
+  storeEngagement: [],
+  productDemand: [],
+}
 
 export default function Dashboard() {
   const [data, setData] = useState(null)
@@ -43,10 +55,19 @@ export default function Dashboard() {
     let mounted = true
     async function load() {
       try {
+        if (!apiBaseUrl()) {
+          setData(SAMPLE_OVERVIEW)
+          return
+        }
         const {ok, data} = await apiJson('/api/admin/analytics/overview', {}, null)
-        if (mounted && ok && data) setData(data)
+        if (mounted && ok && data) {
+          setData(data)
+        } else if (mounted) {
+          setData(SAMPLE_OVERVIEW)
+        }
       } catch (err) {
         console.error(err)
+        if (mounted) setData(SAMPLE_OVERVIEW)
       } finally {
         if (mounted) setLoading(false)
       }
