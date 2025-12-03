@@ -161,6 +161,23 @@ code {
 }
 .notes ul {
   color: var(--muted);
+  /* Ensure multi-column layouts work in modern browsers rather than relying on vendor prefixes */
+  column-count: 2;
+  column-width: 320px;
+  column-gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .notes ul {
+    column-count: 1;
+    column-width: auto;
+  }
+}
+
+.a11y-widget button {
+  /* Keep pointer-events stable to avoid layout thrash in animations */
+  pointer-events: auto;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 .site-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.03);
