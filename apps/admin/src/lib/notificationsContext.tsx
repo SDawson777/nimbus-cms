@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useEffect, useMemo, useState, ReactNode} from "react"
+import React, {createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode} from "react"
 
 export type AdminNotification = {
   id: string
@@ -56,7 +56,7 @@ export function NotificationProvider({children, storageKey}: {children: ReactNod
     saveToStorage(key, notifications)
   }, [key, notifications])
 
-  const addNotification: NotificationContextValue["addNotification"] = (n) => {
+  const addNotification: NotificationContextValue["addNotification"] = useCallback((n) => {
     const next: AdminNotification = {
       ...n,
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -64,15 +64,18 @@ export function NotificationProvider({children, storageKey}: {children: ReactNod
       read: n.read ?? false,
     }
     setNotifications((prev) => [next, ...prev].slice(0, 100))
-  }
+  }, [])
 
-  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({...n, read: true})))
+  const markAllRead = useCallback(
+    () => setNotifications((prev) => prev.map((n) => ({...n, read: true}))),
+    [],
+  )
 
-  const clearAll = () => setNotifications([])
+  const clearAll = useCallback(() => setNotifications([]), [])
 
   const value = useMemo(
     () => ({notifications, addNotification, markAllRead, clearAll}),
-    [notifications],
+    [notifications, addNotification, markAllRead, clearAll],
   )
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
