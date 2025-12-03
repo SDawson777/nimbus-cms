@@ -997,7 +997,26 @@ textarea:focus {
   font-weight: 700;
 }
 .banner-center {
+  position: relative;
   overflow: hidden;
+}
+.banner-center::before,
+.banner-center::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 46px;
+  pointer-events: none;
+  z-index: 2;
+}
+.banner-center::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(31, 41, 74, 0.95), rgba(31, 41, 74, 0));
+}
+.banner-center::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(31, 41, 74, 0.95), rgba(31, 41, 74, 0));
 }
 .ticker {
   display: flex;
@@ -1005,6 +1024,7 @@ textarea:focus {
   white-space: nowrap;
   overflow: hidden;
   animation: ticker-scroll 18s linear infinite;
+  position: relative;
 }
 .ticker:hover {
   animation-play-state: paused;

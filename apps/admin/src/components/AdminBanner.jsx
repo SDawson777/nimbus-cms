@@ -29,20 +29,22 @@ export default function AdminBanner() {
   const openWeatherToken = import.meta.env.VITE_OPENWEATHER_API_TOKEN
   const openWeatherCity = import.meta.env.VITE_OPENWEATHER_CITY || 'Detroit,US'
   const openWeatherUrl = useMemo(() => {
+    const token = (openWeatherToken || '').trim()
+    const baseUrl = import.meta.env.VITE_OPENWEATHER_API_URL || 'https://api.openweathermap.org/data/2.5/weather'
+    const search = new URLSearchParams({units: 'imperial'})
+
     if (geo?.lat && geo?.lon) {
-      return (
-        import.meta.env.VITE_OPENWEATHER_API_URL ||
-        `https://api.openweathermap.org/data/2.5/weather?lat=${geo.lat}&lon=${geo.lon}&units=imperial&appid=${encodeURIComponent(
-          openWeatherToken || '',
-        )}`
-      )
+      search.set('lat', geo.lat)
+      search.set('lon', geo.lon)
+    } else {
+      search.set('q', openWeatherCity)
     }
-    return (
-      import.meta.env.VITE_OPENWEATHER_API_URL ||
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(openWeatherCity)}&units=imperial&appid=${encodeURIComponent(
-        openWeatherToken || '',
-      )}`
-    )
+
+    if (token) {
+      search.set('appid', token)
+    }
+
+    return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${search.toString()}`
   }, [geo, openWeatherCity, openWeatherToken])
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export default function AdminBanner() {
       mounted = false
       clearInterval(id)
     }
-  }, [admin])
+  }, [admin, openWeatherUrl])
 
   function normalizeCondition(condition) {
     const text = String(condition || '').toLowerCase()

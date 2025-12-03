@@ -10,7 +10,7 @@
 2. **Serving content**: API exposes `/content` and `/api/v1/content` for public consumers; Admin uses `/api/admin/**` behind auth/CSRF.
 3. **Analytics**: Frontends post to `/analytics/event` with HMAC + API key. Aggregates stored in Sanity metrics docs.
 4. **Personalization**: Admin configures rules in Studio; API surfaces `/personalization` endpoints consumed by Admin simulator and clients.
-5. **AI concierge**: Admin chat posts to `/api/v1/nimbus/ai/chat`; backend currently returns deterministic responses unless an AI provider is configured via `OPENAI_API_KEY` (placeholder).
+5. **AI concierge**: Admin chat posts to `/api/v1/nimbus/ai/chat`; backend streams responses from OpenAI when `OPENAI_API_KEY` is set (defaults to `gpt-4o-mini`) and falls back to a concise deterministic playbook when the key is absent.
 
 ## Auth & security
 - **Admin auth**: `/admin/login` issues JWT cookie + CSRF cookie. Protected routes use `requireAdmin` + `requireCsrfToken`.
@@ -27,4 +27,4 @@
 ## Integrations
 - **Sanity**: `SANITY_PROJECT_ID`, `SANITY_DATASET`, and `SANITY_API_TOKEN` required for content/analytics writes.
 - **Mapbox (optional)**: `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN` enables 2D static heatmap overlays; without it the heatmap hides gracefully.
-- **AI provider (optional)**: `OPENAI_API_KEY` can back `/api/v1/nimbus/ai/chat` when implemented.
+- **AI provider (optional)**: `OPENAI_API_KEY` (and optional `OPENAI_MODEL`, default `gpt-4o-mini`) powers `/api/v1/nimbus/ai/chat`; without it the concierge replies with a static playbook.
