@@ -70,9 +70,37 @@
     const prefs = load()
     apply(prefs)
 
+    const toggleBtn = document.getElementById('a11y-toggle')
+    const menu = document.getElementById('a11y-menu')
+    function setMenu(open) {
+      if (!menu || !toggleBtn) return
+      if (open) {
+        menu.removeAttribute('hidden')
+        toggleBtn.setAttribute('aria-expanded', 'true')
+      } else {
+        menu.setAttribute('hidden', 'true')
+        toggleBtn.setAttribute('aria-expanded', 'false')
+      }
+    }
+
+    if (toggleBtn && menu) {
+      setMenu(false)
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true'
+        setMenu(!isOpen)
+      })
+
+      document.addEventListener('click', (e) => {
+        if (menu.contains(e.target) || toggleBtn.contains(e.target)) return
+        setMenu(false)
+      })
+    }
+
     const btnContrast = document.getElementById('a11y-contrast')
     const btnLarge = document.getElementById('a11y-large')
     const btnDys = document.getElementById('a11y-dyslexic')
+    const btnReset = document.getElementById('a11y-reset')
     if (btnContrast)
       btnContrast.addEventListener('click', function () {
         toggle('contrast')
@@ -84,6 +112,10 @@
     if (btnDys)
       btnDys.addEventListener('click', function () {
         toggle('dyslexic')
+      })
+    if (btnReset)
+      btnReset.addEventListener('click', function () {
+        reset()
       })
   })
 })()

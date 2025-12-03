@@ -27,29 +27,40 @@ export function AiChatWidget() {
     setMessages((prev) => [...prev, {role: 'user', content: userMessage}])
     setIsLoading(true)
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_NIMBUS_API_URL}/ai/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({message: userMessage}),
-        },
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to send message')
-      }
-
-      const data = await safeJson(response, {})
+    const endpoint = import.meta.env.VITE_NIMBUS_API_URL
+    if (!endpoint) {
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: data?.reply || 'I received your note—give me a moment and try again if needed.',
+          content:
+            "I'm running in preview mode. Connect the Nimbus API URL to enable live answers. Meanwhile, I can summarize dashboards, outline workflows, or prep rollout checklists.",
+        },
+      ])
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`${endpoint}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({message: userMessage}),
+      })
+
+      const data = await safeJson(response, {})
+      const reply = data?.reply
+      const friendlyFallback =
+        'I’m on it. If you need quick wins: review analytics > pipeline health, confirm compliance attestations, and refresh personalization to boost conversions.'
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: reply || friendlyFallback,
         },
       ])
     } catch (error) {
@@ -58,7 +69,8 @@ export function AiChatWidget() {
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again or contact support.',
+          content:
+            'I hit a snag talking to the concierge service. Try again shortly—here’s a quick playbook: check today’s metrics, review open deals, and publish any pending content.',
         },
       ])
     } finally {
