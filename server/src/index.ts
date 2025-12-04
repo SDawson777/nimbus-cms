@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import express from 'express'
-import cors from 'cors'
+import {nimbusCors} from './middleware/cors'
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
@@ -88,83 +88,7 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 app.use(express.urlencoded({extended: true}))
 app.use(requestLogger)
 
-// Configure CORS: if CORS_ORIGINS env is set (comma-separated), restrict origins.
-// Credentials (cookies) are only allowed when the origin is a specific allowlisted origin.
-const normalizeOrigin = (origin?: string | null) => origin?.trim().replace(/\/$/, '')
-
-const allowedOriginsRaw = process.env.CORS_ORIGINS || ''
-const configuredOrigins = allowedOriginsRaw
-  .split(',')
-  .map((s) => normalizeOrigin(s) as string | undefined)
-  .filter(Boolean) as string[]
-
-const envOrigins = (
-  [
-    process.env.ADMIN_ORIGIN,
-    process.env.STUDIO_ORIGIN,
-    process.env.PUBLIC_ORIGIN,
-    process.env.MOBILE_ORIGIN,
-    process.env.CMS_ORIGIN,
-  ] as (string | undefined)[]
-)
-  .map((origin) => normalizeOrigin(origin) as string | undefined)
-  .filter(Boolean) as string[]
-
-const previewSuffix = process.env.CORS_PREVIEW_SUFFIX || '.vercel.app'
-const allowPreview = process.env.ALLOW_PREVIEW_CORS !== 'false'
-const previewFallbacks = allowPreview
-  ? ['https://nimbus-cms-admin.vercel.app', 'https://nimbus-cms-studio.vercel.app'].map((origin) =>
-      normalizeOrigin(origin) as string,
-    )
-  : []
-const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'].map(
-  (origin) => normalizeOrigin(origin) as string,
-)
-
-let allowedOrigins = Array.from(new Set([...configuredOrigins, ...envOrigins, ...previewFallbacks])).filter(Boolean)
-
-// Provide sensible defaults for previews and local runs instead of failing hard.
-if (!allowedOrigins.length) {
-  const fallbackOrigins = isProduction
-    ? [...envOrigins, ...previewFallbacks]
-    : [...envOrigins, ...previewFallbacks, ...defaultDevOrigins]
-  allowedOrigins = Array.from(new Set(fallbackOrigins)).filter(Boolean)
-}
-
-let isWildcard = allowedOrigins.includes('*') || process.env.ALLOW_CORS_ALL === 'true'
-
-if (!allowedOrigins.length && !isWildcard) {
-  logger.warn('CORS origins not configured; defaulting to wildcard for preview builds')
-  allowedOrigins = ['*']
-  isWildcard = true
-}
-
-logger.info('CORS configuration', {
-  origins: isWildcard ? ['*'] : allowedOrigins,
-})
-
-app.use(
-  cors({
-    origin: (origin: any, callback: any) => {
-      // Allow requests with no origin (server-to-server, curl)
-      if (!origin) return callback(null, true)
-      const normalizedOrigin = normalizeOrigin(origin)
-
-      if (isWildcard) return callback(null, true)
-      if (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) return callback(null, true)
-      if (normalizedOrigin && allowPreview && normalizedOrigin.endsWith(previewSuffix)) return callback(null, true)
-      // Allow any Vercel preview/admin domain to keep demos unblocked
-      if (normalizedOrigin && normalizedOrigin.includes('vercel.app')) return callback(null, true)
-
-      logger.warn('CORS origin denied', {origin: normalizedOrigin})
-      return callback(new Error('CORS origin denied'))
-    },
-    // Echo credentials for cookie-backed admin APIs; express-cors will echo the origin when set to true.
-    credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  }),
-)
+app.use(nimbusCors)
 
 // Parse cookies (used by admin auth)
 app.use(cookieParser())
