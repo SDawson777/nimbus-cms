@@ -40,7 +40,7 @@ export default function WelcomeBar() {
   });
 
   const weatherTemp = Math.round(data?.weather?.tempF ?? 72);
-  const weatherDesc = data?.weather?.condition || "Clear";
+  const weatherDesc = data?.weather?.condition || 'Clear';
   const locationLabel = data?.city
     ? `${data.city}${data.region ? `, ${data.region}` : ''}`
     : null;
@@ -55,7 +55,7 @@ export default function WelcomeBar() {
         <div className="wb-greet">Welcome, Admin</div>
         <div className="wb-meta">
           {dateStr} · {timeStr}
-          {locationLabel ? ` · ${locationLabel}` : ""}
+          {locationLabel ? ` · ${locationLabel}` : ''}
         </div>
       </div>
 
