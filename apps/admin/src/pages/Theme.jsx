@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../lib/api';
+import { apiJson } from '../lib/api';
 
 export default function ThemePage() {
   const [theme, setTheme] = useState({
@@ -11,10 +11,9 @@ export default function ThemePage() {
   });
 
   useEffect(() => {
-    api
-      .get('/admin/theme')
-      .then((res) => {
-        if (res.data) setTheme((t) => ({ ...t, ...res.data }));
+    apiJson('/admin/theme')
+      .then(({ ok, data }) => {
+        if (ok && data) setTheme((t) => ({ ...t, ...data }));
       })
       .catch(() => {});
   }, []);
@@ -24,7 +23,10 @@ export default function ThemePage() {
   };
 
   const save = () => {
-    api.post('/admin/theme', theme).catch(() => {});
+    apiJson('/admin/theme', {
+      method: 'POST',
+      body: JSON.stringify(theme),
+    }).catch(() => {});
   };
 
   return (
