@@ -26,7 +26,7 @@ export default function ThemePage() {
   const [error, setError] = useState("");
 
   const loadTenants = async () => {
-    const res = await apiJson("/api/admin/control/tenants");
+    const res = await apiJson("/admin/control/tenants");
     if (res.ok) {
       setTenants(res.data.items || []);
       if (!tenantId && res.data.items?.length)
@@ -36,7 +36,7 @@ export default function ThemePage() {
 
   const loadTheme = async (id) => {
     if (!id) return;
-    const res = await apiJson(`/api/admin/control/theme/${id}`);
+    const res = await apiJson(`/admin/control/theme/${id}`);
     if (res.ok) setTheme(res.data);
     else setTheme({ ...defaultTheme, tenantId: id });
   };
@@ -61,7 +61,7 @@ export default function ThemePage() {
     if (!tenantId) return;
     setToast("");
     setError("");
-    const res = await apiJson(`/api/admin/control/theme/${tenantId}`, {
+    const res = await apiJson(`/admin/control/theme/${tenantId}`, {
       method: "POST",
       body: JSON.stringify({ ...theme, tenantId }),
     });
