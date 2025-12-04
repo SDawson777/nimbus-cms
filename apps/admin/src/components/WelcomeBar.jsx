@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { apiJson } from '../lib/api';
-import './welcome-bar.css';
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
+import "./welcome-bar.css";
 
 // Simple arrow icons for up/down metrics
 const UpArrow = () => (
-  <span style={{ color: '#4ade80', fontWeight: 600 }}>▲</span>
+  <span style={{ color: "#4ade80", fontWeight: 600 }}>▲</span>
 );
 const DownArrow = () => (
-  <span style={{ color: '#f87171', fontWeight: 600 }}>▼</span>
+  <span style={{ color: "#f87171", fontWeight: 600 }}>▼</span>
 );
 
 const FALLBACK_BANNER = {
-  weather: { tempF: 72, condition: 'Clear' },
-  analytics: { activeUsers: '--', change: null },
+  weather: { tempF: 72, condition: "Clear" },
+  analytics: { activeUsers: "--", change: null },
   serverTime: new Date().toISOString(),
   city: null,
   region: null,
