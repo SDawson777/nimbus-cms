@@ -78,16 +78,14 @@ function AppShell() {
           <div
             className="logo"
             style={{
-              width: '160px',
+              width: '140px',
               height: 'var(--logo-height)',
-              background: 'var(--accent)',
-              borderRadius: '999px',
-              boxShadow: '0 0 40px rgba(124, 58, 237, 0.45)',
+              background: 'linear-gradient(90deg, var(--accent), #3b82f6)',
+              borderRadius: '0.5rem',
             }}
+            aria-hidden="true"
           />
-          <div className="brand-meta">
-            <p className="brand-kicker">Nimbus CMS Suite</p>
-          </div>
+          <span className="suite-title">Nimbus CMS Suite</span>
         </div>
         {!isLogin && (
           <div className="header-actions">
