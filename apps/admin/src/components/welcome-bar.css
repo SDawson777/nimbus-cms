@@ -1,72 +1,72 @@
+/* Refined welcome bar */
 .welcome-bar {
-  width: 100%;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.75);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
 }
 
+/* Sections */
 .wb-section {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.wb-title {
-  font-size: 1.25rem;
+/* Left side: greeting */
+.wb-greet {
   font-weight: 600;
+  font-size: 1.25rem;
+}
+.wb-meta {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
-.wb-sub {
-  font-size: 0.875rem;
-  opacity: 0.75;
-}
-
+/* Center: weather */
 .wb-weather {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-
-.temp {
-  font-size: 1.3rem;
+.wb-temp {
+  font-size: 1.25rem;
   font-weight: 500;
 }
-
-.desc {
+.wb-desc {
   font-size: 0.8rem;
   opacity: 0.7;
 }
 
-.wb-metric {
+/* Right: ticker */
+.wb-ticker {
   text-align: right;
-  animation: fadeIn 0.5s ease;
 }
-
-.value {
-  font-size: 1.25rem;
+.wb-label {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.wb-value {
+  font-size: 1.2rem;
   font-weight: 600;
 }
-
-.change.up {
-  color: #4ade80;
-}
-
-.change.down {
-  color: #f87171;
+.wb-change {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
 }
 
 .fade-in {
-  animation: fadeIn 0.6s ease;
+  animation: fadeIn 0.5s ease;
 }
 
 .slide-up {
-  animation: slideUp 0.6s ease;
+  animation: slideUp 0.5s ease;
 }
 
 @keyframes fadeIn {
