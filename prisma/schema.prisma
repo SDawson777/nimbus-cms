@@ -1,0 +1,80 @@
+// Prisma schema for Nimbus CMS control-plane models
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  name          String
+  status        String   @default("active")
+  sanityDataset String
+  primaryDomain String?
+  region        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stores       Store[]
+  themes       Theme[]
+  featureFlags FeatureFlag[]
+}
+
+model Store {
+  id               String   @id @default(uuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug             String
+  name             String
+  address1         String?
+  address2         String?
+  city             String?
+  state            String?
+  postalCode       String?
+  country          String?
+  latitude         Float?
+  longitude        Float?
+  phone            String?
+  email            String?
+  timezone         String?
+  status           String   @default("active")
+  isDeliveryEnabled Boolean @default(false)
+  isPickupEnabled   Boolean @default(true)
+  posType          String?
+  posStoreId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tenantId, slug], map: "tenant_store_slug")
+
+  themes Theme[]
+}
+
+model Theme {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId   String?
+  store     Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  isDefault Boolean  @default(false)
+  configJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  valueJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+}

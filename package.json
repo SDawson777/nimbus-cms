@@ -18,8 +18,10 @@
     "server"
   ],
   "devDependencies": {
+    "@prisma/client": "5.15.0",
     "@typescript-eslint/parser": "^7.13.0",
-    "eslint": "^8.57.1"
+    "eslint": "^8.57.1",
+    "prisma": "5.15.0"
   },
   "dependencies": {
     "framer-motion": "^12.23.25"
