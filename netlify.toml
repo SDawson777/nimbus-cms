@@ -1,3 +1,8 @@
 [build]
 command = "npm run studio:build"
 publish = "dist"
+
+[build.environment]
+# Force Netlify to install dependencies with pnpm and a supported Node version.
+NETLIFY_USE_PNPM = "true"
+NODE_VERSION = "20"
