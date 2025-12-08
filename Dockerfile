@@ -32,9 +32,9 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Install server dependencies from lockfile (deterministic)
-COPY server/package.json server/package-lock.json ./server/
-RUN cd server && npm ci --omit=dev
+# Install server dependencies (do not rely on possibly-stale package-lock)
+COPY server/package.json ./server/
+RUN cd server && npm install --omit=dev
 
 # Copy server source and build
 COPY server ./server
@@ -70,10 +70,9 @@ WORKDIR /app
 
 # Copy server package metadata and install ONLY production deps
 COPY --from=api-builder /app/server/package.json ./server/package.json
-COPY --from=api-builder /app/server/package-lock.json ./server/package-lock.json
 
 # Install prod dependencies only (no dev deps)
-RUN cd server && npm ci --omit=dev
+RUN cd server && npm install --omit=dev
 
 # Copy built server + static assets from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist
