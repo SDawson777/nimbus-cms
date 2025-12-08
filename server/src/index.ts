@@ -1,5 +1,5 @@
 import express from 'express'
-import {nimbusCors} from './middleware/cors'
+// CORS is configured via corsOptions below
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
