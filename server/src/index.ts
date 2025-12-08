@@ -43,6 +43,10 @@ if (isProduction) {
 }
 
 const app = express()
+// --- Healthcheck endpoint (must succeed even if DB/Sanity fail) ---
+app.get('/api/v1/status', (_req, res) => {
+  res.status(200).json({ok: true, env: process.env.APP_ENV || 'unknown'})
+})
 // Security middlewares
 app.use(
   helmet({
@@ -152,11 +156,17 @@ if (process.env.ENABLE_COMPLIANCE_SCHEDULER === 'true') {
 }
 
 export async function startServer() {
-  await seedControlPlane()
+  const port = Number(process.env.PORT) || 8080
 
-  app.listen(PORT, () => {
-    logger.info('server.started', {port: PORT, appEnv: APP_ENV})
+  app.listen(port, () => {
+    logger.info('server.started', {port, appEnv: APP_ENV})
   })
+
+  try {
+    await seedControlPlane()
+  } catch (err) {
+    logger.warn('seedControlPlane failed; continuing server runtime', err as any)
+  }
 }
 
 if (require.main === module) {
