@@ -27,6 +27,7 @@ RUN test -d dist && test "$(ls -A dist)" || \
 # STAGE 2 — API BUILD (BUNDLES ADMIN)
 ########################################
 FROM node:20 AS api-builder
+ARG FORCE_REBUILD=1
 
 ENV NODE_ENV=production
 
@@ -37,7 +38,8 @@ COPY prisma ./prisma
 
 # Install server dependencies (include dev deps needed to build)
 COPY server/package.json ./server/
-RUN cd server && npm install
+# Bust cache to force fresh install including dev deps
+RUN echo "$FORCE_REBUILD" && cd server && npm install
 
 # Copy server source and build
 COPY server ./server
