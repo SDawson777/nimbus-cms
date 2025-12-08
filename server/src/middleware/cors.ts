@@ -1,3 +1,4 @@
+import cors from "cors";
 import { CSRF_HEADER } from "./requireCsrfToken";
 
 const allowedOrigins = [
@@ -20,3 +21,6 @@ export const corsOptions = {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", CSRF_HEADER],
 };
+
+// Backward-compatible export used previously by index.ts
+export const nimbusCors = cors(corsOptions);
