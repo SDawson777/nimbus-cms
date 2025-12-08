@@ -32,6 +32,9 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
+# Make Prisma schema available for server postinstall generate
+COPY prisma ./prisma
+
 # Install server dependencies (do not rely on possibly-stale package-lock)
 COPY server/package.json ./server/
 RUN cd server && npm install --omit=dev
