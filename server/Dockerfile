@@ -30,8 +30,8 @@ FROM node:20 AS api-builder
 WORKDIR /app
 
 # Install server dependencies and build API
-COPY server/package.json server/package-lock.json ./server/
-RUN cd server && npm ci
+COPY server/package.json ./server/
+RUN cd server && npm install
 
 # Copy server source and build
 COPY server ./server
@@ -59,8 +59,7 @@ ENV NODE_ENV=production
 
 # Install production server dependencies only
 COPY --from=api-builder /app/server/package.json ./server/package.json
-COPY --from=api-builder /app/server/package-lock.json ./server/package-lock.json
-RUN cd server && npm ci --omit=dev
+RUN cd server && npm install --omit=dev
 
 # Copy compiled server + admin static assets from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist

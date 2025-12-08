@@ -19,6 +19,10 @@ jobs:
           corepack enable
           pnpm -v
       - run: pnpm install --frozen-lockfile
+      - name: Approve build scripts for Prisma
+        run: pnpm approve-builds @prisma/client @prisma/engines prisma
+      - name: Generate Prisma client (server)
+        run: pnpm --filter server exec prisma generate
       - run: pnpm --filter admin build
       - run: pnpm --filter studio build
       - run: pnpm --filter server build
