@@ -43,6 +43,8 @@ if (isProduction) {
 }
 
 const app = express()
+// Trust proxy headers when running behind Railway/Reverse proxies
+app.set('trust proxy', 1)
 // --- Healthcheck endpoint (must succeed even if DB/Sanity fail) ---
 app.get('/api/v1/status', (_req, res) => {
   res.status(200).json({ok: true, env: process.env.APP_ENV || 'unknown'})
@@ -81,7 +83,9 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 app.use(express.urlencoded({extended: true}))
 app.use(requestLogger)
 
-app.use(nimbusCors)
+import cors from 'cors'
+import {corsOptions} from './middleware/cors'
+app.use(cors(corsOptions))
 
 // Parse cookies (used by admin auth)
 app.use(cookieParser())
