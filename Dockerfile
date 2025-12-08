@@ -3,33 +3,32 @@ FROM node:20-slim AS api-builder
 
 WORKDIR /app/server
 
-# Make Prisma schema available for postinstall generate
-WORKDIR /app
-COPY prisma ./prisma
-WORKDIR /app/server
+# Install required system packages for Prisma
+RUN apt-get update -y && apt-get install -y openssl
 
-# Copy only server manifest and install deps (no lockfile to avoid mismatch)
-COPY server/package.json ./
-RUN npm install
+# Copy manifests
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
 
-# Copy server source and build
+# Copy source
 COPY server ./
 RUN npm run build
 
 # --- Runtime stage ---
 FROM node:20-slim AS runtime
 
+WORKDIR /app/server
+
+# Install required system packages for Prisma in runtime too
+RUN apt-get update -y && apt-get install -y openssl
+
 ENV NODE_ENV=production
 ENV PORT=8080
 
-WORKDIR /app/server
-
-# Copy built server and minimal runtime deps
 COPY --from=api-builder /app/server/dist ./dist
 COPY --from=api-builder /app/server/package.json ./package.json
 COPY --from=api-builder /app/server/node_modules ./node_modules
 
 EXPOSE 8080
 
-# Use whatever start script you already use in `server/package.json`
 CMD ["npm", "run", "start"]
