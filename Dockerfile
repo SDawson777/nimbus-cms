@@ -6,6 +6,11 @@ WORKDIR /app/server
 # Install required system packages for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
+# Ensure Prisma schema is available for postinstall generate
+WORKDIR /app
+COPY prisma ./prisma
+WORKDIR /app/server
+
 # Copy manifest only and install deps (tolerate peer issues)
 COPY server/package.json ./
 RUN npm install --legacy-peer-deps
