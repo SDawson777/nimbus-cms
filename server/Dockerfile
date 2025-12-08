@@ -29,6 +29,9 @@ RUN test -d dist && test "$(ls -A dist)" || \
 FROM node:20 AS api-builder
 WORKDIR /app
 
+# Make Prisma schema available for server postinstall generate
+COPY prisma ./prisma
+
 # Install server dependencies and build API
 COPY server/package.json ./server/
 RUN cd server && npm install

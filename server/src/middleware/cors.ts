@@ -11,6 +11,10 @@ export const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
+    const appEnv = process.env.APP_ENV || "";
+    if (appEnv === "preview") {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
