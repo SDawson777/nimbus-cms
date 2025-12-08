@@ -35,9 +35,9 @@ WORKDIR /app
 # Make Prisma schema available for server postinstall generate
 COPY prisma ./prisma
 
-# Install server dependencies (do not rely on possibly-stale package-lock)
+# Install server dependencies (include dev deps needed to build)
 COPY server/package.json ./server/
-RUN cd server && npm install --omit=dev
+RUN cd server && npm install
 
 # Copy server source and build
 COPY server ./server
