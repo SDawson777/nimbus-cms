@@ -6,9 +6,9 @@ WORKDIR /app/server
 # Install required system packages for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# Copy manifests
-COPY server/package.json server/package-lock.json ./
-RUN npm ci
+# Copy manifest only and install deps (tolerate peer issues)
+COPY server/package.json ./
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY server ./
