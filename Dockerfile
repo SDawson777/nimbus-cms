@@ -3,9 +3,14 @@ FROM node:20-slim AS api-builder
 
 WORKDIR /app/server
 
-# Copy only server manifests and install deps
-COPY server/package.json server/package-lock.json ./
-RUN npm ci
+# Make Prisma schema available for postinstall generate
+WORKDIR /app
+COPY prisma ./prisma
+WORKDIR /app/server
+
+# Copy only server manifest and install deps (no lockfile to avoid mismatch)
+COPY server/package.json ./
+RUN npm install
 
 # Copy server source and build
 COPY server ./
