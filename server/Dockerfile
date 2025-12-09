@@ -60,7 +60,13 @@ FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install production server dependencies only
+# Install system dependency for Prisma runtime
+RUN apt-get update -y && apt-get install -y openssl
+
+# Ensure Prisma schema is available for postinstall generate
+COPY --from=api-builder /app/prisma ./prisma
+
+# Install production server dependencies only (will run prisma generate in postinstall)
 COPY --from=api-builder /app/server/package.json ./server/package.json
 RUN cd server && npm install --omit=dev
 
