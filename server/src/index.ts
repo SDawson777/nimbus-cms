@@ -19,6 +19,9 @@ import {personalizationRouter} from './routes/personalization'
 import {statusRouter} from './routes/status'
 import contentWebhookRoutes from './routes/contentWebhookRoutes'
 import {adminRouter} from './routes/admin'
+import adminLoginPage from './routes/adminLoginPage'
+import adminLogoutRouter from './routes/adminLogout'
+import adminSessionInfoRouter from './routes/adminSessionInfo'
 import analyticsRouter from './routes/analytics'
 import aiRouter from './routes/ai'
 import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
@@ -109,6 +112,12 @@ app.get('/', (_req, res) => {
 const staticDir = path.join(__dirname, '..', 'static')
 app.use(express.static(staticDir))
 app.get('/', (_req, res) => res.sendFile(path.join(staticDir, 'index.html')))
+
+// Serve a lightweight login page for preview/dev
+app.use('/', adminLoginPage)
+// Auth helpers: logout + session info
+app.use('/', adminLogoutRouter)
+app.use('/', adminSessionInfoRouter)
 
 // Admin auth routes (login/logout)
 app.use('/admin', adminAuthRouter)
