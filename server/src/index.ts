@@ -17,6 +17,7 @@ import {swaggerSpec} from './lib/swagger'
 import {contentRouter} from './routes/content'
 import {personalizationRouter} from './routes/personalization'
 import {statusRouter} from './routes/status'
+import contentWebhookRoutes from './routes/contentWebhookRoutes'
 import {adminRouter} from './routes/admin'
 import analyticsRouter from './routes/analytics'
 import aiRouter from './routes/ai'
@@ -140,6 +141,7 @@ app.use('/api/v1/nimbus/ai', aiRouter)
 // status routes (legacy and a simple /status alias)
 app.use('/api/v1/status', statusRouter)
 app.use('/status', statusRouter)
+app.use('/api/v1/content/webhook', express.json({type: '*/*'}), contentWebhookRoutes)
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
 app.use('/api/admin', requireAdmin, ensureCsrfCookie, requireCsrfToken, adminRouter)
 

@@ -10,7 +10,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "lint": "eslint \"server/src/**/*.{ts,tsx}\"",
     "test": "echo \"No server tests defined\"",
-    "postinstall": "prisma generate --schema ../prisma/schema.prisma"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
