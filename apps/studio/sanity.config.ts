@@ -6,7 +6,7 @@ import schemaTypes from './schemaTypes'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID || 'ygbu28p2'
 
-const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
+const dataset = process.env.SANITY_STUDIO_DATASET || 'nimbus_demo'
 
 export default defineConfig({
   name: 'nimbus-studio',
