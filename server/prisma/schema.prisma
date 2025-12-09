@@ -1,0 +1,363 @@
+// ========================================================
+// NIMBUS CLOUD — FULL ENTERPRISE SCHEMA
+// Unified DB powering: API + CMS + Admin + Mobile App
+// Combines: Multi-tenant control plane + E-commerce + CMS
+// ========================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ========================================================
+// MULTI-TENANT CONTROL PLANE
+// ========================================================
+
+model Tenant {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  name          String
+  status        String   @default("active")
+  sanityDataset String
+  primaryDomain String?
+  region        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stores       Store[]
+  themes       Theme[]
+  featureFlags FeatureFlag[]
+}
+
+model Store {
+  id                String   @id @default(uuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug              String
+  name              String
+  address1          String?
+  address2          String?
+  city              String?
+  state             String?
+  postalCode        String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  phone             String?
+  email             String?
+  timezone          String?
+  status            String   @default("active")
+  isDeliveryEnabled Boolean  @default(false)
+  isPickupEnabled   Boolean  @default(true)
+  posType           String?
+  posStoreId        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, slug], map: "tenant_store_slug")
+
+  themes        Theme[]
+  storeProducts StoreProduct[]
+  orders        Order[]
+}
+
+model Theme {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId    String?
+  store      Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name       String
+  isDefault  Boolean  @default(false)
+  configJson Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  valueJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+}
+
+// ========================================================
+// USER & AUTHENTICATION
+// ========================================================
+
+model User {
+  id              String            @id @default(cuid())
+  email           String            @unique
+  phone           String?           @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  preferences     UserPreferences?
+  events          UserEvent[]
+  orders          Order[]
+  cart            Cart?
+  reviews         Review[]
+  journalEntries  JournalEntry[]
+  loyaltyStatus   LoyaltyStatus?
+  loyaltyBadges   LoyaltyBadge[]
+}
+
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  notificationFrequency String   @default("immediate") // immediate | hourly | daily | off
+  notifyOrderUpdates    Boolean  @default(true)
+  notifyDeals           Boolean  @default(true)
+  notifyFavorites       Boolean  @default(true)
+  notifyAnalytics       Boolean  @default(false)
+  themePreference       String?  // light | dark | system
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ========================================================
+// PRODUCTS & INVENTORY
+// ========================================================
+
+model Product {
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  description   String?
+  category      String?
+  brand         String?
+  imageUrl      String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  variants      ProductVariant[]
+  storeProducts StoreProduct[]
+  reviews       Review[]
+}
+
+model ProductVariant {
+  id            String           @id @default(cuid())
+  productId     String
+  name          String
+  thc           Float?
+  cbd           Float?
+  weight        String?
+  unitPrice     Float
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  product       Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeProducts StoreProduct[]
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+}
+
+model StoreProduct {
+  id               String         @id @default(cuid())
+  storeId          String
+  productId        String
+  productVariantId String
+  stock            Int            @default(0)
+  price            Float
+  active           Boolean        @default(true)
+
+  store            Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, productVariantId])
+}
+
+// ========================================================
+// CART & CHECKOUT
+// ========================================================
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cartItems CartItem[]
+}
+
+model CartItem {
+  id               String         @id @default(cuid())
+  cartId           String
+  productVariantId String
+  quantity         Int            @default(1)
+
+  cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String
+  storeId   String
+  total     Float
+  status    String
+  createdAt DateTime    @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id               String         @id @default(cuid())
+  orderId          String
+  productVariantId String
+  quantity         Int
+  unitPrice        Float
+
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+}
+
+// ========================================================
+// LOYALTY SYSTEM (Badges, Levels, Awards)
+// ========================================================
+
+model LoyaltyStatus {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  tier      String   @default("bronze") // bronze | silver | gold | platinum
+  points    Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoyaltyBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeType String   // "Big Spender", "Weekend Warrior", etc.
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Award {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  iconUrl     String?
+  createdAt   DateTime @default(now())
+}
+
+// ========================================================
+// JOURNAL + AI CONCIERGE
+// ========================================================
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  mood        String?
+  productUsed String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String   // login, purchase, product_view, etc.
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ========================================================
+// CMS CONTENT SYSTEM
+// ========================================================
+
+model Article {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  body        Json      // portable text
+  imageUrl    String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+}
+
+model ContentPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  category  String
+  body      Json
+  updatedAt DateTime @updatedAt
+}
+
+model AccessibilityPage {
+  id        String   @id @default(cuid())
+  body      Json
+  updatedAt DateTime @updatedAt
+}
+
+model LegalPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  body      Json
+  version   String
+  updatedAt DateTime @updatedAt
+}
+
+// ========================================================
+// REVIEWS
+// ========================================================
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ========================================================
+// EXPORTS / ANALYTICS / ADMIN
+// ========================================================
+
+model DataExport {
+  id        String   @id @default(cuid())
+  type      String
+  status    String   // pending | running | complete
+  fileUrl   String?
+  createdAt DateTime @default(now())
+}
+
+model SystemBanner {
+  id        String   @id @default(cuid())
+  message   String
+  priority  String   // info | warning | critical
+  updatedAt DateTime @updatedAt
+}
+
+model AdminPreference {
+  id              String @id @default(cuid())
+  adminId         String
+  dashboardLayout Json?
+  favorites       Json?
+}

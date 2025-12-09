@@ -6,11 +6,15 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "migrate:deploy": "prisma migrate deploy",
+    "generate": "prisma generate",
+    "start": "npm run migrate:deploy && node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "lint": "eslint \"server/src/**/*.{ts,tsx}\"",
     "test": "echo \"No server tests defined\"",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:reset:demo": "cross-env NODE_ENV=development prisma migrate reset --force --skip-generate && npm run db:seed:demo",
+    "db:seed:demo": "cross-env NODE_ENV=development node prisma/seed-demo.cjs"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
@@ -43,11 +47,12 @@
     "@types/node": "^24.10.1",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^7.0.3",
     "prisma": "^5.20.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   },
   "prisma": {
-    "schema": "../prisma/schema.prisma"
+    "schema": "prisma/schema.prisma"
   }
 }

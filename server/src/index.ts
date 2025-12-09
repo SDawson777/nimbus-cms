@@ -13,6 +13,7 @@ import {requireAdmin} from './middleware/adminAuth'
 import {requireCsrfToken, ensureCsrfCookie} from './middleware/requireCsrfToken'
 import {requestLogger} from './middleware/requestLogger'
 import {swaggerSpec} from './lib/swagger'
+import {PrismaClient} from '@prisma/client'
 
 import {contentRouter} from './routes/content'
 import {personalizationRouter} from './routes/personalization'
@@ -27,6 +28,8 @@ import aiRouter from './routes/ai'
 import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
 import {seedControlPlane} from './seed'
 import {APP_ENV, JWT_SECRET, PORT} from './config/env'
+
+const prisma = new PrismaClient()
 
 const isProduction = process.env.NODE_ENV === 'production'
 const jwtSecret = JWT_SECRET
@@ -53,6 +56,17 @@ app.set('trust proxy', 1)
 app.get('/api/v1/status', (_req, res) => {
   res.status(200).json({ok: true, env: process.env.APP_ENV || 'unknown'})
 })
+
+// Database health endpoint
+app.get('/health/db', async (_req, res) => {
+  try {
+    const tables = await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema='public';`
+    return res.json({ok: true, tables})
+  } catch (err: any) {
+    return res.status(500).json({ok: false, error: err.message})
+  }
+})
+
 // Security middlewares
 app.use(
   helmet({

@@ -50,3 +50,6 @@ core-api/dist/
 node_modules/
 .turbo/
 .next/
+
+# Keep Prisma migrations in server/prisma
+!server/prisma/migrations/
