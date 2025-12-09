@@ -77,6 +77,36 @@ export default function Heatmap({ stores = [], token }) {
           'circle-stroke-width': 1,
         },
       })
+
+      // Interactivity: hover popup + click focus
+      const popup = new mapboxgl.Popup({closeButton: false, closeOnClick: false})
+
+      map.on('mouseenter', 'stores-points', (e) => {
+        map.getCanvas().style.cursor = 'pointer'
+        const f = e.features?.[0]
+        if (!f) return
+        popup
+          .setLngLat(f.geometry.coordinates)
+          .setHTML(
+            `<div style="font-size:12px">
+               <strong>${f.properties.name}</strong><br/>
+               Engagement: ${f.properties.engagement}
+             </div>`,
+          )
+          .addTo(map)
+      })
+
+      map.on('mouseleave', 'stores-points', () => {
+        map.getCanvas().style.cursor = ''
+        popup.remove()
+      })
+
+      map.on('click', 'stores-points', (e) => {
+        const f = e.features?.[0]
+        if (!f) return
+        map.flyTo({center: f.geometry.coordinates, zoom: 6.5, essential: true})
+        if (navigator.vibrate) try { navigator.vibrate(10) } catch {}
+      })
     })
 
     mapRef.current = map

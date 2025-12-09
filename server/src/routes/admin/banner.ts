@@ -1,0 +1,49 @@
+import { Router } from "express";
+import axios from "axios";
+
+const router = Router();
+
+router.get("/", async (req, res) => {
+  try {
+    const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0] ?? "0.0.0.0";
+
+    // Location lookup (fallback-safe)
+    let city = "Unknown";
+    let region = "";
+    try {
+      const loc = await axios.get(`https://ipapi.co/${ip}/json/`);
+      city = loc.data.city;
+      region = loc.data.region;
+    } catch (_) {}
+
+    // Weather
+    let weather = null;
+    try {
+      const w = await axios.get(
+        `${process.env.WEATHER_API_URL}?q=${city}&appid=${process.env.WEATHER_API_KEY}&units=imperial`
+      );
+      weather = {
+        temp: w.data.main.temp,
+        desc: w.data.weather[0].description,
+      };
+    } catch (_) {}
+
+    // Example analytics snapshot (placeholder)
+    const analytics = {
+      activeUsers: 234,
+      change: +8.2,
+    };
+
+    res.json({
+      now: new Date().toISOString(),
+      city,
+      region,
+      weather,
+      analytics,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load banner" });
+  }
+});
+
+export default router;

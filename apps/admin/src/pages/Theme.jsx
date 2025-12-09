@@ -41,8 +41,8 @@ export default function ThemePage() {
       >
         <div className="preview-logo" style={{ background: theme.primaryColor }} />
         <div className="preview-text">
-          <div className="preview-title">Nimbus CMS Suite</div>
-          <div className="preview-sub">Live theme preview</div>
+          <div className="preview-title">Nimbus CMS Suite</div>
+          <div className="preview-sub">Live preview</div>
         </div>
       </div>
       <div className="theme-grid">

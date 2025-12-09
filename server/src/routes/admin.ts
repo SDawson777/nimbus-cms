@@ -6,6 +6,7 @@ import {z} from 'zod'
 import {requireRole, canAccessBrand, canAccessStore} from '../middleware/requireRole'
 import {portableTextToHtml} from '../lib/portableText'
 import {logger} from '../lib/logger'
+import bannerRouter from './admin/banner'
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -83,6 +84,8 @@ function resolveScopedBrand(
 export const adminRouter = Router()
 
 // Simple in-memory cache for overview responses to avoid repeated heavy queries.
+// Mount banner under /api/admin/banner
+adminRouter.use('/banner', bannerRouter)
 type AnalyticsCacheEntry = {ts: number; data: any; refreshedAt?: string}
 const overviewCache: Map<string, AnalyticsCacheEntry> = new Map()
 const OVERVIEW_CACHE_TTL = Number(process.env.ANALYTICS_OVERVIEW_CACHE_TTL_MS || 30000)
