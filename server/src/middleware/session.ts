@@ -1,28 +1,13 @@
-import jwt from 'jsonwebtoken'
 import {Request, Response, NextFunction} from 'express'
 
-export function setAdminSession(res: Response, payload: any) {
-  const token = jwt.sign(payload, process.env.SESSION_SECRET!, {
-    expiresIn: '7d',
-  })
-
-  res.cookie('admin_session', token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/',
-  })
+// Legacy no-op: session is managed via express-session in index.ts
+export function setAdminSession(_res: Response, _payload: any) {
+  return
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const cookie = req.cookies?.admin_session
-  if (!cookie) return res.status(401).json({error: 'Not authenticated'})
-
-  try {
-    const decoded = jwt.verify(cookie, process.env.SESSION_SECRET!)
-    ;(req as any).admin = decoded
-    next()
-  } catch (err) {
-    return res.status(401).json({error: 'Invalid session'})
+export function requireAdmin(req: Request & {session?: any}, res: Response, next: NextFunction) {
+  if (!req.session || !req.session.admin || !req.session.admin.loggedIn) {
+    return res.status(401).json({error: 'Not authenticated'})
   }
+  next()
 }

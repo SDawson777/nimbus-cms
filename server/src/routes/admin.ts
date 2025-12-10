@@ -86,6 +86,47 @@ export const adminRouter = Router()
 // Simple in-memory cache for overview responses to avoid repeated heavy queries.
 // Mount banner under /api/admin/banner
 adminRouter.use('/banner', bannerRouter)
+adminRouter.post('/login', async (req: Request & {session?: any}, res: Response) => {
+  const {email, password} = req.body
+
+  if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({error: 'Invalid credentials'})
+  }
+
+  // attach simple session flag when using express-session
+  if (req.session) {
+    req.session.admin = {
+      email,
+      loggedIn: true,
+      ts: Date.now(),
+    }
+  }
+
+  return res.json({success: true})
+})
+
+// Add logout
+adminRouter.post('/logout', (req: Request & {session?: any}, res: Response) => {
+  if (req.session) {
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid')
+      res.json({success: true})
+    })
+    return
+  }
+  res.json({success: true})
+})
+
+// Add session inspector
+adminRouter.get('/session', (req: Request & {session?: any}, res: Response) => {
+  if (!req.session || !req.session.admin) {
+    return res.status(401).json({authenticated: false})
+  }
+  return res.json({
+    authenticated: true,
+    admin: req.session.admin,
+  })
+})
 type AnalyticsCacheEntry = {ts: number; data: any; refreshedAt?: string}
 const overviewCache: Map<string, AnalyticsCacheEntry> = new Map()
 const OVERVIEW_CACHE_TTL = Number(process.env.ANALYTICS_OVERVIEW_CACHE_TTL_MS || 30000)

@@ -64,7 +64,8 @@ ENV NODE_ENV=production
 RUN apt-get update -y && apt-get install -y openssl
 
 # Ensure Prisma schema is available for postinstall generate
-COPY --from=api-builder /app/prisma ./prisma
+	# Ensure correct prisma copy path
+	COPY server/prisma ./prisma
 
 # Install production server dependencies only (will run prisma generate in postinstall)
 COPY --from=api-builder /app/server/package.json ./server/package.json

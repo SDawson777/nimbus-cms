@@ -1,6 +1,7 @@
 import express from 'express'
 import path from 'path'
 import cookieParser from 'cookie-parser'
+import session from 'express-session'
 import helmet from 'helmet'
 import compression from 'compression'
 import rateLimit from 'express-rate-limit'
@@ -18,8 +19,7 @@ import {personalizationRouter} from './routes/personalization'
 import {statusRouter} from './routes/status'
 import contentWebhookRoutes from './routes/contentWebhookRoutes'
 import {adminRouter} from './routes/admin'
-import adminLoginRouter from './routes/admin/login'
-import adminMeRouter from './routes/admin/me'
+// legacy admin login/me routes removed in favor of session-based adminRouter
 import analyticsRouter from './routes/analytics'
 import aiRouter from './routes/ai'
 import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
@@ -60,6 +60,21 @@ app.use(cookieParser())
 // Parse JSON and URL-encoded bodies
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
+
+// enable express-session for admin auth
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'fallback_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  }),
+)
 
 // --- Healthcheck endpoint (must succeed even if DB/Sanity fail) ---
 app.get('/api/v1/status', (_req, res) => {
@@ -127,9 +142,7 @@ app.get('/', (_req, res) => {
 const staticDir = path.join(__dirname, '..', 'static')
 app.use(express.static(staticDir))
 
-// Admin auth routes (simplified)
-app.use('/admin/login', adminLoginRouter)
-app.use('/admin/me', adminMeRouter)
+// Admin auth routes mounted via adminRouter aliases
 
 // content routes (existing + new)
 // Mount content routes for legacy API consumers
@@ -153,7 +166,13 @@ app.use('/api/v1/status', statusRouter)
 app.use('/status', statusRouter)
 app.use('/api/v1/content/webhook', express.json({type: '*/*'}), contentWebhookRoutes)
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
-app.use('/api/admin', requireAdmin, adminRouter)
+// ADMIN ROUTE MOUNTING — OPTION C (all valid paths)
+// /admin
+// /api/admin
+// /api/v1/nimbus/admin
+app.use('/admin', adminRouter)
+app.use('/api/admin', adminRouter)
+app.use('/api/v1/nimbus/admin', adminRouter)
 
 // Start compliance snapshot scheduler only when explicitly enabled (avoid running during tests)
 if (process.env.ENABLE_COMPLIANCE_SCHEDULER === 'true') {

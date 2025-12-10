@@ -3,16 +3,16 @@ import jwt from 'jsonwebtoken'
 
 const COOKIE_NAME = 'admin_token'
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireAdmin(req: Request & {session?: any}, res: Response, next: NextFunction) {
   const token = req.cookies && req.cookies[COOKIE_NAME]
-  if (!token) return res.status(401).json({error: 'UNAUTHORIZED'})
+    if (!req.session || !req.session.admin || !req.session.admin.loggedIn) {
+      return res.status(401).json({error: 'Admin authentication required'})
+    }
   try {
     const secret = process.env.JWT_SECRET
     if (!secret) throw new Error('JWT_SECRET not configured')
-    const payload = jwt.verify(token, secret)
-    ;(req as any).admin = payload
-    return next()
+    next()
   } catch (err) {
-    return res.status(401).json({error: 'UNAUTHORIZED'})
+      return res.status(401).json({error: 'UNAUTHORIZED'})
   }
 }
