@@ -44,7 +44,7 @@ export default [
     },
   },
   {
-    files: ['server/**', 'core-api/**'],
+    files: ['server/src/**/*.{ts,tsx}', 'core-api/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -52,6 +52,25 @@ export default [
         sourceType: 'module',
         project: ['./tsconfig.eslint.server.json'],
         tsconfigRootDir: process.cwd(),
+      },
+      globals: {
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {},
+  },
+  {
+    files: ['server/**/*.{js,cjs,mjs}'],
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: 'module',
       },
       globals: {
         process: 'readonly',
