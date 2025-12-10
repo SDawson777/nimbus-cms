@@ -4,8 +4,8 @@ export default defineCliConfig({
   api: {
     // prefer env vars so CLI targets the same project/dataset as the API
     projectId:
-      process.env.SANITY_PROJECT_ID || process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'ygbu28p2',
-    dataset: process.env.SANITY_DATASET || process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
+      process.env.SANITY_PROJECT_ID || process.env.VITE_SANITY_PROJECT_ID || 'ygbu28p2',
+    dataset: process.env.SANITY_DATASET || process.env.VITE_SANITY_DATASET || 'production',
   },
   /**
    * Enable auto-updates for studios.

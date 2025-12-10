@@ -110,23 +110,27 @@ export default function Dashboard() {
   const notify = useNotify()
 
   useEffect(() => {
-    let mounted = true
+    const controller = new AbortController()
     async function loadRecalled() {
       try {
         if (!apiBaseUrl()) {
           setRecalledCount(0)
           return
         }
-        const {ok, data} = await apiJson('/api/admin/products/recalled-count', {}, null)
-        if (mounted && ok && data)
+        const {ok, data, aborted} = await apiJson(
+          '/api/admin/products/recalled-count',
+          {signal: controller.signal},
+          null,
+        )
+        if (!aborted && !controller.signal.aborted && ok && data)
           setRecalledCount(typeof data.count === 'number' ? data.count : 0)
       } catch (e) {
-        if (mounted) setRecalledCount(0)
+        if (!controller.signal.aborted) setRecalledCount(0)
       }
     }
     async function loadLayout() {
       const {layout} = await fetchDashboardLayout()
-      if (mounted && layout) setLayout(layout)
+      if (!controller.signal.aborted && layout) setLayout(layout)
     }
     async function loadOverview() {
       try {
@@ -134,19 +138,23 @@ export default function Dashboard() {
           setData(SAMPLE_OVERVIEW)
           return
         }
-        const {ok, data} = await apiJson('/api/admin/analytics/overview', {}, null)
-        if (mounted) setData(ok && data ? data : SAMPLE_OVERVIEW)
+        const {ok, data, aborted} = await apiJson(
+          '/api/admin/analytics/overview',
+          {signal: controller.signal},
+          null,
+        )
+        if (!controller.signal.aborted) setData(!aborted && ok && data ? data : SAMPLE_OVERVIEW)
       } catch (err) {
-        if (mounted) setData(SAMPLE_OVERVIEW)
+        if (!controller.signal.aborted) setData(SAMPLE_OVERVIEW)
       } finally {
-        if (mounted) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     loadRecalled()
     loadLayout()
     loadOverview()
     return () => {
-      mounted = false
+      controller.abort()
     }
   }, [])
 

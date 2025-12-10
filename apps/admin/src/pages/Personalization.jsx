@@ -21,13 +21,18 @@ export default function Personalization() {
   const canManage = !!capabilities?.canManagePersonalization
   const canView = !!capabilities?.canViewPersonalization
 
-  const loadRules = useCallback(async () => {
+  const loadRules = useCallback(async (signal) => {
     setRulesLoading(true)
     setRulesError(null)
     try {
-      const {ok, data, response} = await apiJson('/api/admin/personalization/rules', {}, [])
+      const {ok, data, response, aborted} = await apiJson(
+        '/api/admin/personalization/rules',
+        {signal},
+        [],
+      )
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => '')
+        const text = response ? await response.text().catch(() => '') : ''
         throw new Error(text || 'Failed to load rules')
       }
       setRules(Array.isArray(data) ? data : [])
@@ -36,12 +41,14 @@ export default function Personalization() {
       setRules([])
       setRulesError(err?.message || 'Failed to load rules')
     } finally {
-      setRulesLoading(false)
+      if (!signal?.aborted) setRulesLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadRules()
+    const controller = new AbortController()
+    loadRules(controller.signal)
+    return () => controller.abort()
   }, [loadRules])
 
   const hasRules = useMemo(() => Array.isArray(rules) && rules.length > 0, [rules])

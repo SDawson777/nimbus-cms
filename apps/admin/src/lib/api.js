@@ -15,6 +15,25 @@ export const api = axios.create({
 });
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
+const apiEventTarget = typeof window !== "undefined" ? new EventTarget() : null;
+
+export function subscribeToApiErrors(listener) {
+  if (!apiEventTarget) return () => {};
+  const handler = (event) => listener(event.detail);
+  apiEventTarget.addEventListener("api-error", handler);
+  return () => apiEventTarget.removeEventListener("api-error", handler);
+}
+
+function emitApiError(detail) {
+  if (!apiEventTarget) return;
+  apiEventTarget.dispatchEvent(new CustomEvent("api-error", { detail }));
+}
+
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  window.location.replace("/login");
+}
+
 function buildUrl(path = "") {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const normalized = path ? (path.startsWith("/") ? path : `/${path}`) : "";
@@ -25,6 +44,7 @@ function buildUrl(path = "") {
 export async function apiFetch(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const headers = new Headers(options.headers || {});
+  const signal = options.signal;
 
   if (!SAFE_METHODS.has(method)) {
     const csrf = getCsrfToken();
@@ -40,20 +60,51 @@ export async function apiFetch(path, options = {}) {
 
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
-  const response = await fetch(buildUrl(path), {
-    ...options,
-    method,
-    headers,
-    credentials: options.credentials || "include",
-  });
+  try {
+    const response = await fetch(buildUrl(path), {
+      ...options,
+      method,
+      headers,
+      signal,
+      credentials: options.credentials || "include",
+    });
 
-  return response;
+    if (response.status === 401) {
+      emitApiError({ type: "unauthorized", status: 401, path: buildUrl(path) });
+      redirectToLogin();
+    } else if (response.status === 403) {
+      emitApiError({ type: "forbidden", status: 403, path: buildUrl(path) });
+    } else if (response.status >= 500) {
+      emitApiError({ type: "server-error", status: response.status, path: buildUrl(path) });
+    }
+
+    return response;
+  } catch (err) {
+    if (err?.name === "AbortError") throw err;
+    emitApiError({ type: "network-error", status: 0, path: buildUrl(path), error: err });
+    throw err;
+  }
 }
 
 export async function apiJson(path, options = {}, fallback = null) {
-  const res = await apiFetch(path, options);
-  const data = await safeJson(res, fallback);
-  return { ok: res.ok, status: res.status, data, response: res };
+  try {
+    const res = await apiFetch(path, options);
+    const data = await safeJson(res, fallback);
+    const error = res.ok
+      ? null
+      : data?.error || data?.message || `Request failed (${res.status || "unknown"})`;
+    return { ok: res.ok, status: res.status, data, error, response: res };
+  } catch (err) {
+    const aborted = err?.name === "AbortError";
+    return {
+      ok: false,
+      status: 0,
+      data: fallback,
+      error: aborted ? "Request aborted" : err?.message || "Network error",
+      response: null,
+      aborted,
+    };
+  }
 }
 
 export function apiBaseUrl() {

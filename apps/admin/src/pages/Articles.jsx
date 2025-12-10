@@ -8,12 +8,14 @@ export default function Articles() {
   const [channel, setChannel] = useState('')
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       try {
         const q = channel
           ? `/api/admin/articles?channel=${encodeURIComponent(channel)}`
           : '/api/admin/articles'
-        const {ok, data} = await apiJson(q, {}, [])
+        const {ok, data, aborted} = await apiJson(q, {signal: controller.signal}, [])
+        if (aborted || controller.signal.aborted) return
         if (ok) {
           setItems(Array.isArray(data) ? data : [])
         }
@@ -22,6 +24,7 @@ export default function Articles() {
       }
     }
     load()
+    return () => controller.abort()
   }, [channel])
 
   return (

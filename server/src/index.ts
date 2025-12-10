@@ -1,5 +1,6 @@
 import express from 'express'
 // CORS is configured via corsOptions below
+import cors from 'cors'
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
@@ -13,6 +14,7 @@ import {requireAdmin} from './middleware/adminAuth'
 import {requireCsrfToken, ensureCsrfCookie} from './middleware/requireCsrfToken'
 import {requestLogger} from './middleware/requestLogger'
 import {swaggerSpec} from './lib/swagger'
+import {corsOptions} from './middleware/cors'
 
 import {contentRouter} from './routes/content'
 import {personalizationRouter} from './routes/personalization'
@@ -47,6 +49,7 @@ if (isProduction) {
 }
 
 const app = express()
+app.use(cors(corsOptions))
 // Trust proxy headers when running behind Railway/Reverse proxies
 app.set('trust proxy', 1)
 // --- Healthcheck endpoint (must succeed even if DB/Sanity fail) ---
@@ -86,10 +89,6 @@ app.use(
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 app.use(express.urlencoded({extended: true}))
 app.use(requestLogger)
-
-import cors from 'cors'
-import {corsOptions} from './middleware/cors'
-app.use(cors(corsOptions))
 
 // Parse cookies (used by admin auth)
 app.use(cookieParser())
@@ -173,7 +172,7 @@ if (process.env.ENABLE_COMPLIANCE_SCHEDULER === 'true') {
 export async function startServer() {
   const port = Number(process.env.PORT) || 8080
 
-  app.listen(port, () => {
+  app.listen(port, '0.0.0.0', () => {
     logger.info('server.started', {port, appEnv: APP_ENV})
   })
 

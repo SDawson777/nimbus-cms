@@ -8,12 +8,14 @@ export default function Faqs() {
   const [channel, setChannel] = useState('')
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       try {
         const q = channel
           ? `/api/admin/faqs?channel=${encodeURIComponent(channel)}`
           : '/api/admin/faqs'
-        const {ok, data} = await apiJson(q, {}, [])
+        const {ok, data, aborted} = await apiJson(q, {signal: controller.signal}, [])
+        if (aborted || controller.signal.aborted) return
         if (ok) {
           setGroups(Array.isArray(data) ? data : [])
         }
@@ -22,6 +24,7 @@ export default function Faqs() {
       }
     }
     load()
+    return () => controller.abort()
   }, [channel])
 
   return (

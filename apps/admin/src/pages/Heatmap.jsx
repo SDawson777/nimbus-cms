@@ -14,26 +14,29 @@ export default function HeatmapPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true
+    const controller = new AbortController()
     async function load() {
       try {
         if (apiBaseUrl()) {
-          const { ok, data } = await apiJson('/api/admin/analytics/overview')
-          if (mounted && ok && data?.storeEngagement) {
+          const { ok, data, aborted } = await apiJson(
+            '/api/admin/analytics/overview',
+            { signal: controller.signal },
+          )
+          if (!aborted && !controller.signal.aborted && ok && data?.storeEngagement) {
             setStores(Array.isArray(data.storeEngagement) ? data.storeEngagement : [])
             return
           }
         }
-        if (mounted) setStores(SAMPLE_STORES)
+        if (!controller.signal.aborted) setStores(SAMPLE_STORES)
       } catch (e) {
-        if (mounted) setStores(SAMPLE_STORES)
+        if (!controller.signal.aborted) setStores(SAMPLE_STORES)
       } finally {
-        if (mounted) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     load()
     return () => {
-      mounted = false
+      controller.abort()
     }
   }, [])
 

@@ -11,11 +11,14 @@ export default function ThemePage() {
   });
 
   useEffect(() => {
-    apiJson('/admin/theme')
-      .then(({ ok, data }) => {
+    const controller = new AbortController();
+    apiJson('/admin/theme', { signal: controller.signal })
+      .then(({ ok, data, aborted }) => {
+        if (aborted || controller.signal.aborted) return;
         if (ok && data) setTheme((t) => ({ ...t, ...data }));
       })
       .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   const update = (key, value) => {

@@ -8,13 +8,15 @@ export default function Deals() {
   const [channel, setChannel] = useState('')
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       try {
         // use Nimbus endpoint which lists active deals
         const q = channel
           ? `/api/v1/nimbus/content/deals?limit=50&channel=${encodeURIComponent(channel)}`
           : '/api/v1/nimbus/content/deals?limit=50'
-        const {ok, data} = await apiJson(q, {}, [])
+        const {ok, data, aborted} = await apiJson(q, {signal: controller.signal}, [])
+        if (aborted || controller.signal.aborted) return
         if (ok) {
           setItems(Array.isArray(data) ? data : [])
         }
@@ -23,6 +25,7 @@ export default function Deals() {
       }
     }
     load()
+    return () => controller.abort()
   }, [channel])
 
   return (

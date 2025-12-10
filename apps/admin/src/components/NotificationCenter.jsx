@@ -1,7 +1,9 @@
-import React, {createContext, useContext, useMemo, useState, useEffect} from 'react'
+import React, {createContext, useContext, useMemo, useState, useEffect, useCallback} from 'react'
 import {AnimatePresence, motion} from 'framer-motion'
 import {useAdmin} from '../lib/adminContext'
 import {NotificationProvider as NotificationStoreProvider, useNotifications} from '../lib/notificationsContext'
+import Modal from '../design-system/Modal'
+import {subscribeToApiErrors} from '../lib/api'
 
 const ToastContext = createContext({notify: () => {}})
 
@@ -9,6 +11,10 @@ function NotificationPortal({children}) {
   const {notifications, addNotification, markAllRead, clearAll} = useNotifications()
   const [toasts, setToasts] = useState([])
   const [open, setOpen] = useState(false)
+  const [permissionModal, setPermissionModal] = useState(false)
+  const [permissionMessage, setPermissionMessage] = useState(
+    'You do not have permission to perform this action.',
+  )
 
   const notify = useMemo(
     () => (toast) => {
@@ -46,6 +52,24 @@ function NotificationPortal({children}) {
       markAllRead()
     }
   }, [open, unreadCount, markAllRead])
+
+  const handleApiError = useCallback(
+    (detail) => {
+      if (!detail) return
+      if (detail.type === 'forbidden') {
+        setPermissionMessage('You do not have permission to access this resource.')
+        setPermissionModal(true)
+      } else if (detail.type === 'server-error') {
+        notify({tone: 'error', title: 'Server error', body: 'Please try again later.'})
+      }
+    },
+    [notify],
+  )
+
+  useEffect(() => {
+    const unsubscribe = subscribeToApiErrors(handleApiError)
+    return () => unsubscribe()
+  }, [handleApiError])
 
   const value = useMemo(() => ({notify}), [notify])
 
@@ -144,6 +168,17 @@ function NotificationPortal({children}) {
           ))}
         </AnimatePresence>
       </div>
+
+      <Modal
+        isOpen={permissionModal}
+        onClose={() => setPermissionModal(false)}
+        title="Permission required"
+      >
+        <p style={{marginBottom: 16}}>{permissionMessage}</p>
+        <button type="button" onClick={() => setPermissionModal(false)}>
+          Dismiss
+        </button>
+      </Modal>
     </ToastContext.Provider>
   )
 }

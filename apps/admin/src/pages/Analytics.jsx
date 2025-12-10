@@ -12,13 +12,18 @@ export default function Analytics() {
   const [refreshing, setRefreshing] = useState(false)
   const {capabilities} = useAdmin()
 
-  const loadMetrics = useCallback(async () => {
+  const loadMetrics = useCallback(async (signal) => {
     setMetricsLoading(true)
     setMetricsError(null)
     try {
-      const {ok, data, response} = await apiJson('/api/admin/analytics/content-metrics', {}, [])
+      const {ok, data, response, aborted} = await apiJson(
+        '/api/admin/analytics/content-metrics',
+        {signal},
+        [],
+      )
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => 'Failed to load metrics')
+        const text = response ? await response.text().catch(() => 'Failed to load metrics') : ''
         throw new Error(text || 'Failed to load metrics')
       }
       setMetrics(Array.isArray(data) ? data : [])
@@ -26,17 +31,22 @@ export default function Analytics() {
       console.error(err)
       setMetricsError(err?.message || 'Unable to load metrics')
     } finally {
-      setMetricsLoading(false)
+      if (!signal?.aborted) setMetricsLoading(false)
     }
   }, [])
 
-  const loadSummary = useCallback(async () => {
+  const loadSummary = useCallback(async (signal) => {
     setSummaryLoading(true)
     setSummaryError(null)
     try {
-      const {ok, data, response} = await apiJson('/api/admin/analytics/summary', {}, null)
+      const {ok, data, response, aborted} = await apiJson(
+        '/api/admin/analytics/summary',
+        {signal},
+        null,
+      )
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => 'Failed to load summary')
+        const text = response ? await response.text().catch(() => 'Failed to load summary') : ''
         throw new Error(text || 'Failed to load summary')
       }
       setSummary(data)
@@ -45,13 +55,15 @@ export default function Analytics() {
       setSummaryError(err?.message || 'Unable to load summary')
       setSummary(null)
     } finally {
-      setSummaryLoading(false)
+      if (!signal?.aborted) setSummaryLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadMetrics()
-    loadSummary()
+    const controller = new AbortController()
+    loadMetrics(controller.signal)
+    loadSummary(controller.signal)
+    return () => controller.abort()
   }, [loadMetrics, loadSummary])
 
   const handleRefresh = useCallback(async () => {
