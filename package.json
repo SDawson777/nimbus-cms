@@ -9,7 +9,7 @@
     "studio:build": "rm -rf dist && pnpm -C apps/studio build && cp -r apps/studio/dist dist",
     "server:dev": "pnpm -C server dev",
     "server:build": "pnpm -C server build",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint .",
     "test": "echo \"No root test suite defined\""
   },
   "workspaces": [
