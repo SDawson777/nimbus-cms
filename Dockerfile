@@ -1,23 +1,24 @@
 # --- Build stage: API only ---
 FROM node:20-slim AS api-builder
 
-WORKDIR /app/server
+WORKDIR /app
 
 # Install required system packages for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# Copy server package.json first
-COPY server/package.json ./
+# Copy root package files for workspace context
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
-# Copy Prisma schema BEFORE npm install (needed for postinstall generate)
-COPY server/prisma ./prisma
+# Copy server directory with package.json and Prisma schema
+COPY server ./server
 
-# Install deps (tolerate peer issues)
-RUN npm install --legacy-peer-deps
+# Install dependencies using pnpm
+RUN npm install -g pnpm@10.20.0
+RUN pnpm install --frozen-lockfile
 
-# Copy source
-COPY server ./
-RUN npm run build
+# Build the server
+WORKDIR /app/server
+RUN pnpm run build
 
 # --- Runtime stage ---
 FROM node:20-slim AS runtime

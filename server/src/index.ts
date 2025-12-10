@@ -1,5 +1,4 @@
 import express from 'express'
-// CORS is configured via corsOptions below
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
@@ -8,9 +7,8 @@ import rateLimit from 'express-rate-limit'
 import morgan from 'morgan'
 import swaggerUi from 'swagger-ui-express'
 import {logger} from './lib/logger'
-import adminAuthRouter from './routes/adminAuth'
-import {requireAdmin} from './middleware/adminAuth'
-import {requireCsrfToken, ensureCsrfCookie} from './middleware/requireCsrfToken'
+import {nimbusCors} from './middleware/cors'
+import {requireAdmin} from './middleware/session'
 import {requestLogger} from './middleware/requestLogger'
 import {swaggerSpec} from './lib/swagger'
 import {PrismaClient} from '@prisma/client'
@@ -20,9 +18,8 @@ import {personalizationRouter} from './routes/personalization'
 import {statusRouter} from './routes/status'
 import contentWebhookRoutes from './routes/contentWebhookRoutes'
 import {adminRouter} from './routes/admin'
-import adminLoginPage from './routes/adminLoginPage'
-import adminLogoutRouter from './routes/adminLogout'
-import adminSessionInfoRouter from './routes/adminSessionInfo'
+import adminLoginRouter from './routes/admin/login'
+import adminMeRouter from './routes/admin/me'
 import analyticsRouter from './routes/analytics'
 import aiRouter from './routes/ai'
 import {startComplianceScheduler} from './jobs/complianceSnapshotJob'
@@ -50,8 +47,20 @@ if (isProduction) {
 }
 
 const app = express()
+
 // Trust proxy headers when running behind Railway/Reverse proxies
 app.set('trust proxy', 1)
+
+// Apply CORS with credentials support
+app.use(nimbusCors)
+
+// Parse cookies (must be before routes)
+app.use(cookieParser())
+
+// Parse JSON and URL-encoded bodies
+app.use(express.json())
+app.use(express.urlencoded({extended: true}))
+
 // --- Healthcheck endpoint (must succeed even if DB/Sanity fail) ---
 app.get('/api/v1/status', (_req, res) => {
   res.status(200).json({ok: true, env: process.env.APP_ENV || 'unknown'})
@@ -98,15 +107,7 @@ app.use(
   }),
 )
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
-app.use(express.urlencoded({extended: true}))
 app.use(requestLogger)
-
-import cors from 'cors'
-import {corsOptions} from './middleware/cors'
-app.use(cors(corsOptions))
-
-// Parse cookies (used by admin auth)
-app.use(cookieParser())
 
 // Mount OpenAPI/Swagger documentation at /docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
@@ -125,24 +126,10 @@ app.get('/', (_req, res) => {
 })
 const staticDir = path.join(__dirname, '..', 'static')
 app.use(express.static(staticDir))
-app.get('/', (_req, res) => res.sendFile(path.join(staticDir, 'index.html')))
 
-// Serve a lightweight login page for preview/dev
-app.use('/', adminLoginPage)
-// Auth helpers: logout + session info
-app.use('/', adminLogoutRouter)
-app.use('/', adminSessionInfoRouter)
-
-// Admin auth routes (login/logout)
-app.use('/admin', adminAuthRouter)
-// Serve admin static pages (login and dashboard)
-app.get('/admin', (_req, res) => res.sendFile(path.join(staticDir, 'admin', 'login.html')))
-app.get('/admin/dashboard', requireAdmin, (_req, res) =>
-  res.sendFile(path.join(staticDir, 'admin', 'dashboard.html')),
-)
-app.get('/admin/settings', requireAdmin, (_req, res) =>
-  res.sendFile(path.join(staticDir, 'admin', 'settings.html')),
-)
+// Admin auth routes (simplified)
+app.use('/admin/login', adminLoginRouter)
+app.use('/admin/me', adminMeRouter)
 
 // content routes (existing + new)
 // Mount content routes for legacy API consumers
@@ -166,7 +153,7 @@ app.use('/api/v1/status', statusRouter)
 app.use('/status', statusRouter)
 app.use('/api/v1/content/webhook', express.json({type: '*/*'}), contentWebhookRoutes)
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
-app.use('/api/admin', requireAdmin, ensureCsrfCookie, requireCsrfToken, adminRouter)
+app.use('/api/admin', requireAdmin, adminRouter)
 
 // Start compliance snapshot scheduler only when explicitly enabled (avoid running during tests)
 if (process.env.ENABLE_COMPLIANCE_SCHEDULER === 'true') {

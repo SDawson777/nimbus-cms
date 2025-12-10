@@ -1,30 +1,13 @@
-import cors from "cors";
-import { CSRF_HEADER } from "./requireCsrfToken";
+import cors from 'cors'
 
-const allowedOrigins = [
-  process.env.CORS_ORIGIN_ADMIN,
-  process.env.CORS_ORIGIN_MOBILE,
-].filter(Boolean) as string[];
-
-export const corsOptions = {
-  origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    if (!origin) {
-      return callback(null, true);
-    }
-    const appEnv = process.env.APP_ENV || "";
-    if (appEnv === "preview") {
-      return callback(null, true);
-    }
-    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.error("Blocked by CORS:", origin);
-    callback(new Error("Not allowed by CORS"));
+export const nimbusCors = cors({
+  origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    const allowed = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) || []
+    if (!origin || allowed.includes(origin)) return cb(null, true)
+    return cb(new Error('CORS blocked for origin: ' + origin))
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", CSRF_HEADER],
-};
-
-// Backward-compatible export used previously by index.ts
-export const nimbusCors = cors(corsOptions);
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie'],
+})
