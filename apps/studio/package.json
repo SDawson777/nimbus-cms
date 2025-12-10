@@ -7,6 +7,7 @@
     "dev": "sanity dev",
     "build": "sanity build --no-auto-update",
     "deploy": "sanity deploy",
+    "check": "sanity check",
     "lint": "echo \"Sanity lint handled via Studio tooling\"",
     "test": "echo \"No studio tests defined\""
   },
