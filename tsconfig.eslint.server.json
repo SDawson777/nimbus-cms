@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["server/src/**/*"]
+  "include": ["server/src/**/*", "core-api/src/**/*"]
 }

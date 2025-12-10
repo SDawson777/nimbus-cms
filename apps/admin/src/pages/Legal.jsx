@@ -4,9 +4,11 @@ import {apiJson} from '../lib/api'
 export default function Legal() {
   const [items, setItems] = useState([])
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       try {
-        const {ok, data} = await apiJson('/api/admin/legal', {}, [])
+        const {ok, data, aborted} = await apiJson('/api/admin/legal', {signal: controller.signal}, [])
+        if (aborted || controller.signal.aborted) return
         if (ok) {
           setItems(Array.isArray(data) ? data : [])
         }
@@ -15,6 +17,7 @@ export default function Legal() {
       }
     }
     load()
+    return () => controller.abort()
   }, [])
 
   return (

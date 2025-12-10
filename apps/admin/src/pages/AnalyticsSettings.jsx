@@ -18,20 +18,25 @@ export default function AnalyticsSettings() {
   })
 
   useEffect(() => {
-    let mounted = true
+    const controller = new AbortController()
     async function load() {
       try {
-        const {ok, data} = await apiJson('/api/admin/analytics/settings', {}, {})
+        const {ok, data, aborted} = await apiJson(
+          '/api/admin/analytics/settings',
+          {signal: controller.signal},
+          {},
+        )
+        if (aborted || controller.signal.aborted) return
         if (!ok) throw new Error('failed')
-        if (mounted && data) setSettings((s) => ({...s, ...data}))
+        if (data) setSettings((s) => ({...s, ...data}))
       } catch (err) {
         // ignore, keep defaults
       } finally {
-        if (mounted) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     load()
-    return () => (mounted = false)
+    return () => controller.abort()
   }, [])
 
   function updateField(k, v) {

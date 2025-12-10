@@ -23,8 +23,18 @@ jobs:
         run: pnpm approve-builds @prisma/client @prisma/engines prisma
       - name: Generate Prisma client (server)
         run: pnpm --filter server exec prisma generate
-      - run: pnpm --filter admin build
-      - run: pnpm --filter studio build
-      - run: pnpm --filter server build
+      - name: Lint
+        run: pnpm lint
+      - name: Test
+        run: pnpm test
+      - name: Build admin
+        run: pnpm --filter admin build
+      - name: Build studio
+        run: pnpm --filter studio build
+      - name: Validate Sanity schema
+        working-directory: apps/studio
+        run: pnpm exec sanity check
+      - name: Build server
+        run: pnpm --filter server build
 
   # Optional: you can add further jobs for lint, integration tests, or publish steps.

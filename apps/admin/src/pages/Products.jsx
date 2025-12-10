@@ -6,10 +6,12 @@ export default function Products() {
   const [showRecalled, setShowRecalled] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       try {
         const q = showRecalled ? '/api/admin/products?includeRecalled=true' : '/api/admin/products'
-        const {data, ok} = await apiJson(q, {}, [])
+        const {data, ok, aborted} = await apiJson(q, {signal: controller.signal}, [])
+        if (aborted || controller.signal.aborted) return
         if (ok) {
           setItems(Array.isArray(data) ? data : [])
         }
@@ -18,6 +20,7 @@ export default function Products() {
       }
     }
     load()
+    return () => controller.abort()
   }, [showRecalled])
 
   return (

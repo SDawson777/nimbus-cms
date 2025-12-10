@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useAdmin} from '../lib/adminContext'
 import {apiFetch, apiJson} from '../lib/api'
 
@@ -31,14 +31,6 @@ export default function Compliance() {
   const [showModal, setShowModal] = useState(false)
   const [snapshotLoading, setSnapshotLoading] = useState(false)
 
-  const isMounted = useRef(true)
-  useEffect(
-    () => () => {
-      isMounted.current = false
-    },
-    [],
-  )
-
   useEffect(() => {
     if (!brandFilter && scopedBrand) setBrandFilter(scopedBrand)
   }, [brandFilter, scopedBrand])
@@ -49,87 +41,90 @@ export default function Compliance() {
   const canRunSnapshot = !!capabilities?.canRunComplianceSnapshot
   const brandLocked = Boolean(scopedBrand)
 
-  const loadOverview = useCallback(async () => {
+  const loadOverview = useCallback(async (signal) => {
     setOverviewLoading(true)
     setOverviewError(null)
     try {
       const qs = new URLSearchParams()
       if (normalizedBrandFilter) qs.set('brand', normalizedBrandFilter)
       const url = `/api/admin/compliance/overview${qs.toString() ? `?${qs}` : ''}`
-      const {ok, data, response} = await apiJson(url, {}, {})
+      const {ok, data, response, aborted} = await apiJson(url, {signal}, {})
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => '')
+        const text = response ? await response.text().catch(() => '') : ''
         throw new Error(text || 'Failed to load compliance overview')
       }
       const resultRows = Array.isArray(data) ? data : data?.results || []
-      if (!isMounted.current) return
       setRows(resultRows)
       setSnapshotTs(data?.snapshotTs || null)
     } catch (err) {
       console.error(err)
-      if (!isMounted.current) return
       setOverviewError(err?.message || 'Failed to load compliance overview')
       setRows([])
       setSnapshotTs(null)
     } finally {
-      if (isMounted.current) setOverviewLoading(false)
+      if (!signal?.aborted) setOverviewLoading(false)
     }
   }, [normalizedBrandFilter])
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (signal) => {
     setHistoryLoading(true)
     setHistoryError(null)
     try {
       const qs = new URLSearchParams()
       if (normalizedBrandFilter) qs.set('brand', normalizedBrandFilter)
       const url = `/api/admin/compliance/history${qs.toString() ? `?${qs}` : ''}`
-      const {ok, data, response} = await apiJson(url, {}, [])
+      const {ok, data, response, aborted} = await apiJson(url, {signal}, [])
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => '')
+        const text = response ? await response.text().catch(() => '') : ''
         throw new Error(text || 'Failed to load history')
       }
-      if (!isMounted.current) return
       setHistory(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error(err)
-      if (!isMounted.current) return
       setHistoryError(err?.message || 'Failed to load history')
       setHistory([])
     } finally {
-      if (isMounted.current) setHistoryLoading(false)
+      if (!signal?.aborted) setHistoryLoading(false)
     }
   }, [normalizedBrandFilter])
 
-  const loadBrands = useCallback(async () => {
+  const loadBrands = useCallback(async (signal) => {
     setBrandsLoading(true)
     setBrandsError(null)
     try {
-      const {ok, data, response} = await apiJson('/api/admin/brands', {}, [])
+      const {ok, data, response, aborted} = await apiJson('/api/admin/brands', {signal}, [])
+      if (aborted || signal?.aborted) return
       if (!ok) {
-        const text = await response.text().catch(() => '')
+        const text = response ? await response.text().catch(() => '') : ''
         throw new Error(text || 'Failed to load brands')
       }
-      if (!isMounted.current) return
       setBrands(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error(err)
-      if (!isMounted.current) return
       setBrandsError(err?.message || 'Failed to load brands')
     } finally {
-      if (isMounted.current) setBrandsLoading(false)
+      if (!signal?.aborted) setBrandsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadOverview()
+    const controller = new AbortController()
+    loadOverview(controller.signal)
+    return () => controller.abort()
   }, [loadOverview])
 
   useEffect(() => {
-    loadHistory()
+    const controller = new AbortController()
+    loadHistory(controller.signal)
+    return () => controller.abort()
   }, [loadHistory])
 
   useEffect(() => {
-    loadBrands()
+    const controller = new AbortController()
+    loadBrands(controller.signal)
+    return () => controller.abort()
   }, [loadBrands])
 
   const stateOptions = useMemo(() => {
