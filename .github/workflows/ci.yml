@@ -32,8 +32,7 @@ jobs:
       - name: Build studio
         run: pnpm --filter studio build
       - name: Validate Sanity schema
-        working-directory: apps/studio
-        run: pnpm exec sanity check
+        run: pnpm --filter studio exec sanity check
       - name: Build server
         run: pnpm --filter server build
 
