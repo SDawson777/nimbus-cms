@@ -23,13 +23,11 @@ import { contentRouter } from "./routes/content";
 import { personalizationRouter } from "./routes/personalization";
 import { statusRouter } from "./routes/status";
 import contentWebhookRoutes from "./routes/contentWebhookRoutes";
-import contentPreviewRouter from "./routes/contentPreview";
 import { adminRouter } from "./routes/admin";
 import adminLoginPage from "./routes/adminLoginPage";
 import adminLogoutRouter from "./routes/adminLogout";
 import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
-import analyticsSeedCheckRouter from "./routes/analyticsSeedCheck";
 import aiRouter from "./routes/ai";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -170,10 +168,6 @@ app.use(
   express.json({ type: "*/*" }),
   contentWebhookRoutes,
 );
-  // lightweight preview validation endpoint
-  app.use('/api/v1/content/preview', express.json(), contentPreviewRouter);
-// seed-check endpoint for demo verification
-app.use('/api/v1/analytics/seedCheck', analyticsSeedCheckRouter);
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
 app.use(
   "/api/admin",
