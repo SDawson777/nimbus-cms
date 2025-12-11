@@ -101,3 +101,26 @@ SANITY_STUDIO_DATASET=development
 - **Production values** are set in Railway/Vercel dashboards
 - **Local `.env` files** are for development only
 - **CORS_ORIGINS** must match deployed Admin/Studio URLs
+
+---
+
+## Deployment mapping (examples)
+
+Use these mappings when provisioning environment variables for each deployment stage.
+
+- DEMO:
+	- API: `https://nimbus-api-demo.up.railway.app`
+	- Sanity dataset: `nimbus_demo`
+	- Admin: `https://nimbus-admin-demo.vercel.app`
+
+- PREVIEW:
+	- API: `https://nimbus-api-preview.up.railway.app`
+	- Sanity dataset: `nimbus_preview`
+	- Admin: `https://nimbus-admin-preview.vercel.app`
+
+- PRODUCTION:
+	- API: `https://nimbus-api-prod.up.railway.app`
+	- Sanity dataset: (set a production dataset name; replace the placeholder)
+	- Admin: `https://nimbus-admin-prod.vercel.app`
+
+Set the `SANITY_STUDIO_DATASET` and `VITE_NIMBUS_API_URL` (or equivalent) per-environment to match the above mapping.

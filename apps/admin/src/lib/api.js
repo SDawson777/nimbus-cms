@@ -2,8 +2,13 @@ import axios from "axios";
 import { safeJson } from "./safeJson";
 import { getCsrfToken } from "./csrf";
 
-// Respect the provided base URL without stripping trailing API segments; only remove trailing slashes.
-const API_BASE = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+// Respect the provided base URL; prefer canonical `VITE_NIMBUS_API_URL` but fall
+// back to legacy `VITE_API_URL` for compatibility. Only remove trailing slashes.
+const API_BASE = (
+  (import.meta.env.VITE_NIMBUS_API_URL || import.meta.env.VITE_API_URL || "")
+)
+  .trim()
+  .replace(/\/$/, "");
 
 export const APP_ENV = (import.meta.env.VITE_APP_ENV || "").trim();
 

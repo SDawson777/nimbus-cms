@@ -32,22 +32,25 @@ async function main() {
     process.exit(2);
   }
 
-  ensureEnv("SANITY_PROJECT_ID");
+  if (!process.env.SANITY_PROJECT_ID && !process.env.SANITY_STUDIO_PROJECT_ID) {
+    console.error('Missing required env var: SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID');
+    process.exit(2);
+  }
 
-  const projectId = process.env.SANITY_PROJECT_ID!;
+  const projectId = process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!;
   // source client uses preview token if provided, target needs a token with write access
   const srcClient = createClient({
     projectId,
     dataset: src,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
-    token: process.env.SANITY_API_TOKEN,
+    token: process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
     useCdn: false,
   });
   const tgtClient = createClient({
     projectId,
     dataset: tgt,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
-    token: process.env.SANITY_API_TOKEN,
+    token: process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
     useCdn: false,
   });
 

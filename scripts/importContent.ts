@@ -27,8 +27,14 @@ async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
 }
 
 async function main() {
-  ensureEnv("SANITY_PROJECT_ID");
-  ensureEnv("SANITY_DATASET");
+  if (!process.env.SANITY_PROJECT_ID && !process.env.SANITY_STUDIO_PROJECT_ID) {
+    console.error('Missing required env var: SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID');
+    process.exit(2);
+  }
+  if (!process.env.SANITY_DATASET && !process.env.SANITY_STUDIO_DATASET) {
+    console.error('Missing required env var: SANITY_DATASET or SANITY_STUDIO_DATASET');
+    process.exit(2);
+  }
 
   const argv = process.argv.slice(2);
   if (argv.length === 0) {
@@ -48,10 +54,11 @@ async function main() {
   const results = parsed.results || parsed;
 
   const client = createClient({
-    projectId: process.env.SANITY_PROJECT_ID!,
-    dataset: process.env.SANITY_DATASET!,
+    projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
+    dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
-    token: process.env.SANITY_API_TOKEN,
+    token:
+      process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
     useCdn: false,
   });
 

@@ -35,12 +35,18 @@ router.get("/", async (req, res) => {
       change: +8.2,
     };
 
+    // if admin present, include envelope info
+    const admin = (req as any).admin || null;
+    const tenantSlug = admin?.organizationSlug || admin?.brandSlug || null;
+
     res.json({
       now: new Date().toISOString(),
       city,
       region,
       weather,
       analytics,
+      tenant: tenantSlug,
+      admin: admin ? { email: admin.email, role: admin.role } : null,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to load banner" });

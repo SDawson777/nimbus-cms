@@ -136,7 +136,9 @@ router.get("/me", requireAdmin, (req: any, res) => {
   const admin = (req as any).admin || null;
   // ensure passwordHash is never leaked
   if (admin && admin.passwordHash) delete admin.passwordHash;
-  res.json({ admin });
+  // enrich with tenantSlug if present in payload
+  const tenantSlug = admin?.organizationSlug || admin?.brandSlug || null;
+  res.json({ admin: { ...admin, tenantSlug } });
 });
 
 // GET /admin/logout

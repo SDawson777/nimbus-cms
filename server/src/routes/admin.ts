@@ -712,7 +712,8 @@ try {
 // preview middleware consistent with content routes
 adminRouter.use((req, _res, next) => {
   // Preview gating consistent with content routes; require matching PREVIEW_SECRET.
-  const previewSecretEnv = process.env.PREVIEW_SECRET;
+  // Accept VITE_PREVIEW_SECRET (legacy/dev) as a fallback for local/dev setups
+  const previewSecretEnv = process.env.PREVIEW_SECRET || process.env.VITE_PREVIEW_SECRET;
   const previewSecretConfigured =
     typeof previewSecretEnv === "string" && previewSecretEnv.length > 0;
   if (!previewSecretConfigured) {

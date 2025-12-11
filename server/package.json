@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "seed": "ts-node-dev --respawn --transpile-only prisma/seed.ts",
     "lint": "cd .. && eslint \"server/src/**/*.{ts,tsx}\"",
     "test": "echo \"No server tests defined\"",
     "postinstall": "prisma generate"
