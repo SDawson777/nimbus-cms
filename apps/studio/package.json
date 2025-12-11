@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@sanity/client": "^7.13.1",
-    "@sanity/icons": "^2.11.2",
+    "@sanity/icons": "^3.7.4",
     "@sanity/dashboard": "^4.0.0",
     "@sanity/vision": "^4.18.0",
     "@sanity/ui": "^2.0.0",
