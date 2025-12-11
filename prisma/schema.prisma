@@ -1,4 +1,4 @@
-// Unified multi-tenant Prisma schema for Nimbus CMS
+// Prisma schema for Nimbus CMS control-plane models
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -6,7 +6,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["referentialActions"]
 }
 
 model Tenant {
@@ -21,14 +20,8 @@ model Tenant {
   updatedAt     DateTime @updatedAt
 
   stores       Store[]
-  products     Product[]
-  users        User[]
-  articles     Article[]
-  deals        Deal[]
-  awards       Award[]
-  legalDocs    LegalDocument[]
-  journal      JournalEntry[]
-  analytics    AnalyticsEvent[]
+  themes       Theme[]
+  featureFlags FeatureFlag[]
 }
 
 model Store {
@@ -38,217 +31,50 @@ model Store {
   slug             String
   name             String
   address1         String?
+  address2         String?
   city             String?
   state            String?
   postalCode       String?
-  // prisma/schema.prisma
+  country          String?
+  latitude         Float?
+  longitude        Float?
+  phone            String?
+  email            String?
+  timezone         String?
+  status           String   @default("active")
+  isDeliveryEnabled Boolean @default(false)
+  isPickupEnabled   Boolean @default(true)
+  posType          String?
+  posStoreId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-  }
+  @@unique([tenantId, slug], map: "tenant_store_slug")
 
-  generator client {
-    provider = "prisma-client-js"
-  }
+  themes Theme[]
+}
 
-  model Tenant {
-    id             String    @id @default(uuid())
-    slug           String    @unique
-    name           String
-    region         String?
-    status         String    @default("active")
-    sanityDataset  String
-    primaryDomain  String?
-    createdAt      DateTime  @default(now())
-    updatedAt      DateTime  @updatedAt
+model Theme {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId   String?
+  store     Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  isDefault Boolean  @default(false)
+  configJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-    stores         Store[]
-    users          User[]
-    products       Product[]
-    orders         Order[]
-    contentPages   ContentPage[]
-    legalDocuments LegalDocument[]
-  }
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  valueJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  model User {
-    id           String        @id @default(uuid())
-    tenantId     String
-    email        String        @unique
-    password     String?
-    name         String?
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
-
-    tenant       Tenant        @relation(fields: [tenantId], references: [id])
-    preferences  UserPreference?
-    orders       Order[]
-    events       UserEvent[]
-  }
-
-  model Store {
-    id        String   @id @default(uuid())
-    tenantId  String
-    name      String
-    address   String?
-    city      String?
-    state     String?
-    zip       String?
-    latitude  Float?
-    longitude Float?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    tenant    Tenant   @relation(fields: [tenantId], references: [id])
-    products  StoreProduct[]
-  }
-
-  model Product {
-    id           String     @id @default(uuid())
-    tenantId     String
-    name         String
-    description  String
-    category     String
-    subcategory  String?
-    thcPercent   Float?
-    cbdPercent   Float?
-    price        Float
-    media        Json?
-    tags         String[]
-    createdAt    DateTime   @default(now())
-    updatedAt    DateTime   @updatedAt
-
-    tenant       Tenant     @relation(fields: [tenantId], references: [id])
-    variants     ProductVariant[]
-    storeMapping StoreProduct[]
-    reviews      Review[]
-  }
-
-  model ProductVariant {
-    id         String    @id @default(uuid())
-    productId  String
-    option     String
-    value      String
-    priceDelta Float?
-
-    product    Product   @relation(fields: [productId], references: [id])
-  }
-
-  model StoreProduct {
-    id         String    @id @default(uuid())
-    storeId    String
-    productId  String
-    inventory  Int
-    price      Float
-
-    store      Store     @relation(fields: [storeId], references: [id])
-    product    Product   @relation(fields: [productId], references: [id])
-  }
-
-  model Review {
-    id        String   @id @default(uuid())
-    userId    String
-    productId String
-    rating    Int
-    comment   String?
-    createdAt DateTime @default(now())
-
-    user      User     @relation(fields: [userId], references: [id])
-    product   Product  @relation(fields: [productId], references: [id])
-  }
-
-  model Order {
-    id         String        @id @default(uuid())
-    userId     String
-    tenantId   String
-    total      Float
-    status     String        @default("processing")
-    createdAt  DateTime      @default(now())
-
-    items      OrderItem[]
-    tenant     Tenant        @relation(fields: [tenantId], references: [id])
-    user       User          @relation(fields: [userId], references: [id])
-  }
-
-  model OrderItem {
-    id         String   @id @default(uuid())
-    orderId    String
-    productId  String
-    quantity   Int
-    price      Float
-
-    order      Order    @relation(fields: [orderId], references: [id])
-    product    Product  @relation(fields: [productId], references: [id])
-  }
-
-  model ContentPage {
-    id        String   @id @default(uuid())
-    tenantId  String
-    slug      String
-    title     String
-    body      String
-    updatedAt DateTime @updatedAt
-
-    tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  }
-
-  model LegalDocument {
-    id         String   @id @default(uuid())
-    tenantId   String
-    type       String
-    version    String
-    body       String
-    createdAt  DateTime @default(now())
-
-    tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  }
-
-  model Award {
-    id        String   @id @default(uuid())
-    tenantId  String
-    title     String
-    points    Int
-    media     Json?
-    createdAt DateTime @default(now())
-
-    tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  }
-
-  model UserPreference {
-    id               String   @id @default(uuid())
-    userId           String   @unique
-    theme            String?
-    notifications    Json?
-    favorites        Json?
-    createdAt        DateTime @default(now())
-
-    user             User     @relation(fields: [userId], references: [id])
-  }
-
-  model JournalEntry {
-    id        String   @id @default(uuid())
-    userId    String
-    mood      String?
-    notes     String?
-    createdAt DateTime @default(now())
-
-    user      User     @relation(fields: [userId], references: [id])
-  }
-
-  model UserEvent {
-    id        String   @id @default(uuid())
-    userId    String
-    type      String
-    meta      Json?
-    createdAt DateTime @default(now())
-
-    user      User     @relation(fields: [userId], references: [id])
-  }
-
-  model Admin {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    password  String
-    createdAt DateTime @default(now())
-  }
-
+  @@unique([tenantId, key])
+}
