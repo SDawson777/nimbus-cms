@@ -2,10 +2,10 @@ import {defineConfig} from 'sanity'
 import {deskTool} from 'sanity/desk'
 import {visionTool} from '@sanity/vision'
 import {dashboardTool} from '@sanity/dashboard'
+import dashboardConfig from './src/dashboardConfig'
 
 // Shared schemaTypes live at the monorepo root
 import {schemaTypes} from '../../schemaTypes'
-import dashboardConfig from './src/dashboardConfig'
 import { PREVIEW_TOKEN_ENV } from './config/preview'
 
 // Prefer generic SANITY_PROJECT_ID / SANITY_DATASET, fall back to SANITY_STUDIO_* for compatibility
@@ -19,9 +19,10 @@ export default defineConfig({
   dataset,
   basePath: '/studio',
   plugins: [
-    dashboardTool({ widgets: dashboardConfig.widgets }),
     deskTool(),
     visionTool(),
+    // Enable the Studio dashboard and mount our custom widgets
+    dashboardTool({widgets: dashboardConfig.widgets}),
   ],
   schema: {
     // Single source of truth for content model
