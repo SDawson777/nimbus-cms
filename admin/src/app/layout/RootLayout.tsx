@@ -1,9 +1,13 @@
-import React from 'react'
-import Sidebar from './Sidebar'
-import Topbar from './Topbar'
-import './layout.css'
+import React from "react";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
+import "./layout.css";
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="layout-root">
       <Sidebar />
@@ -12,5 +16,5 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <div className="layout-content">{children}</div>
       </div>
     </div>
-  )
+  );
 }

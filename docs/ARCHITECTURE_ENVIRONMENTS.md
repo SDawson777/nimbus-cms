@@ -2,11 +2,11 @@
 
 This project uses three isolated environments:
 
-| Environment | API Service             | DB                       | Admin SPA                      | Sanity Dataset | Auto Seed | Tenant Slug      |
-|------------|-------------------------|--------------------------|-------------------------------|----------------|-----------|------------------|
-| **demo**   | nimbus-api-demo (Railway)| nimbus-demo-db (Postgres)| nimbus-admin-demo (Vercel)    | nimbus_demo    | true      | demo-operator    |
-| **preview**| nimbus-api-preview      | nimbus-preview-db        | nimbus-admin-preview          | nimbus_preview | true      | preview-operator |
-| **prod**   | nimbus-api-prod         | nimbus-prod-db           | nimbus-admin-prod             | *buyer*        | false     | (none)           |
+| Environment | API Service               | DB                        | Admin SPA                  | Sanity Dataset | Auto Seed | Tenant Slug      |
+| ----------- | ------------------------- | ------------------------- | -------------------------- | -------------- | --------- | ---------------- |
+| **demo**    | nimbus-api-demo (Railway) | nimbus-demo-db (Postgres) | nimbus-admin-demo (Vercel) | nimbus_demo    | true      | demo-operator    |
+| **preview** | nimbus-api-preview        | nimbus-preview-db         | nimbus-admin-preview       | nimbus_preview | true      | preview-operator |
+| **prod**    | nimbus-api-prod           | nimbus-prod-db            | nimbus-admin-prod          | _buyer_        | false     | (none)           |
 
 ## Required API Variables
 

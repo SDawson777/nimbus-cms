@@ -3,9 +3,7 @@ import { safeJson } from "./safeJson";
 import { getCsrfToken } from "./csrf";
 
 // Respect the provided base URL without stripping trailing API segments; only remove trailing slashes.
-const API_BASE = (import.meta.env.VITE_API_URL || "")
-  .trim()
-  .replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
 
 export const APP_ENV = (import.meta.env.VITE_APP_ENV || "").trim();
 
@@ -75,13 +73,22 @@ export async function apiFetch(path, options = {}) {
     } else if (response.status === 403) {
       emitApiError({ type: "forbidden", status: 403, path: buildUrl(path) });
     } else if (response.status >= 500) {
-      emitApiError({ type: "server-error", status: response.status, path: buildUrl(path) });
+      emitApiError({
+        type: "server-error",
+        status: response.status,
+        path: buildUrl(path),
+      });
     }
 
     return response;
   } catch (err) {
     if (err?.name === "AbortError") throw err;
-    emitApiError({ type: "network-error", status: 0, path: buildUrl(path), error: err });
+    emitApiError({
+      type: "network-error",
+      status: 0,
+      path: buildUrl(path),
+      error: err,
+    });
     throw err;
   }
 }
@@ -92,7 +99,9 @@ export async function apiJson(path, options = {}, fallback = null) {
     const data = await safeJson(res, fallback);
     const error = res.ok
       ? null
-      : data?.error || data?.message || `Request failed (${res.status || "unknown"})`;
+      : data?.error ||
+        data?.message ||
+        `Request failed (${res.status || "unknown"})`;
     return { ok: res.ok, status: res.status, data, error, response: res };
   } catch (err) {
     const aborted = err?.name === "AbortError";

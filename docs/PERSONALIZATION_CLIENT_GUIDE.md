@@ -96,12 +96,14 @@ Content-Type: application/json
 ```ts
 async function fetchPersonalizedFeed(ctx, defaults) {
   try {
-    const {items} = await personalizationApply(ctx)
-    if (!items?.length) return defaults
-    return hydrateContent(items)
+    const { items } = await personalizationApply(ctx);
+    if (!items?.length) return defaults;
+    return hydrateContent(items);
   } catch (err) {
-    logger.warn('personalization.unavailable', {err})
-    return defaults.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
+    logger.warn("personalization.unavailable", { err });
+    return defaults.sort(
+      (a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt),
+    );
   }
 }
 ```

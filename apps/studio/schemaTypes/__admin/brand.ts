@@ -1,37 +1,42 @@
-import {defineField, defineType} from 'sanity'
+import { defineField, defineType } from "sanity";
 
 export default defineType({
-  name: 'brand',
-  type: 'document',
-  title: 'Brand',
+  name: "brand",
+  type: "document",
+  title: "Brand",
   fields: [
-    defineField({name: 'name', type: 'string', title: 'Name'}),
+    defineField({ name: "name", type: "string", title: "Name" }),
     defineField({
-      name: 'slug',
-      type: 'slug',
-      title: 'Slug',
-      options: {source: 'name', maxLength: 96},
+      name: "slug",
+      type: "slug",
+      title: "Slug",
+      options: { source: "name", maxLength: 96 },
     }),
     defineField({
-      name: 'organization',
-      type: 'reference',
-      to: [{type: 'organization'}],
-      title: 'Organization',
-    }),
-    defineField({name: 'logo', type: 'image', title: 'Logo', options: {hotspot: true}}),
-    defineField({
-      name: 'primaryColor',
-      type: 'string',
-      title: 'Primary color',
-      description: 'Hex or CSS color',
+      name: "organization",
+      type: "reference",
+      to: [{ type: "organization" }],
+      title: "Organization",
     }),
     defineField({
-      name: 'secondaryColor',
-      type: 'string',
-      title: 'Secondary color',
-      description: 'Hex or CSS color',
+      name: "logo",
+      type: "image",
+      title: "Logo",
+      options: { hotspot: true },
     }),
-    defineField({name: 'notes', type: 'text', title: 'Notes'}),
+    defineField({
+      name: "primaryColor",
+      type: "string",
+      title: "Primary color",
+      description: "Hex or CSS color",
+    }),
+    defineField({
+      name: "secondaryColor",
+      type: "string",
+      title: "Secondary color",
+      description: "Hex or CSS color",
+    }),
+    defineField({ name: "notes", type: "text", title: "Notes" }),
   ],
-  preview: {select: {title: 'name', media: 'logo'}},
-})
+  preview: { select: { title: "name", media: "logo" } },
+});

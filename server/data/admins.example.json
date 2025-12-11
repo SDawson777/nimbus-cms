@@ -7,7 +7,9 @@
         {
           "id": "disp-1",
           "name": "Downtown Dispensary",
-          "admins": [{"email": "owner@example.com", "passwordHash": "<bcrypt-hash>"}]
+          "admins": [
+            { "email": "owner@example.com", "passwordHash": "<bcrypt-hash>" }
+          ]
         }
       ]
     }

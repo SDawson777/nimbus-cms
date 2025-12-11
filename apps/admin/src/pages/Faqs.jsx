@@ -1,47 +1,51 @@
-import React, {useEffect, useState} from 'react'
-import {apiJson} from '../lib/api'
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
 
-const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
+const CHANNELS = ["", "mobile", "web", "kiosk", "email", "ads"];
 
 export default function Faqs() {
-  const [groups, setGroups] = useState([])
-  const [channel, setChannel] = useState('')
+  const [groups, setGroups] = useState([]);
+  const [channel, setChannel] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
     async function load() {
       try {
         const q = channel
           ? `/api/admin/faqs?channel=${encodeURIComponent(channel)}`
-          : '/api/admin/faqs'
-        const {ok, data, aborted} = await apiJson(q, {signal: controller.signal}, [])
-        if (aborted || controller.signal.aborted) return
+          : "/api/admin/faqs";
+        const { ok, data, aborted } = await apiJson(
+          q,
+          { signal: controller.signal },
+          [],
+        );
+        if (aborted || controller.signal.aborted) return;
         if (ok) {
-          setGroups(Array.isArray(data) ? data : [])
+          setGroups(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    load()
-    return () => controller.abort()
-  }, [channel])
+    load();
+    return () => controller.abort();
+  }, [channel]);
 
   return (
-    <div style={{padding: 20}}>
+    <div style={{ padding: 20 }}>
       <h1>FAQ Groups</h1>
-      <div style={{marginBottom: 12}}>
-        <label style={{marginRight: 8}}>Channel:</label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ marginRight: 8 }}>Channel:</label>
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>
           {CHANNELS.map((c) => (
             <option key={c} value={c}>
-              {c === '' ? 'All' : c}
+              {c === "" ? "All" : c}
             </option>
           ))}
         </select>
       </div>
 
-      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Group</th>
@@ -53,15 +57,15 @@ export default function Faqs() {
         <tbody>
           {groups.map((g) => {
             // derive channels from items if present
-            const itemChannels = new Set()
-            ;(g.items || []).forEach((it) => {
+            const itemChannels = new Set();
+            (g.items || []).forEach((it) => {
               if (Array.isArray(it.channels) && it.channels.length) {
-                it.channels.forEach((c) => itemChannels.add(c))
+                it.channels.forEach((c) => itemChannels.add(c));
               } else {
-                itemChannels.add('Global')
+                itemChannels.add("Global");
               }
-            })
-            const channelsDisplay = Array.from(itemChannels).join(', ')
+            });
+            const channelsDisplay = Array.from(itemChannels).join(", ");
             return (
               <tr key={g._id}>
                 <td>{g.title}</td>
@@ -73,10 +77,10 @@ export default function Faqs() {
                   </a>
                 </td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

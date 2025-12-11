@@ -30,9 +30,10 @@
     <div class="meta">Date: 2025-11-18</div>
     <h2>Summary</h2>
     <p>
-      This release prepares the Jars CMS repository for buyer handoff. It includes dependency
-      security updates, build fixes for the Studio, and restores expected API behavior. All
-      automated tests pass locally (Vitest: 36/36) and the API TypeScript build is clean.
+      This release prepares the Jars CMS repository for buyer handoff. It
+      includes dependency security updates, build fixes for the Studio, and
+      restores expected API behavior. All automated tests pass locally (Vitest:
+      36/36) and the API TypeScript build is clean.
     </p>
     <h2>High-level changes</h2>
     <ul>
@@ -40,15 +41,17 @@
         <strong>Security & dependency updates</strong>
         <ul>
           <li>
-            Ran an audit and applied targeted fixes; updated several transitive dependencies and
-            lockfile entries.
+            Ran an audit and applied targeted fixes; updated several transitive
+            dependencies and lockfile entries.
           </li>
           <li>
             Upgraded <code>multer</code> to a maintained version and aligned
-            <code>@sanity/*</code> packages to compatible versions (Studio/vision alignment).
+            <code>@sanity/*</code> packages to compatible versions
+            (Studio/vision alignment).
           </li>
           <li>
-            Updated <code>@typescript-eslint</code> to v8 to resolve peer dependency conflicts.
+            Updated <code>@typescript-eslint</code> to v8 to resolve peer
+            dependency conflicts.
           </li>
         </ul>
       </li>
@@ -56,8 +59,8 @@
         <strong>Studio & build fixes</strong>
         <ul>
           <li>
-            Repaired version mismatch causing Rollup parse errors by aligning <code>sanity</code> to
-            <code>^4.16.0</code>.
+            Repaired version mismatch causing Rollup parse errors by aligning
+            <code>sanity</code> to <code>^4.16.0</code>.
           </li>
           <li>Added CI workflow scaffolding to run tests and Studio build.</li>
         </ul>
@@ -66,11 +69,12 @@
         <strong>API & tests</strong>
         <ul>
           <li>
-            Restored server source behavior expected by tests (endpoints for theme, uploads, content
-            routes). Local tests are green.
+            Restored server source behavior expected by tests (endpoints for
+            theme, uploads, content routes). Local tests are green.
           </li>
           <li>
-            Added small utilities and scripts (import/export/promote) used for dataset management.
+            Added small utilities and scripts (import/export/promote) used for
+            dataset management.
           </li>
         </ul>
       </li>
@@ -78,12 +82,13 @@
     <h2>Developer & deployment notes</h2>
     <ul>
       <li>
-        Tests: Run unit tests: <code>npm test</code> (Vitest). Current baseline: 36 tests passing
-        locally.
+        Tests: Run unit tests: <code>npm test</code> (Vitest). Current baseline:
+        36 tests passing locally.
       </li>
       <li>
-        Lint & types: Run ESLint for server and admin: <code>npm run lint:src</code>.
-        Build/type-check API: <code>npm run build:api</code>.
+        Lint & types: Run ESLint for server and admin:
+        <code>npm run lint:src</code>. Build/type-check API:
+        <code>npm run build:api</code>.
       </li>
       <li>
         Sanity Studio: Studio commands are in <code>apps/studio</code>. Use
@@ -91,26 +96,32 @@
       </li>
       <li>
         Docker: <code>server/Dockerfile</code> is multi-stage; to build locally:
-        <code>docker build -f server/Dockerfile -t jars-cms-server:latest .</code>.
+        <code
+          >docker build -f server/Dockerfile -t jars-cms-server:latest .</code
+        >.
       </li>
     </ul>
     <h2>Known limitations & follow-ups</h2>
     <ul>
       <li>
-        Lint configuration: typed-linting requires per-package tsconfig scoping. Consider adding
+        Lint configuration: typed-linting requires per-package tsconfig scoping.
+        Consider adding
         <code>ignores</code> to <code>eslint.config.mjs</code>.
       </li>
-      <li>CI: ensure secrets (SANITY_API_TOKEN, SANITY_PREVIEW_TOKEN, JWT_SECRET) are set.</li>
       <li>
-        Further hardening: some moderate advisories remain in transitive deps; follow-up curated
-        upgrades recommended.
+        CI: ensure secrets (SANITY_API_TOKEN, SANITY_PREVIEW_TOKEN, JWT_SECRET)
+        are set.
+      </li>
+      <li>
+        Further hardening: some moderate advisories remain in transitive deps;
+        follow-up curated upgrades recommended.
       </li>
     </ul>
     <h2>Contact & next steps</h2>
     <p>
-      If you'd like, I can: open a PR to remove <code>.eslintignore</code> and switch to
-      <code>ignores</code>, add a CI job to build Docker images and push to a registry, or produce a
-      one-page PDF from these notes.
+      If you'd like, I can: open a PR to remove <code>.eslintignore</code> and
+      switch to <code>ignores</code>, add a CI job to build Docker images and
+      push to a registry, or produce a one-page PDF from these notes.
     </p>
   </body>
 </html>

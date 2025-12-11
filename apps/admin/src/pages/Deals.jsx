@@ -1,48 +1,52 @@
-import React, {useEffect, useState} from 'react'
-import {apiJson} from '../lib/api'
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
 
-const CHANNELS = ['', 'mobile', 'web', 'kiosk', 'email', 'ads']
+const CHANNELS = ["", "mobile", "web", "kiosk", "email", "ads"];
 
 export default function Deals() {
-  const [items, setItems] = useState([])
-  const [channel, setChannel] = useState('')
+  const [items, setItems] = useState([]);
+  const [channel, setChannel] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
     async function load() {
       try {
         // use Nimbus endpoint which lists active deals
         const q = channel
           ? `/api/v1/nimbus/content/deals?limit=50&channel=${encodeURIComponent(channel)}`
-          : '/api/v1/nimbus/content/deals?limit=50'
-        const {ok, data, aborted} = await apiJson(q, {signal: controller.signal}, [])
-        if (aborted || controller.signal.aborted) return
+          : "/api/v1/nimbus/content/deals?limit=50";
+        const { ok, data, aborted } = await apiJson(
+          q,
+          { signal: controller.signal },
+          [],
+        );
+        if (aborted || controller.signal.aborted) return;
         if (ok) {
-          setItems(Array.isArray(data) ? data : [])
+          setItems(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    load()
-    return () => controller.abort()
-  }, [channel])
+    load();
+    return () => controller.abort();
+  }, [channel]);
 
   return (
-    <div style={{padding: 20}}>
+    <div style={{ padding: 20 }}>
       <h1>Deals</h1>
-      <div style={{marginBottom: 12}}>
-        <label style={{marginRight: 8}}>Channel:</label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ marginRight: 8 }}>Channel:</label>
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>
           {CHANNELS.map((c) => (
             <option key={c} value={c}>
-              {c === '' ? 'All' : c}
+              {c === "" ? "All" : c}
             </option>
           ))}
         </select>
       </div>
 
-      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Title</th>
@@ -59,7 +63,9 @@ export default function Deals() {
               <td>{d.slug}</td>
               <td>{d.priority}</td>
               <td>
-                {Array.isArray(d.channels) && d.channels.length ? d.channels.join(', ') : 'Global'}
+                {Array.isArray(d.channels) && d.channels.length
+                  ? d.channels.join(", ")
+                  : "Global"}
               </td>
               <td>
                 <a href="/studio" target="_blank" rel="noreferrer">
@@ -71,5 +77,5 @@ export default function Deals() {
         </tbody>
       </table>
     </div>
-  )
+  );
 }

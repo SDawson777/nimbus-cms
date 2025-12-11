@@ -5,7 +5,8 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0] ?? "0.0.0.0";
+    const ip =
+      req.headers["x-forwarded-for"]?.toString().split(",")[0] ?? "0.0.0.0";
 
     // Location lookup (fallback-safe)
     let city = "Unknown";
@@ -20,7 +21,7 @@ router.get("/", async (req, res) => {
     let weather = null;
     try {
       const w = await axios.get(
-        `${process.env.WEATHER_API_URL}?q=${city}&appid=${process.env.WEATHER_API_KEY}&units=imperial`
+        `${process.env.WEATHER_API_URL}?q=${city}&appid=${process.env.WEATHER_API_KEY}&units=imperial`,
       );
       weather = {
         temp: w.data.main.temp,

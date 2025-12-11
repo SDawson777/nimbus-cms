@@ -150,7 +150,10 @@
       ],
       "effects": [],
       "range": "<3.14.2 || >=4.0.0 <4.1.1",
-      "nodes": ["node_modules/js-yaml", "node_modules/load-yaml-file/node_modules/js-yaml"],
+      "nodes": [
+        "node_modules/js-yaml",
+        "node_modules/load-yaml-file/node_modules/js-yaml"
+      ],
       "fixAvailable": true
     },
     "multer": {

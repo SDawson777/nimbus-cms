@@ -4,14 +4,14 @@ module.exports = {
     es2021: true,
   },
   globals: {
-    window: 'readonly',
-    document: 'readonly',
-    fetch: 'readonly',
-    FormData: 'readonly',
-    FileReader: 'readonly',
-    Blob: 'readonly',
+    window: "readonly",
+    document: "readonly",
+    fetch: "readonly",
+    FormData: "readonly",
+    FileReader: "readonly",
+    Blob: "readonly",
   },
   rules: {
-    'no-console': 'off',
+    "no-console": "off",
   },
-}
+};

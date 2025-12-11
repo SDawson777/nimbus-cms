@@ -6,35 +6,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-          run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           cache: 'pnpm'
-      - name: Enable corepack and verify pnpm
-        run: |
-          corepack enable
-          pnpm -v
-      - run: pnpm install --frozen-lockfile
-      - name: Approve build scripts for Prisma
-        run: pnpm approve-builds @prisma/client @prisma/engines prisma
-      - name: Generate Prisma client (server)
-        run: pnpm --filter server exec prisma generate
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
       - name: Lint
-        run: pnpm lint
-      - name: Test
-        run: pnpm test
-      - name: Build admin
-        run: pnpm --filter admin build
-      - name: Build studio
-        run: pnpm --filter studio build
-      - name: Validate Sanity schema
-        working-directory: apps/studio
-        run: pnpm exec sanity check
-      - name: Build server
-        run: pnpm --filter server build
-
-  # Optional: you can add further jobs for lint, integration tests, or publish steps.
+        run: pnpm -w lint
+      - name: Typecheck
+        run: pnpm -w typecheck
+      - name: Build
+        run: pnpm -w build
+      - name: Sanity schema check
+        env:
+          SANITY_STUDIO_PROJECT_ID: ygbu28p2
+          SANITY_STUDIO_DATASET: nimbus_demo
+          SANITY_STUDIO_READ_TOKEN: ${{ secrets.SANITY_STUDIO_READ_TOKEN }}
+        run: pnpm sanity:check

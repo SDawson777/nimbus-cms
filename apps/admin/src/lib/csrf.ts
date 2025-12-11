@@ -2,28 +2,28 @@
 // Uses browser fetch types; in non-DOM contexts this file should be excluded.
 
 export function getCsrfToken(): string | null {
-  if (typeof document === 'undefined') return null
+  if (typeof document === "undefined") return null;
   const match = document.cookie
-    .split(';')
+    .split(";")
     .map((part) => part.trim())
-    .find((part) => part.startsWith('admin_csrf='))
-  if (!match) return null
-  return decodeURIComponent(match.split('=')[1] || '') || null
+    .find((part) => part.startsWith("admin_csrf="));
+  if (!match) return null;
+  return decodeURIComponent(match.split("=")[1] || "") || null;
 }
 
 export function withCsrf(init: RequestInit = {}): RequestInit {
-  const token = getCsrfToken()
-  const headers = new Headers(init.headers || {})
-  if (token && !headers.has('X-CSRF-Token')) {
-    headers.set('X-CSRF-Token', token)
+  const token = getCsrfToken();
+  const headers = new Headers(init.headers || {});
+  if (token && !headers.has("X-CSRF-Token")) {
+    headers.set("X-CSRF-Token", token);
   }
   return {
     ...init,
     headers,
-    credentials: init.credentials || 'include',
-  }
+    credentials: init.credentials || "include",
+  };
 }
 
 export function csrfFetch(input: RequestInfo | URL, init?: RequestInit) {
-  return fetch(input, withCsrf(init))
+  return fetch(input, withCsrf(init));
 }

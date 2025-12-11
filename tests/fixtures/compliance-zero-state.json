@@ -1,4 +1,11 @@
 {
-  "stores": [{"_id": "store-zero", "slug": "store-zero", "stateCode": "CA", "title": "Zero Store"}],
+  "stores": [
+    {
+      "_id": "store-zero",
+      "slug": "store-zero",
+      "stateCode": "CA",
+      "title": "Zero Store"
+    }
+  ],
   "legalDocs": []
 }

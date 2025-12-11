@@ -2,7 +2,5 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "cd apps/admin && pnpm run build",
   "outputDirectory": "apps/admin/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

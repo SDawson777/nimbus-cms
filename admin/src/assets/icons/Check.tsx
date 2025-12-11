@@ -1,5 +1,5 @@
-import React from 'react'
-export default function Check({size = 20}: {size?: number}) {
+import React from "react";
+export default function Check({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -13,5 +13,5 @@ export default function Check({size = 20}: {size?: number}) {
     >
       <path d="M20 6L9 17l-5-5" />
     </svg>
-  )
+  );
 }

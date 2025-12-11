@@ -1,77 +1,101 @@
-import React, {createContext, useContext, useMemo, useState, useEffect, useCallback} from 'react'
-import {AnimatePresence, motion} from 'framer-motion'
-import {useAdmin} from '../lib/adminContext'
-import {NotificationProvider as NotificationStoreProvider, useNotifications} from '../lib/notificationsContext'
-import Modal from '../design-system/Modal'
-import {subscribeToApiErrors} from '../lib/api'
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useAdmin } from "../lib/adminContext";
+import {
+  NotificationProvider as NotificationStoreProvider,
+  useNotifications,
+} from "../lib/notificationsContext";
+import Modal from "../design-system/Modal";
+import { subscribeToApiErrors } from "../lib/api";
 
-const ToastContext = createContext({notify: () => {}})
+const ToastContext = createContext({ notify: () => {} });
 
-function NotificationPortal({children}) {
-  const {notifications, addNotification, markAllRead, clearAll} = useNotifications()
-  const [toasts, setToasts] = useState([])
-  const [open, setOpen] = useState(false)
-  const [permissionModal, setPermissionModal] = useState(false)
+function NotificationPortal({ children }) {
+  const { notifications, addNotification, markAllRead, clearAll } =
+    useNotifications();
+  const [toasts, setToasts] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [permissionModal, setPermissionModal] = useState(false);
   const [permissionMessage, setPermissionMessage] = useState(
-    'You do not have permission to perform this action.',
-  )
+    "You do not have permission to perform this action.",
+  );
 
   const notify = useMemo(
     () => (toast) => {
-      const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
-      const tone = toast.tone || 'info'
+      const id = crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
+      const tone = toast.tone || "info";
       const payload = {
         id,
-        title: toast.title || 'Alert',
-        body: toast.body || '',
+        title: toast.title || "Alert",
+        body: toast.body || "",
         tone,
         ttl: toast.ttl || 4500,
-      }
+      };
 
-      const normalizedType = ['success', 'warning', 'error'].includes(tone) ? tone : 'info'
+      const normalizedType = ["success", "warning", "error"].includes(tone)
+        ? tone
+        : "info";
 
       addNotification({
         type: normalizedType,
         title: payload.title,
         message: payload.body,
         read: false,
-      })
+      });
 
-      setToasts((prev) => [...prev, payload])
+      setToasts((prev) => [...prev, payload]);
       setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id))
-      }, payload.ttl)
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, payload.ttl);
     },
     [addNotification],
-  )
+  );
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
 
   useEffect(() => {
     if (open && unreadCount) {
-      markAllRead()
+      markAllRead();
     }
-  }, [open, unreadCount, markAllRead])
+  }, [open, unreadCount, markAllRead]);
 
   const handleApiError = useCallback(
     (detail) => {
-      if (!detail) return
-      if (detail.type === 'forbidden') {
-        setPermissionMessage('You do not have permission to access this resource.')
-        setPermissionModal(true)
-      } else if (detail.type === 'server-error') {
-        notify({tone: 'error', title: 'Server error', body: 'Please try again later.'})
+      if (!detail) return;
+      if (detail.type === "forbidden") {
+        setPermissionMessage(
+          "You do not have permission to access this resource.",
+        );
+        setPermissionModal(true);
+      } else if (detail.type === "server-error") {
+        notify({
+          tone: "error",
+          title: "Server error",
+          body: "Please try again later.",
+        });
       }
     },
     [notify],
-  )
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToApiErrors(handleApiError)
-    return () => unsubscribe()
-  }, [handleApiError])
+    const unsubscribe = subscribeToApiErrors(handleApiError);
+    return () => unsubscribe();
+  }, [handleApiError]);
 
-  const value = useMemo(() => ({notify}), [notify])
+  const value = useMemo(() => ({ notify }), [notify]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -86,58 +110,81 @@ function NotificationPortal({children}) {
       >
         <span aria-hidden="true">🔔</span>
         <span className="notification-toggle__label">Notifications</span>
-        {unreadCount > 0 && <span className="notification-toggle__badge">{unreadCount}</span>}
+        {unreadCount > 0 && (
+          <span className="notification-toggle__badge">{unreadCount}</span>
+        )}
       </button>
 
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
             className="notification-center"
-            initial={{opacity: 0, y: 12}}
-            animate={{opacity: 1, y: 0}}
-            exit={{opacity: 0, y: 10}}
-            transition={{duration: 0.2}}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
             role="region"
             aria-label="Notification center"
           >
             <div className="notification-center__header">
               <div>
-                <div className="notification-center__title">Notification Center</div>
-                <div className="notification-center__subtitle">Persistent alerts and activity</div>
+                <div className="notification-center__title">
+                  Notification Center
+                </div>
+                <div className="notification-center__subtitle">
+                  Persistent alerts and activity
+                </div>
               </div>
               <div className="notification-center__actions">
-                <button type="button" onClick={markAllRead} disabled={!notifications.length}>
+                <button
+                  type="button"
+                  onClick={markAllRead}
+                  disabled={!notifications.length}
+                >
                   Mark read
                 </button>
-                <button type="button" onClick={clearAll} disabled={!notifications.length}>
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  disabled={!notifications.length}
+                >
                   Clear
                 </button>
               </div>
             </div>
 
             <div className="notification-center__list">
-              {notifications.length === 0 && <div className="notification-empty">You're all caught up.</div>}
+              {notifications.length === 0 && (
+                <div className="notification-empty">You're all caught up.</div>
+              )}
               {notifications.map((note) => (
                 <div
                   key={note.id}
-                  className={`notification-card ${note.read ? 'is-read' : 'is-unread'}`}
+                  className={`notification-card ${note.read ? "is-read" : "is-unread"}`}
                   role="article"
                 >
                   <div className="notification-card__row">
                     <div className="notification-pill" data-tone={note.type}>
-                      {note.type === 'warning' ? 'Warning' : note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                      {note.type === "warning"
+                        ? "Warning"
+                        : note.type.charAt(0).toUpperCase() +
+                          note.type.slice(1)}
                     </div>
                     <div className="notification-timestamp">
                       {new Date(note.createdAt).toLocaleString(undefined, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        month: 'short',
-                        day: 'numeric',
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        month: "short",
+                        day: "numeric",
                       })}
                     </div>
                   </div>
                   <div className="notification-card__title">{note.title}</div>
-                  {note.message && <div className="notification-card__body">{note.message}</div>}
+                  {note.message && (
+                    <div className="notification-card__body">
+                      {note.message}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -151,15 +198,20 @@ function NotificationPortal({children}) {
             <motion.div
               key={toast.id}
               className={`toast toast-${toast.tone}`}
-              initial={{opacity: 0, y: 12}}
-              animate={{opacity: 1, y: 0}}
-              exit={{opacity: 0, y: 12}}
-              transition={{duration: 0.2}}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.2 }}
               role="status"
             >
               <div className="toast-header">
                 <strong>{toast.title}</strong>
-                <button aria-label="Dismiss" onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}>
+                <button
+                  aria-label="Dismiss"
+                  onClick={() =>
+                    setToasts((prev) => prev.filter((t) => t.id !== toast.id))
+                  }
+                >
                   ×
                 </button>
               </div>
@@ -174,26 +226,26 @@ function NotificationPortal({children}) {
         onClose={() => setPermissionModal(false)}
         title="Permission required"
       >
-        <p style={{marginBottom: 16}}>{permissionMessage}</p>
+        <p style={{ marginBottom: 16 }}>{permissionMessage}</p>
         <button type="button" onClick={() => setPermissionModal(false)}>
           Dismiss
         </button>
       </Modal>
     </ToastContext.Provider>
-  )
+  );
 }
 
-export function NotificationProvider({children}) {
-  const {admin} = useAdmin()
-  const storageKey = admin?.email || admin?.id || admin?.name || 'guest'
+export function NotificationProvider({ children }) {
+  const { admin } = useAdmin();
+  const storageKey = admin?.email || admin?.id || admin?.name || "guest";
 
   return (
     <NotificationStoreProvider storageKey={storageKey}>
       <NotificationPortal>{children}</NotificationPortal>
     </NotificationStoreProvider>
-  )
+  );
 }
 
 export function useNotify() {
-  return useContext(ToastContext).notify
+  return useContext(ToastContext).notify;
 }

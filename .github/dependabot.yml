@@ -1,18 +1,18 @@
 version: 2
 updates:
-  - package-ecosystem: 'npm'
-    directory: '/'
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-  - package-ecosystem: 'npm'
-    directory: '/server'
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/server"
     schedule:
-      interval: 'weekly'
-  - package-ecosystem: 'npm'
-    directory: '/apps/admin'
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/apps/admin"
     schedule:
-      interval: 'weekly'
-  - package-ecosystem: 'npm'
-    directory: '/apps/studio'
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/apps/studio"
     schedule:
-      interval: 'weekly'
+      interval: "weekly"

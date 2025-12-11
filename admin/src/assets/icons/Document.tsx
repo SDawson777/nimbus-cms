@@ -1,5 +1,5 @@
-import React from 'react'
-export default function Document({size = 20}: {size?: number}) {
+import React from "react";
+export default function Document({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -15,5 +15,5 @@ export default function Document({size = 20}: {size?: number}) {
       <path d="M14 2v6h6" />
       <path d="M16 13H8M16 17H8" />
     </svg>
-  )
+  );
 }

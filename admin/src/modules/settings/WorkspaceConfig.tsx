@@ -1,5 +1,5 @@
-import React from 'react'
-import Card from '@/design-system/ui/Card'
+import React from "react";
+import Card from "@/design-system/ui/Card";
 
 export default function WorkspaceConfig() {
   return (
@@ -7,5 +7,5 @@ export default function WorkspaceConfig() {
       <h2>Workspace Configuration</h2>
       <div>Define default tenant, branding, and integrations.</div>
     </Card>
-  )
+  );
 }

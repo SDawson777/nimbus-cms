@@ -5,28 +5,28 @@ This small example shows how to fetch the flattened theme contract from `/conten
 ```js
 // fetch the flattened theme contract (example: client-side bootstrap)
 async function applyTheme(brand, store) {
-  const qs = new URLSearchParams()
-  if (brand) qs.set('brand', brand)
-  if (store) qs.set('store', store)
-  const res = await fetch(`/content/theme?${qs.toString()}`)
-  if (!res.ok) return
-  const t = await res.json()
+  const qs = new URLSearchParams();
+  if (brand) qs.set("brand", brand);
+  if (store) qs.set("store", store);
+  const res = await fetch(`/content/theme?${qs.toString()}`);
+  if (!res.ok) return;
+  const t = await res.json();
 
   // Map tokens to CSS variables on :root
-  const root = document.documentElement
-  root.style.setProperty('--accent-color', t.accentColor || '')
-  root.style.setProperty('--surface-color', t.surfaceColor || '')
-  root.style.setProperty('--muted-text-color', t.mutedTextColor || '')
-  root.style.setProperty('--corner-radius', t.cornerRadius || '6px')
-  root.style.setProperty('--elevation-style', t.elevationStyle || 'soft')
+  const root = document.documentElement;
+  root.style.setProperty("--accent-color", t.accentColor || "");
+  root.style.setProperty("--surface-color", t.surfaceColor || "");
+  root.style.setProperty("--muted-text-color", t.mutedTextColor || "");
+  root.style.setProperty("--corner-radius", t.cornerRadius || "6px");
+  root.style.setProperty("--elevation-style", t.elevationStyle || "soft");
 
   // Example usage: toggle dark mode class
-  if (t.darkModeEnabled) document.documentElement.classList.add('theme--dark')
-  else document.documentElement.classList.remove('theme--dark')
+  if (t.darkModeEnabled) document.documentElement.classList.add("theme--dark");
+  else document.documentElement.classList.remove("theme--dark");
 }
 
 // call at app bootstrap
-applyTheme('brand-slug')
+applyTheme("brand-slug");
 ```
 
 This lets you write CSS like:

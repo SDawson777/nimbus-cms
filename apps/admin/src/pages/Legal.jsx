@@ -1,41 +1,47 @@
-import React, {useEffect, useState} from 'react'
-import {apiJson} from '../lib/api'
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
 
 export default function Legal() {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState([]);
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
     async function load() {
       try {
-        const {ok, data, aborted} = await apiJson('/api/admin/legal', {signal: controller.signal}, [])
-        if (aborted || controller.signal.aborted) return
+        const { ok, data, aborted } = await apiJson(
+          "/api/admin/legal",
+          { signal: controller.signal },
+          [],
+        );
+        if (aborted || controller.signal.aborted) return;
         if (ok) {
-          setItems(Array.isArray(data) ? data : [])
+          setItems(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    load()
-    return () => controller.abort()
-  }, [])
+    load();
+    return () => controller.abort();
+  }, []);
 
   return (
-    <div style={{padding: 20}}>
+    <div style={{ padding: 20 }}>
       <h1>Legal Documents</h1>
-      <div className="card" style={{marginBottom: 16}}>
-        <h3 style={{marginTop: 0}}>Data &amp; AI Usage</h3>
-        <p style={{margin: '4px 0'}}>
-          Nimbus surfaces optional AI assistance for admins. Inputs are limited to the prompts you
-          provide, and no training or retention occurs server-side unless the API backend enables it via
-          environment flags. Buyers should review their own data handling policies before enabling
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Data &amp; AI Usage</h3>
+        <p style={{ margin: "4px 0" }}>
+          Nimbus surfaces optional AI assistance for admins. Inputs are limited
+          to the prompts you provide, and no training or retention occurs
+          server-side unless the API backend enables it via environment flags.
+          Buyers should review their own data handling policies before enabling
           production AI endpoints.
         </p>
-        <p style={{margin: '4px 0'}}>
-          For privacy requests or data export, reach the team at <a href="mailto:privacy@nimbus.app">privacy@nimbus.app</a>.
+        <p style={{ margin: "4px 0" }}>
+          For privacy requests or data export, reach the team at{" "}
+          <a href="mailto:privacy@nimbus.app">privacy@nimbus.app</a>.
         </p>
       </div>
-      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Title</th>
@@ -52,11 +58,13 @@ export default function Legal() {
             <tr key={d._id}>
               <td>{d.title}</td>
               <td>{d.type}</td>
-              <td>{d.stateCode || 'Global'}</td>
+              <td>{d.stateCode || "Global"}</td>
               <td>{d.version}</td>
               <td>{d.effectiveFrom}</td>
               <td>
-                {Array.isArray(d.channels) && d.channels.length ? d.channels.join(', ') : 'Global'}
+                {Array.isArray(d.channels) && d.channels.length
+                  ? d.channels.join(", ")
+                  : "Global"}
               </td>
               <td>
                 <a href="/studio" target="_blank" rel="noreferrer">
@@ -68,5 +76,5 @@ export default function Legal() {
         </tbody>
       </table>
     </div>
-  )
+  );
 }

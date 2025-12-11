@@ -19,8 +19,8 @@
       <section class="intro">
         <h2>Quick Links</h2>
         <p>
-          Use these endpoints to explore the CMS content. All endpoints return JSON suitable for the
-          mobile app.
+          Use these endpoints to explore the CMS content. All endpoints return
+          JSON suitable for the mobile app.
         </p>
 
         <div class="cards">
@@ -36,13 +36,15 @@
       <section class="how">
         <h2>Previewing & Studio</h2>
         <p>
-          To preview drafts, add <code>?preview=true&amp;secret=YOUR_PREVIEW_SECRET</code> or set
-          the header <code>X-Preview: true</code> and <code>X-Preview-Secret</code>.
+          To preview drafts, add
+          <code>?preview=true&amp;secret=YOUR_PREVIEW_SECRET</code> or set the
+          header <code>X-Preview: true</code> and <code>X-Preview-Secret</code>.
         </p>
         <p>
-          To open the Sanity Studio (content editing), run the Studio locally with
-          <code>npm run dev:studio</code> or visit your deployed Studio. The API and Studio share
-          the same Sanity project/dataset configuration.
+          To open the Sanity Studio (content editing), run the Studio locally
+          with
+          <code>npm run dev:studio</code> or visit your deployed Studio. The API
+          and Studio share the same Sanity project/dataset configuration.
         </p>
       </section>
 
@@ -50,11 +52,12 @@
         <h2>Notes for integrators</h2>
         <ul>
           <li>
-            Mobile base URL should point to this server; mobile expects `/content/*` endpoints.
+            Mobile base URL should point to this server; mobile expects
+            `/content/*` endpoints.
           </li>
           <li>
-            Legacy endpoints are available under <code>/api/v1/content/*</code> for backwards
-            compatibility.
+            Legacy endpoints are available under
+            <code>/api/v1/content/*</code> for backwards compatibility.
           </li>
         </ul>
       </section>
@@ -70,9 +73,21 @@
       aria-hidden="false"
       style="position: fixed; right: 12px; bottom: 12px; z-index: 999"
     >
-      <button id="a11y-contrast" title="Toggle high contrast" aria-pressed="false">Contrast</button>
-      <button id="a11y-large" title="Toggle large text" aria-pressed="false">Large text</button>
-      <button id="a11y-dyslexic" title="Toggle dyslexia-friendly font" aria-pressed="false">
+      <button
+        id="a11y-contrast"
+        title="Toggle high contrast"
+        aria-pressed="false"
+      >
+        Contrast
+      </button>
+      <button id="a11y-large" title="Toggle large text" aria-pressed="false">
+        Large text
+      </button>
+      <button
+        id="a11y-dyslexic"
+        title="Toggle dyslexia-friendly font"
+        aria-pressed="false"
+      >
         Dyslexic
       </button>
     </div>

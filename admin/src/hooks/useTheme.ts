@@ -1,7 +1,7 @@
-import {useEffect} from 'react'
+import { useEffect } from "react";
 
-export function useTheme(theme: 'light' | 'dark') {
+export function useTheme(theme: "light" | "dark") {
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 }

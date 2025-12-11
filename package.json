@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "pnpm -C apps/admin build && pnpm -C apps/studio build && pnpm -C server build",
+    "typecheck": "pnpm server:build",
+    "sanity:check": "pnpm -C apps/studio check",
     "admin:dev": "pnpm -C apps/admin dev",
     "admin:build": "pnpm -C apps/admin build",
     "studio:dev": "pnpm -C apps/studio dev",

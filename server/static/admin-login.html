@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,7 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
         background: #0f172a;
         color: #e2e8f0;
         display: flex;
@@ -70,42 +75,44 @@
       <input id="password" type="password" placeholder="Password" />
       <button id="loginBtn">Sign In</button>
       <div id="error" class="error"></div>
-      <div id="success" class="success">Login successful. You may now open the Admin dashboard.</div>
+      <div id="success" class="success">
+        Login successful. You may now open the Admin dashboard.
+      </div>
     </div>
     <script>
       async function login() {
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const error = document.getElementById('error');
-        const success = document.getElementById('success');
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const error = document.getElementById("error");
+        const success = document.getElementById("success");
 
-        error.style.display = 'none';
-        success.style.display = 'none';
+        error.style.display = "none";
+        success.style.display = "none";
 
         try {
-          const res = await fetch('/admin/login', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+          const res = await fetch("/admin/login", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
           });
           const data = await res.json();
           if (!res.ok) {
-            error.textContent = data.error || 'Invalid login.';
-            error.style.display = 'block';
+            error.textContent = data.error || "Invalid login.";
+            error.style.display = "block";
             return;
           }
-          success.style.display = 'block';
+          success.style.display = "block";
         } catch (e) {
-          const error = document.getElementById('error');
-          error.textContent = 'Network error';
-          error.style.display = 'block';
+          const error = document.getElementById("error");
+          error.textContent = "Network error";
+          error.style.display = "block";
         }
       }
-      document.getElementById('loginBtn').addEventListener('click', login);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') login();
+      document.getElementById("loginBtn").addEventListener("click", login);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") login();
       });
     </script>
   </body>
-  </html>
+</html>

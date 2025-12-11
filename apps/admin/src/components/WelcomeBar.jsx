@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { apiJson } from '../lib/api';
-import './welcome-bar.css';
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
+import "./welcome-bar.css";
 
-const UpArrow = () => <span style={{ color: '#4ade80', fontWeight: 600 }}>▲</span>;
-const DownArrow = () => <span style={{ color: '#f87171', fontWeight: 600 }}>▼</span>;
+const UpArrow = () => (
+  <span style={{ color: "#4ade80", fontWeight: 600 }}>▲</span>
+);
+const DownArrow = () => (
+  <span style={{ color: "#f87171", fontWeight: 600 }}>▼</span>
+);
 
 export default function WelcomeBar() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
     let mounted = true;
-    apiJson('/api/admin/banner')
+    apiJson("/api/admin/banner")
       .then(({ ok, data }) => {
         if (mounted && ok) setData(data);
       })
@@ -22,7 +26,10 @@ export default function WelcomeBar() {
 
   const now = data?.serverTime ? new Date(data.serverTime) : new Date();
   const dateStr = now.toLocaleDateString();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeStr = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <div className="welcome-bar">
@@ -47,7 +54,8 @@ export default function WelcomeBar() {
             <span className="wb-label">Active users</span>
             <span className="wb-value">{data.analytics.activeUsers}</span>
             <span className="wb-change">
-              {data.analytics.change >= 0 ? <UpArrow /> : <DownArrow />} {Math.abs(data.analytics.change)}%
+              {data.analytics.change >= 0 ? <UpArrow /> : <DownArrow />}{" "}
+              {Math.abs(data.analytics.change)}%
             </span>
           </div>
         )}

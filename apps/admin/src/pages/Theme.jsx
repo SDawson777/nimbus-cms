@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { apiJson } from '../lib/api';
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
 
 export default function ThemePage() {
   const [theme, setTheme] = useState({
-    primaryColor: '#3b82f6',
-    accentColor: '#22c55e',
-    backgroundColor: '#020617',
-    surfaceColor: '#0f172a',
-    fontColor: '#e5e7eb',
+    primaryColor: "#3b82f6",
+    accentColor: "#22c55e",
+    backgroundColor: "#020617",
+    surfaceColor: "#0f172a",
+    fontColor: "#e5e7eb",
   });
 
   useEffect(() => {
     const controller = new AbortController();
-    apiJson('/admin/theme', { signal: controller.signal })
+    apiJson("/admin/theme", { signal: controller.signal })
       .then(({ ok, data, aborted }) => {
         if (aborted || controller.signal.aborted) return;
         if (ok && data) setTheme((t) => ({ ...t, ...data }));
@@ -26,8 +26,8 @@ export default function ThemePage() {
   };
 
   const save = () => {
-    apiJson('/admin/theme', {
-      method: 'POST',
+    apiJson("/admin/theme", {
+      method: "POST",
       body: JSON.stringify(theme),
     }).catch(() => {});
   };
@@ -42,7 +42,10 @@ export default function ThemePage() {
           borderColor: theme.accentColor,
         }}
       >
-        <div className="preview-logo" style={{ background: theme.primaryColor }} />
+        <div
+          className="preview-logo"
+          style={{ background: theme.primaryColor }}
+        />
         <div className="preview-text">
           <div className="preview-title">Nimbus CMS Suite</div>
           <div className="preview-sub">Live preview</div>
@@ -54,7 +57,7 @@ export default function ThemePage() {
           <input
             type="color"
             value={theme.primaryColor}
-            onChange={(e) => update('primaryColor', e.target.value)}
+            onChange={(e) => update("primaryColor", e.target.value)}
           />
         </label>
         <label>
@@ -62,7 +65,7 @@ export default function ThemePage() {
           <input
             type="color"
             value={theme.accentColor}
-            onChange={(e) => update('accentColor', e.target.value)}
+            onChange={(e) => update("accentColor", e.target.value)}
           />
         </label>
         <label>
@@ -70,7 +73,7 @@ export default function ThemePage() {
           <input
             type="color"
             value={theme.backgroundColor}
-            onChange={(e) => update('backgroundColor', e.target.value)}
+            onChange={(e) => update("backgroundColor", e.target.value)}
           />
         </label>
         <label>
@@ -78,12 +81,16 @@ export default function ThemePage() {
           <input
             type="color"
             value={theme.surfaceColor}
-            onChange={(e) => update('surfaceColor', e.target.value)}
+            onChange={(e) => update("surfaceColor", e.target.value)}
           />
         </label>
         <label>
           Font color
-          <input type="color" value={theme.fontColor} onChange={(e) => update('fontColor', e.target.value)} />
+          <input
+            type="color"
+            value={theme.fontColor}
+            onChange={(e) => update("fontColor", e.target.value)}
+          />
         </label>
       </div>
       <button className="btn primary" onClick={save}>

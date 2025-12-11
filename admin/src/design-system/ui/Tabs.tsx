@@ -1,20 +1,20 @@
-import React from 'react'
+import React from "react";
 
-type Tab = {id: string; label: string}
+type Tab = { id: string; label: string };
 
 type Props = {
-  tabs: Tab[]
-  activeId: string
-  onChange: (id: string) => void
-}
+  tabs: Tab[];
+  activeId: string;
+  onChange: (id: string) => void;
+};
 
-export default function Tabs({tabs, activeId, onChange}: Props) {
+export default function Tabs({ tabs, activeId, onChange }: Props) {
   return (
     <div
       style={{
-        display: 'flex',
+        display: "flex",
         gap: 8,
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: "1px solid var(--color-border)",
         marginBottom: 16,
       }}
     >
@@ -23,17 +23,20 @@ export default function Tabs({tabs, activeId, onChange}: Props) {
           key={t.id}
           onClick={() => onChange(t.id)}
           style={{
-            padding: '8px 12px',
-            border: 'none',
-            background: 'transparent',
+            padding: "8px 12px",
+            border: "none",
+            background: "transparent",
             borderBottom:
-              activeId === t.id ? '2px solid var(--color-primary)' : '2px solid transparent',
-            color: activeId === t.id ? 'var(--color-primary)' : 'var(--color-text)',
+              activeId === t.id
+                ? "2px solid var(--color-primary)"
+                : "2px solid transparent",
+            color:
+              activeId === t.id ? "var(--color-primary)" : "var(--color-text)",
           }}
         >
           {t.label}
         </button>
       ))}
     </div>
-  )
+  );
 }

@@ -1,40 +1,46 @@
-import React, {useEffect, useState} from 'react'
-import {apiJson} from '../lib/api'
+import React, { useEffect, useState } from "react";
+import { apiJson } from "../lib/api";
 
 export default function Products() {
-  const [items, setItems] = useState([])
-  const [showRecalled, setShowRecalled] = useState(false)
+  const [items, setItems] = useState([]);
+  const [showRecalled, setShowRecalled] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
     async function load() {
       try {
-        const q = showRecalled ? '/api/admin/products?includeRecalled=true' : '/api/admin/products'
-        const {data, ok, aborted} = await apiJson(q, {signal: controller.signal}, [])
-        if (aborted || controller.signal.aborted) return
+        const q = showRecalled
+          ? "/api/admin/products?includeRecalled=true"
+          : "/api/admin/products";
+        const { data, ok, aborted } = await apiJson(
+          q,
+          { signal: controller.signal },
+          [],
+        );
+        if (aborted || controller.signal.aborted) return;
         if (ok) {
-          setItems(Array.isArray(data) ? data : [])
+          setItems(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    load()
-    return () => controller.abort()
-  }, [showRecalled])
+    load();
+    return () => controller.abort();
+  }, [showRecalled]);
 
   return (
-    <div style={{padding: 20}}>
+    <div style={{ padding: 20 }}>
       <h1>Products</h1>
-      <div style={{marginBottom: 12}}>
-        <label style={{marginRight: 8}}>Show recalled:</label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ marginRight: 8 }}>Show recalled:</label>
         <input
           type="checkbox"
           checked={showRecalled}
           onChange={(e) => setShowRecalled(e.target.checked)}
         />
       </div>
-      <table style={{width: '100%', borderCollapse: 'collapse'}}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Id</th>
@@ -53,11 +59,11 @@ export default function Products() {
               <td>{p.slug}</td>
               <td>{p.price}</td>
               <td>{p.type}</td>
-              <td>{p.isRecalled ? 'Yes' : 'No'}</td>
+              <td>{p.isRecalled ? "Yes" : "No"}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

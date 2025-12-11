@@ -1,11 +1,11 @@
-import express from 'express'
-import {z} from 'zod'
-import {requireRoleV2} from '../middleware/requireRole'
-import {Role} from '../types/roles'
-import {logger} from '../lib/logger'
-import OpenAI from 'openai'
+import express from "express";
+import { z } from "zod";
+import { requireRoleV2 } from "../middleware/requireRole";
+import { Role } from "../types/roles";
+import { logger } from "../lib/logger";
+import OpenAI from "openai";
 
-const router = express.Router()
+const router = express.Router();
 
 /**
  * @openapi
@@ -49,78 +49,82 @@ const router = express.Router()
  *       500:
  *         description: Server error
  */
-router.post('/chat', requireRoleV2([Role.Admin, Role.Editor, Role.Viewer]), async (req, res) => {
-  try {
-    const parsed = z
-      .object({
-        message: z.string().min(1, 'Message is required'),
-        context: z.string().optional(),
-      })
-      .safeParse(req.body || {})
-
-    if (!parsed.success) {
-      return res.status(400).json({
-        code: 'INVALID_MESSAGE',
-        message: 'Message is required and must be a string',
-        details: parsed.error.issues,
-      })
-    }
-
-    const {message, context} = parsed.data
-    const apiKey = (process.env.OPENAI_API_KEY || '').trim()
-    const aiModel = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
-
-    let reply: string | undefined
-
-    if (apiKey) {
-      try {
-        const openai = new OpenAI({apiKey})
-        const completion = await openai.chat.completions.create({
-          model: aiModel,
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are Nimbus CMS Concierge, a concise assistant for admins. Keep replies under 120 words, give actionable steps, and avoid guessing metrics.',
-            },
-            {
-              role: 'user',
-              content: message,
-            },
-            ...(context
-              ? [
-                  {
-                    role: 'system' as const,
-                    content: `Context: ${context}`,
-                  },
-                ]
-              : []),
-          ],
-          temperature: 0.3,
-          max_tokens: 240,
+router.post(
+  "/chat",
+  requireRoleV2([Role.Admin, Role.Editor, Role.Viewer]),
+  async (req, res) => {
+    try {
+      const parsed = z
+        .object({
+          message: z.string().min(1, "Message is required"),
+          context: z.string().optional(),
         })
+        .safeParse(req.body || {});
 
-        reply = completion.choices?.[0]?.message?.content?.trim()
-      } catch (error: any) {
-        logger.error('AI chat provider error', error)
+      if (!parsed.success) {
+        return res.status(400).json({
+          code: "INVALID_MESSAGE",
+          message: "Message is required and must be a string",
+          details: parsed.error.issues,
+        });
       }
+
+      const { message, context } = parsed.data;
+      const apiKey = (process.env.OPENAI_API_KEY || "").trim();
+      const aiModel = (process.env.OPENAI_MODEL || "gpt-4o-mini").trim();
+
+      let reply: string | undefined;
+
+      if (apiKey) {
+        try {
+          const openai = new OpenAI({ apiKey });
+          const completion = await openai.chat.completions.create({
+            model: aiModel,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are Nimbus CMS Concierge, a concise assistant for admins. Keep replies under 120 words, give actionable steps, and avoid guessing metrics.",
+              },
+              {
+                role: "user",
+                content: message,
+              },
+              ...(context
+                ? [
+                    {
+                      role: "system" as const,
+                      content: `Context: ${context}`,
+                    },
+                  ]
+                : []),
+            ],
+            temperature: 0.3,
+            max_tokens: 240,
+          });
+
+          reply = completion.choices?.[0]?.message?.content?.trim();
+        } catch (error: any) {
+          logger.error("AI chat provider error", error);
+        }
+      }
+
+      const friendlyFallback =
+        "I’m on it. For quick wins: review pipeline health, confirm compliance attestations, and refresh personalization to boost conversions.";
+
+      res.json({
+        reply: reply || friendlyFallback,
+        echo: { context, message },
+        provider: apiKey ? "openai" : "static-fallback",
+      });
+    } catch (error: any) {
+      logger.error("AI chat error", error);
+      res.status(500).json({
+        code: "AI_ERROR",
+        message: "Failed to process AI request",
+      });
     }
+  },
+);
 
-    const friendlyFallback =
-      'I’m on it. For quick wins: review pipeline health, confirm compliance attestations, and refresh personalization to boost conversions.'
-
-    res.json({
-      reply: reply || friendlyFallback,
-      echo: {context, message},
-      provider: apiKey ? 'openai' : 'static-fallback',
-    })
-  } catch (error: any) {
-    logger.error('AI chat error', error)
-    res.status(500).json({
-      code: 'AI_ERROR',
-      message: 'Failed to process AI request',
-    })
-  }
-})
-
-export default router
+export default router;

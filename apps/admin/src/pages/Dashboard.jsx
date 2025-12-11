@@ -1,236 +1,285 @@
-import React, {useEffect, useMemo, useState} from 'react'
-import {TrafficChart, SalesChart, EngagementChart} from '../components/Charts'
-import Badge from '../design-system/Badge'
-import Card from '../design-system/Card'
-import ChartJS from 'chart.js/auto'
-import {Line} from 'react-chartjs-2'
-import {apiJson, apiBaseUrl} from '../lib/api'
-import Heatmap2D from '../components/Heatmap2D'
-import {fetchDashboardLayout, saveDashboardLayout, DEFAULT_LAYOUT} from '../lib/preferences'
-import {useNotify} from '../components/NotificationCenter'
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  TrafficChart,
+  SalesChart,
+  EngagementChart,
+} from "../components/Charts";
+import Badge from "../design-system/Badge";
+import Card from "../design-system/Card";
+import ChartJS from "chart.js/auto";
+import { Line } from "react-chartjs-2";
+import { apiJson, apiBaseUrl } from "../lib/api";
+import Heatmap2D from "../components/Heatmap2D";
+import {
+  fetchDashboardLayout,
+  saveDashboardLayout,
+  DEFAULT_LAYOUT,
+} from "../lib/preferences";
+import { useNotify } from "../components/NotificationCenter";
 
 const SAMPLE_OVERVIEW = {
   traffic: [
-    {timestamp: '08:00', visits: 320},
-    {timestamp: '10:00', visits: 540},
-    {timestamp: '12:00', visits: 680},
-    {timestamp: '14:00', visits: 720},
-    {timestamp: '16:00', visits: 610},
+    { timestamp: "08:00", visits: 320 },
+    { timestamp: "10:00", visits: 540 },
+    { timestamp: "12:00", visits: 680 },
+    { timestamp: "14:00", visits: 720 },
+    { timestamp: "16:00", visits: 610 },
   ],
   sales: [
-    {timestamp: '08:00', value: 1800},
-    {timestamp: '10:00', value: 2400},
-    {timestamp: '12:00', value: 3100},
-    {timestamp: '14:00', value: 3600},
-    {timestamp: '16:00', value: 2900},
+    { timestamp: "08:00", value: 1800 },
+    { timestamp: "10:00", value: 2400 },
+    { timestamp: "12:00", value: 3100 },
+    { timestamp: "14:00", value: 3600 },
+    { timestamp: "16:00", value: 2900 },
   ],
   engagement: [
-    {timestamp: 'Mon', depth: 5.4, retention: 62},
-    {timestamp: 'Tue', depth: 5.9, retention: 64},
-    {timestamp: 'Wed', depth: 6.4, retention: 67},
-    {timestamp: 'Thu', depth: 6.1, retention: 65},
-    {timestamp: 'Fri', depth: 6.7, retention: 70},
+    { timestamp: "Mon", depth: 5.4, retention: 62 },
+    { timestamp: "Tue", depth: 5.9, retention: 64 },
+    { timestamp: "Wed", depth: 6.4, retention: 67 },
+    { timestamp: "Thu", depth: 6.1, retention: 65 },
+    { timestamp: "Fri", depth: 6.7, retention: 70 },
   ],
   topArticles: [
-    {contentSlug: 'ai-strategy-2025', views: 1820, clickThroughs: 420},
-    {contentSlug: 'compliance-fastlane', views: 1460, clickThroughs: 360},
-    {contentSlug: 'design-systems', views: 1210, clickThroughs: 310},
+    { contentSlug: "ai-strategy-2025", views: 1820, clickThroughs: 420 },
+    { contentSlug: "compliance-fastlane", views: 1460, clickThroughs: 360 },
+    { contentSlug: "design-systems", views: 1210, clickThroughs: 310 },
   ],
   topFaqs: [
-    {contentSlug: 'pricing', views: 980, clickThroughs: 250},
-    {contentSlug: 'security', views: 840, clickThroughs: 210},
-    {contentSlug: 'analytics', views: 720, clickThroughs: 180},
+    { contentSlug: "pricing", views: 980, clickThroughs: 250 },
+    { contentSlug: "security", views: 840, clickThroughs: 210 },
+    { contentSlug: "analytics", views: 720, clickThroughs: 180 },
   ],
   topProducts: [
-    {contentSlug: 'aurora-os', views: 2100, clickThroughs: 640, sales: 74},
-    {contentSlug: 'halo-pay', views: 1860, clickThroughs: 520, sales: 58},
-    {contentSlug: 'atlas-ai', views: 1640, clickThroughs: 480, sales: 61},
+    { contentSlug: "aurora-os", views: 2100, clickThroughs: 640, sales: 74 },
+    { contentSlug: "halo-pay", views: 1860, clickThroughs: 520, sales: 58 },
+    { contentSlug: "atlas-ai", views: 1640, clickThroughs: 480, sales: 61 },
   ],
   productSeries: [
     {
-      slug: 'aurora-os',
+      slug: "aurora-os",
       series: [
-        {date: 'T0', views: 320},
-        {date: 'T1', views: 480},
-        {date: 'T2', views: 620},
-        {date: 'T3', views: 710},
-        {date: 'T4', views: 680},
+        { date: "T0", views: 320 },
+        { date: "T1", views: 480 },
+        { date: "T2", views: 620 },
+        { date: "T3", views: 710 },
+        { date: "T4", views: 680 },
       ],
     },
     {
-      slug: 'halo-pay',
+      slug: "halo-pay",
       series: [
-        {date: 'T0', views: 280},
-        {date: 'T1', views: 340},
-        {date: 'T2', views: 420},
-        {date: 'T3', views: 510},
-        {date: 'T4', views: 470},
+        { date: "T0", views: 280 },
+        { date: "T1", views: 340 },
+        { date: "T2", views: 420 },
+        { date: "T3", views: 510 },
+        { date: "T4", views: 470 },
       ],
     },
     {
-      slug: 'atlas-ai',
+      slug: "atlas-ai",
       series: [
-        {date: 'T0', views: 260},
-        {date: 'T1', views: 330},
-        {date: 'T2', views: 410},
-        {date: 'T3', views: 560},
-        {date: 'T4', views: 520},
+        { date: "T0", views: 260 },
+        { date: "T1", views: 330 },
+        { date: "T2", views: 410 },
+        { date: "T3", views: 560 },
+        { date: "T4", views: 520 },
       ],
     },
   ],
   storeEngagement: [
-    {storeSlug: 'detroit-hq', longitude: -83.0458, latitude: 42.3314, engagement: 42, views: 980, clickThroughs: 240},
-    {storeSlug: 'chicago-loop', longitude: -87.6298, latitude: 41.8781, engagement: 37, views: 860, clickThroughs: 210},
-    {storeSlug: 'nyc-soho', longitude: -74.006, latitude: 40.7128, engagement: 55, views: 1120, clickThroughs: 310},
+    {
+      storeSlug: "detroit-hq",
+      longitude: -83.0458,
+      latitude: 42.3314,
+      engagement: 42,
+      views: 980,
+      clickThroughs: 240,
+    },
+    {
+      storeSlug: "chicago-loop",
+      longitude: -87.6298,
+      latitude: 41.8781,
+      engagement: 37,
+      views: 860,
+      clickThroughs: 210,
+    },
+    {
+      storeSlug: "nyc-soho",
+      longitude: -74.006,
+      latitude: 40.7128,
+      engagement: 55,
+      views: 1120,
+      clickThroughs: 310,
+    },
   ],
   productDemand: [
-    {slug: 'aurora-os', demandScore: 92, status: 'Hot'},
-    {slug: 'halo-pay', demandScore: 84, status: 'Watch'},
-    {slug: 'atlas-ai', demandScore: 76, status: 'Stable'},
+    { slug: "aurora-os", demandScore: 92, status: "Hot" },
+    { slug: "halo-pay", demandScore: 84, status: "Watch" },
+    { slug: "atlas-ai", demandScore: 76, status: "Stable" },
   ],
-}
+};
 
 const CARD_COPY = {
-  traffic: 'Traffic momentum across web and app surfaces.',
-  revenue: 'Revenue pulse in real time across SKUs.',
-  engagement: 'Engagement depth and retention by week.',
-  demand: 'Product demand and risk signals.',
-  products: 'Top products with sparklines by velocity.',
-  faqs: 'Knowledge base deflection and FAQ traction.',
-  stores: 'Store by store engagement rollup.',
-  heatmap: 'Multi-location heatmap for regional ops.',
-}
+  traffic: "Traffic momentum across web and app surfaces.",
+  revenue: "Revenue pulse in real time across SKUs.",
+  engagement: "Engagement depth and retention by week.",
+  demand: "Product demand and risk signals.",
+  products: "Top products with sparklines by velocity.",
+  faqs: "Knowledge base deflection and FAQ traction.",
+  stores: "Store by store engagement rollup.",
+  heatmap: "Multi-location heatmap for regional ops.",
+};
 
 export default function Dashboard() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [recalledCount, setRecalledCount] = useState(null)
-  const [layout, setLayout] = useState(DEFAULT_LAYOUT)
-  const [savingLayout, setSavingLayout] = useState(false)
-  const notify = useNotify()
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [recalledCount, setRecalledCount] = useState(null);
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT);
+  const [savingLayout, setSavingLayout] = useState(false);
+  const notify = useNotify();
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
     async function loadRecalled() {
       try {
         if (!apiBaseUrl()) {
-          setRecalledCount(0)
-          return
+          setRecalledCount(0);
+          return;
         }
-        const {ok, data, aborted} = await apiJson(
-          '/api/admin/products/recalled-count',
-          {signal: controller.signal},
+        const { ok, data, aborted } = await apiJson(
+          "/api/admin/products/recalled-count",
+          { signal: controller.signal },
           null,
-        )
+        );
         if (!aborted && !controller.signal.aborted && ok && data)
-          setRecalledCount(typeof data.count === 'number' ? data.count : 0)
+          setRecalledCount(typeof data.count === "number" ? data.count : 0);
       } catch (e) {
-        if (!controller.signal.aborted) setRecalledCount(0)
+        if (!controller.signal.aborted) setRecalledCount(0);
       }
     }
     async function loadLayout() {
-      const {layout} = await fetchDashboardLayout()
-      if (!controller.signal.aborted && layout) setLayout(layout)
+      const { layout } = await fetchDashboardLayout();
+      if (!controller.signal.aborted && layout) setLayout(layout);
     }
     async function loadOverview() {
       try {
         if (!apiBaseUrl()) {
-          setData(SAMPLE_OVERVIEW)
-          return
+          setData(SAMPLE_OVERVIEW);
+          return;
         }
-        const {ok, data, aborted} = await apiJson(
-          '/api/admin/analytics/overview',
-          {signal: controller.signal},
+        const { ok, data, aborted } = await apiJson(
+          "/api/admin/analytics/overview",
+          { signal: controller.signal },
           null,
-        )
-        if (!controller.signal.aborted) setData(!aborted && ok && data ? data : SAMPLE_OVERVIEW)
+        );
+        if (!controller.signal.aborted)
+          setData(!aborted && ok && data ? data : SAMPLE_OVERVIEW);
       } catch (err) {
-        if (!controller.signal.aborted) setData(SAMPLE_OVERVIEW)
+        if (!controller.signal.aborted) setData(SAMPLE_OVERVIEW);
       } finally {
-        if (!controller.signal.aborted) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
-    loadRecalled()
-    loadLayout()
-    loadOverview()
+    loadRecalled();
+    loadLayout();
+    loadOverview();
     return () => {
-      controller.abort()
-    }
-  }, [])
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (layout?.favorites?.length) {
       notify({
-        title: 'Favorites saved',
-        body: 'Alerts mirror your favorites. Adjust ordering with the arrows.',
-        tone: 'info',
+        title: "Favorites saved",
+        body: "Alerts mirror your favorites. Adjust ordering with the arrows.",
+        tone: "info",
         ttl: 3200,
-      })
+      });
     }
-  }, [layout?.favorites?.length, notify])
+  }, [layout?.favorites?.length, notify]);
 
-  const topArticles = (data && data.topArticles) || SAMPLE_OVERVIEW.topArticles
-  const topFaqs = (data && data.topFaqs) || SAMPLE_OVERVIEW.topFaqs
-  const topProducts = (data && data.topProducts) || SAMPLE_OVERVIEW.topProducts
-  const productSeries = (data && data.productSeries) || SAMPLE_OVERVIEW.productSeries
-  const stores = (data && data.storeEngagement) || SAMPLE_OVERVIEW.storeEngagement
-  const demand = (data && data.productDemand) || SAMPLE_OVERVIEW.productDemand
-  const heatmapToken = import.meta.env.VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN || null
+  const topArticles = (data && data.topArticles) || SAMPLE_OVERVIEW.topArticles;
+  const topFaqs = (data && data.topFaqs) || SAMPLE_OVERVIEW.topFaqs;
+  const topProducts = (data && data.topProducts) || SAMPLE_OVERVIEW.topProducts;
+  const productSeries =
+    (data && data.productSeries) || SAMPLE_OVERVIEW.productSeries;
+  const stores =
+    (data && data.storeEngagement) || SAMPLE_OVERVIEW.storeEngagement;
+  const demand = (data && data.productDemand) || SAMPLE_OVERVIEW.productDemand;
+  const heatmapToken = import.meta.env.VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN || null;
 
   const visibleCards = useMemo(
     () => layout.order.filter((id) => !layout.hidden.includes(id)),
     [layout],
-  )
-  const favorites = useMemo(() => new Set(layout.favorites || []), [layout])
+  );
+  const favorites = useMemo(() => new Set(layout.favorites || []), [layout]);
 
-  if (loading) return <div style={{padding: 20}}>Loading...</div>
+  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
 
   const productSnapshot = topProducts.map((p, idx) => {
-    const ps = productSeries.find((s) => s.slug === p.contentSlug)
-    const series = ps?.series || []
-    const point = series.length ? series[series.length - 1] : null
-    const value = point?.views ?? point?.value ?? p.views ?? p.clickThroughs ?? 0
+    const ps = productSeries.find((s) => s.slug === p.contentSlug);
+    const series = ps?.series || [];
+    const point = series.length ? series[series.length - 1] : null;
+    const value =
+      point?.views ?? point?.value ?? p.views ?? p.clickThroughs ?? 0;
     return {
       label: p.contentSlug || p.name || `Product ${idx + 1}`,
       value,
-    }
-  })
+    };
+  });
 
   const saveLayout = async (next) => {
-    setLayout(next)
-    setSavingLayout(true)
-    await saveDashboardLayout(next)
-    setSavingLayout(false)
-  }
+    setLayout(next);
+    setSavingLayout(true);
+    await saveDashboardLayout(next);
+    setSavingLayout(false);
+  };
 
   const toggleFavorite = (id) => {
-    const favs = new Set(layout.favorites)
-    if (favs.has(id)) favs.delete(id)
-    else favs.add(id)
-    saveLayout({...layout, favorites: Array.from(favs)})
-  }
+    const favs = new Set(layout.favorites);
+    if (favs.has(id)) favs.delete(id);
+    else favs.add(id);
+    saveLayout({ ...layout, favorites: Array.from(favs) });
+  };
 
   const moveCard = (id, dir) => {
-    const order = [...layout.order]
-    const idx = order.indexOf(id)
-    const swap = idx + dir
-    if (idx === -1 || swap < 0 || swap >= order.length) return
-    ;[order[idx], order[swap]] = [order[swap], order[idx]]
-    saveLayout({...layout, order})
-  }
+    const order = [...layout.order];
+    const idx = order.indexOf(id);
+    const swap = idx + dir;
+    if (idx === -1 || swap < 0 || swap >= order.length) return;
+    [order[idx], order[swap]] = [order[swap], order[idx]];
+    saveLayout({ ...layout, order });
+  };
 
   const renderSpark = (series) => {
-    if (!Line || !ChartJS) return null
-    const labels = series.map((s) => s.date)
-    const values = series.map((s) => s.views || s.value || 0)
-    const data = {labels, datasets: [{data: values, borderColor: '#22d3ee', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0}]}
-    const opts = {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {x: {display: false}, y: {display: false}}}
+    if (!Line || !ChartJS) return null;
+    const labels = series.map((s) => s.date);
+    const values = series.map((s) => s.views || s.value || 0);
+    const data = {
+      labels,
+      datasets: [
+        {
+          data: values,
+          borderColor: "#22d3ee",
+          backgroundColor: "transparent",
+          tension: 0.3,
+          pointRadius: 0,
+        },
+      ],
+    };
+    const opts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+    };
     return (
       <div className="sparkline">
         <Line data={data} options={opts} />
       </div>
-    )
-  }
+    );
+  };
 
   const cardRenderers = {
     traffic: (
@@ -265,7 +314,7 @@ export default function Dashboard() {
     ),
     demand: (
       <div className="table-card">
-        <div className="panel-header" style={{marginBottom: 4}}>
+        <div className="panel-header" style={{ marginBottom: 4 }}>
           <h2 className="section-title">Product demand insights</h2>
           <span className="pill">Signal</span>
         </div>
@@ -286,11 +335,11 @@ export default function Dashboard() {
                 <td>
                   <span
                     className={
-                      d.status?.toLowerCase().includes('watch')
-                        ? 'status-warn'
-                        : d.status?.toLowerCase().includes('risk')
-                          ? 'status-danger'
-                          : 'status-positive'
+                      d.status?.toLowerCase().includes("watch")
+                        ? "status-warn"
+                        : d.status?.toLowerCase().includes("risk")
+                          ? "status-danger"
+                          : "status-positive"
                     }
                   >
                     {d.status}
@@ -320,15 +369,23 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {topProducts.map((p) => {
-              const series = productSeries.find((s) => s.slug === p.contentSlug)?.series || []
+              const series =
+                productSeries.find((s) => s.slug === p.contentSlug)?.series ||
+                [];
               return (
                 <tr key={p.contentSlug}>
                   <td>{p.contentSlug}</td>
                   <td>{p.views}</td>
                   <td>{p.clickThroughs}</td>
-                  <td style={{minWidth: 110}}>{series.length ? renderSpark(series) : <span className="metric-subtle">n/a</span>}</td>
+                  <td style={{ minWidth: 110 }}>
+                    {series.length ? (
+                      renderSpark(series)
+                    ) : (
+                      <span className="metric-subtle">n/a</span>
+                    )}
+                  </td>
                 </tr>
-              )
+              );
             })}
           </tbody>
         </table>
@@ -363,39 +420,42 @@ export default function Dashboard() {
     ),
     stores: (
       <div className="table-card">
-        <div className="panel-header" style={{marginBottom: 4}}>
+        <div className="panel-header" style={{ marginBottom: 4 }}>
           <h2 className="section-title">Stores by engagement</h2>
           <span className="pill">Regional</span>
         </div>
         <p className="section-note">{CARD_COPY.stores}</p>
         <ul className="list-muted">
           {stores.map((s) => (
-            <li key={s.storeSlug} style={{marginBottom: 8}}>
-              <strong style={{color: '#fff'}}>{s.storeSlug}</strong> — {s.views} views · {s.clickThroughs}
+            <li key={s.storeSlug} style={{ marginBottom: 8 }}>
+              <strong style={{ color: "#fff" }}>{s.storeSlug}</strong> —{" "}
+              {s.views} views · {s.clickThroughs}
               &nbsp;clicks
             </li>
           ))}
         </ul>
       </div>
     ),
-    heatmap: stores.length > 1 && heatmapToken ? (
-      <div>
-        <h2 className="section-title">Location heatmap</h2>
-        <p className="section-note">{CARD_COPY.heatmap}</p>
-        <Heatmap2D stores={stores} token={heatmapToken} />
-      </div>
-    ) : null,
-  }
+    heatmap:
+      stores.length > 1 && heatmapToken ? (
+        <div>
+          <h2 className="section-title">Location heatmap</h2>
+          <p className="section-note">{CARD_COPY.heatmap}</p>
+          <Heatmap2D stores={stores} token={heatmapToken} />
+        </div>
+      ) : null,
+  };
 
   return (
-    <div className="dashboard-shell" style={{padding: 8}}>
+    <div className="dashboard-shell" style={{ padding: 8 }}>
       <div className="hero-banner">
         <div className="hero-copy">
           <p className="pill">Nimbus Control Center</p>
           <h1>Operational analytics cockpit</h1>
           <p>
-            Production-ready governance for engagement, commerce, and compliance across every surface.
-            Built for real-time operations and buyer handoff without surprises.
+            Production-ready governance for engagement, commerce, and compliance
+            across every surface. Built for real-time operations and buyer
+            handoff without surprises.
           </p>
           <div className="pill-row">
             <span className="pill-badge">99.95% uptime</span>
@@ -406,7 +466,7 @@ export default function Dashboard() {
         <div className="hero-actions">
           <div className="mini-stat">
             <div className="metric-label">Daily actives</div>
-            <div className="metric-value" style={{fontSize: 26}}>
+            <div className="metric-value" style={{ fontSize: 26 }}>
               1,245
             </div>
             <div className="status-positive">+12% vs last week</div>
@@ -414,15 +474,27 @@ export default function Dashboard() {
           <div className="mini-stat">
             <div className="metric-label">Risk posture</div>
             <div className="status-warn">Tracked</div>
-            <div className="metric-subtle">Monitoring data residency &amp; PII access</div>
+            <div className="metric-subtle">
+              Monitoring data residency &amp; PII access
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="dashboard-toolbar" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, margin: '12px 0 16px'}}>
+      <div
+        className="dashboard-toolbar"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          margin: "12px 0 16px",
+        }}
+      >
         <div>
-          <p className="section-note" style={{margin: 0}}>
-            Tap the star to favorite and use the tiny arrows to reorder your core widgets. Full layout controls live in Settings.
+          <p className="section-note" style={{ margin: 0 }}>
+            Tap the star to favorite and use the tiny arrows to reorder your
+            core widgets. Full layout controls live in Settings.
           </p>
         </div>
         {savingLayout && <span className="metric-subtle">Saving…</span>}
@@ -433,7 +505,9 @@ export default function Dashboard() {
           <div className="metric-label">Conversion rate</div>
           <div className="metric-value">3.2%</div>
           <Badge tone="success">+0.4% uplift</Badge>
-          <div className="metric-subtle">Personalization experiments holding steady</div>
+          <div className="metric-subtle">
+            Personalization experiments holding steady
+          </div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Avg. order value</div>
@@ -449,15 +523,22 @@ export default function Dashboard() {
         </div>
         <div className="metric-card">
           <div className="metric-label">Recalled products</div>
-          <div className="metric-value" style={{color: recalledCount && recalledCount > 0 ? '#f87171' : '#34d399'}}>
-            {recalledCount === null ? 'Loading…' : recalledCount}
+          <div
+            className="metric-value"
+            style={{
+              color: recalledCount && recalledCount > 0 ? "#f87171" : "#34d399",
+            }}
+          >
+            {recalledCount === null ? "Loading…" : recalledCount}
           </div>
           {recalledCount !== null && (
-            <Badge tone={recalledCount > 0 ? 'error' : 'success'}>
-              {recalledCount === 0 ? 'All clear' : 'Action needed'}
+            <Badge tone={recalledCount > 0 ? "error" : "success"}>
+              {recalledCount === 0 ? "All clear" : "Action needed"}
             </Badge>
           )}
-          <div className="metric-subtle">Quality controls &amp; consumer safety</div>
+          <div className="metric-subtle">
+            Quality controls &amp; consumer safety
+          </div>
         </div>
       </div>
 
@@ -465,30 +546,42 @@ export default function Dashboard() {
         {visibleCards.map((id) => (
           <Card key={id}>
             <div className="card-header">
-              <div className="card-title-row" style={{gap: 8}}>
-                <h3 style={{margin: 0, fontSize: 16}}>{id.replace(/\b\w/g, (l) => l.toUpperCase())}</h3>
+              <div className="card-title-row" style={{ gap: 8 }}>
+                <h3 style={{ margin: 0, fontSize: 16 }}>
+                  {id.replace(/\b\w/g, (l) => l.toUpperCase())}
+                </h3>
                 <div className="card-actions" aria-label="Widget controls">
                   <button
-                    className={`icon-button ${favorites.has(id) ? 'is-active' : ''}`}
+                    className={`icon-button ${favorites.has(id) ? "is-active" : ""}`}
                     aria-label="Toggle favorite"
                     onClick={() => toggleFavorite(id)}
                   >
                     ★
                   </button>
-                  <button className="icon-button" aria-label="Move up" onClick={() => moveCard(id, -1)}>
+                  <button
+                    className="icon-button"
+                    aria-label="Move up"
+                    onClick={() => moveCard(id, -1)}
+                  >
                     ↑
                   </button>
-                  <button className="icon-button" aria-label="Move down" onClick={() => moveCard(id, 1)}>
+                  <button
+                    className="icon-button"
+                    aria-label="Move down"
+                    onClick={() => moveCard(id, 1)}
+                  >
                     ↓
                   </button>
                 </div>
               </div>
-              <p className="section-note" style={{margin: 0}}>{CARD_COPY[id]}</p>
+              <p className="section-note" style={{ margin: 0 }}>
+                {CARD_COPY[id]}
+              </p>
             </div>
             {cardRenderers[id] || <p className="metric-subtle">Coming soon</p>}
           </Card>
         ))}
       </div>
     </div>
-  )
+  );
 }

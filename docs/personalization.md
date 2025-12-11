@@ -88,8 +88,8 @@ A typical safe pattern for rule updates over `/api/admin/personalization/rules` 
 {
   "_id": "rule:vip-store-boost",
   "conditions": [
-    {"field": "storeId", "op": "equals", "value": "store-nyc-001"},
-    {"field": "segment", "op": "in", "value": ["vip", "whale"]}
+    { "field": "storeId", "op": "equals", "value": "store-nyc-001" },
+    { "field": "segment", "op": "in", "value": ["vip", "whale"] }
   ],
   "action": {
     "targetType": "article",

@@ -7,7 +7,10 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 export const corsOptions = {
-  origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+  origin(
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) {
     if (!origin) {
       return callback(null, true);
     }

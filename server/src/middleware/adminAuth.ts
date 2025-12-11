@@ -1,18 +1,18 @@
-import {Request, Response, NextFunction} from 'express'
-import jwt from 'jsonwebtoken'
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 
-const COOKIE_NAME = 'admin_token'
+const COOKIE_NAME = "admin_token";
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies && req.cookies[COOKIE_NAME]
-  if (!token) return res.status(401).json({error: 'UNAUTHORIZED'})
+  const token = req.cookies && req.cookies[COOKIE_NAME];
+  if (!token) return res.status(401).json({ error: "UNAUTHORIZED" });
   try {
-    const secret = process.env.JWT_SECRET
-    if (!secret) throw new Error('JWT_SECRET not configured')
-    const payload = jwt.verify(token, secret)
-    ;(req as any).admin = payload
-    return next()
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("JWT_SECRET not configured");
+    const payload = jwt.verify(token, secret);
+    (req as any).admin = payload;
+    return next();
   } catch (err) {
-    return res.status(401).json({error: 'UNAUTHORIZED'})
+    return res.status(401).json({ error: "UNAUTHORIZED" });
   }
 }

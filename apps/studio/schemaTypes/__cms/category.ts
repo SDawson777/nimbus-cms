@@ -1,15 +1,20 @@
-import {defineField, defineType} from 'sanity'
+import { defineField, defineType } from "sanity";
 
 export default defineType({
-  name: 'category',
-  type: 'document',
-  title: 'Category',
+  name: "category",
+  type: "document",
+  title: "Category",
   fields: [
-    defineField({name: 'title', type: 'string', title: 'Category Name'}),
-    defineField({name: 'description', type: 'text', title: 'Description'}),
-    defineField({name: 'icon', type: 'image', title: 'Icon Image', options: {hotspot: true}}),
+    defineField({ name: "title", type: "string", title: "Category Name" }),
+    defineField({ name: "description", type: "text", title: "Description" }),
+    defineField({
+      name: "icon",
+      type: "image",
+      title: "Icon Image",
+      options: { hotspot: true },
+    }),
   ],
   preview: {
-    select: {title: 'title', media: 'icon'},
+    select: { title: "title", media: "icon" },
   },
-})
+});

@@ -1,65 +1,69 @@
-import React, {createContext, useContext, useState, useEffect} from 'react'
+import React, { createContext, useContext, useState, useEffect } from "react";
 
-const TenantContext = createContext()
+const TenantContext = createContext();
 
-export function TenantProvider({children}) {
-  const [tenantId, setTenantId] = useState(null)
+export function TenantProvider({ children }) {
+  const [tenantId, setTenantId] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('nimbus.activeTenant')
+    const saved = localStorage.getItem("nimbus.activeTenant");
     if (saved) {
-      setTenantId(saved)
+      setTenantId(saved);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (tenantId) {
-      localStorage.setItem('nimbus.activeTenant', tenantId)
+      localStorage.setItem("nimbus.activeTenant", tenantId);
     } else {
-      localStorage.removeItem('nimbus.activeTenant')
+      localStorage.removeItem("nimbus.activeTenant");
     }
-  }, [tenantId])
+  }, [tenantId]);
 
-  return <TenantContext.Provider value={{tenantId, setTenantId}}>{children}</TenantContext.Provider>
+  return (
+    <TenantContext.Provider value={{ tenantId, setTenantId }}>
+      {children}
+    </TenantContext.Provider>
+  );
 }
 
 export function useTenant() {
-  const context = useContext(TenantContext)
+  const context = useContext(TenantContext);
   if (!context) {
-    throw new Error('useTenant must be used within TenantProvider')
+    throw new Error("useTenant must be used within TenantProvider");
   }
-  return context
+  return context;
 }
 
 export function WorkspaceSelector() {
-  const {tenantId, setTenantId} = useTenant()
+  const { tenantId, setTenantId } = useTenant();
 
   const workspaces = [
-    {id: null, name: 'Global'},
-    {id: 'tenant-a', name: 'Tenant A'},
-    {id: 'tenant-b', name: 'Tenant B'},
-    {id: 'tenant-c', name: 'Tenant C'},
-  ]
+    { id: null, name: "Global" },
+    { id: "tenant-a", name: "Tenant A" },
+    { id: "tenant-b", name: "Tenant B" },
+    { id: "tenant-c", name: "Tenant C" },
+  ];
 
   return (
     <select
-      value={tenantId || ''}
+      value={tenantId || ""}
       onChange={(e) => setTenantId(e.target.value || null)}
       style={{
-        padding: '8px 12px',
-        border: '1px solid #D1D5DB',
-        borderRadius: '6px',
+        padding: "8px 12px",
+        border: "1px solid #D1D5DB",
+        borderRadius: "6px",
         fontSize: 14,
-        background: '#fff',
-        cursor: 'pointer',
-        outline: 'none',
+        background: "#fff",
+        cursor: "pointer",
+        outline: "none",
       }}
     >
       {workspaces.map((ws) => (
-        <option key={ws.id || 'global'} value={ws.id || ''}>
+        <option key={ws.id || "global"} value={ws.id || ""}>
           {ws.name}
         </option>
       ))}
     </select>
-  )
+  );
 }

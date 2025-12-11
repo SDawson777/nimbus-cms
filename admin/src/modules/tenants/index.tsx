@@ -1,5 +1,5 @@
-import React from 'react'
-import Card from '@/design-system/ui/Card'
+import React from "react";
+import Card from "@/design-system/ui/Card";
 
 export default function TenantsIndex() {
   return (
@@ -9,5 +9,5 @@ export default function TenantsIndex() {
         <div>Manage tenants and workspaces.</div>
       </Card>
     </div>
-  )
+  );
 }

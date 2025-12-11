@@ -1,5 +1,5 @@
-import React from 'react'
-export default function Alert({size = 20}: {size?: number}) {
+import React from "react";
+export default function Alert({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -15,5 +15,5 @@ export default function Alert({size = 20}: {size?: number}) {
       <path d="M12 9v4" />
       <path d="M12 17h0" />
     </svg>
-  )
+  );
 }

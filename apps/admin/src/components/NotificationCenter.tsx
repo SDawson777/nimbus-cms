@@ -1,8 +1,8 @@
-import React, {useState} from "react";
-import {useNotifications} from "../lib/notificationsContext";
+import React, { useState } from "react";
+import { useNotifications } from "../lib/notificationsContext";
 
 export function NotificationCenter() {
-  const {notifications, markAllRead, clearAll} = useNotifications();
+  const { notifications, markAllRead, clearAll } = useNotifications();
   const [open, setOpen] = useState(false);
 
   const unread = notifications.filter((n) => !n.read).length;
@@ -35,7 +35,10 @@ export function NotificationCenter() {
                 <div className="title-row">
                   <span className="title">{n.title}</span>
                   <span className="time">
-                    {new Date(n.createdAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}
+                    {new Date(n.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
                 <div className="message">{n.message}</div>

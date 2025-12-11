@@ -44,15 +44,27 @@
     <div class="container">
       <div class="site-top" style="margin-bottom: 12px">
         <div class="brand">
-          <img class="logo" src="/nimbus-logo.svg" alt="Nimbus Cannabis OS CMS logo" />
+          <img
+            class="logo"
+            src="/nimbus-logo.svg"
+            alt="Nimbus Cannabis OS CMS logo"
+          />
           <strong>Nimbus Cannabis OS CMS</strong>
         </div>
       </div>
       <div class="login-wrap">
         <h2>Admin login</h2>
-        <p class="hint">Enter your email and password to access the admin area.</p>
+        <p class="hint">
+          Enter your email and password to access the admin area.
+        </p>
         <form id="login">
-          <input type="email" name="email" placeholder="Email" required autocomplete="username" />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+            autocomplete="username"
+          />
           <input
             type="password"
             name="password"
@@ -70,31 +82,44 @@
       aria-hidden="false"
       style="position: fixed; right: 12px; bottom: 12px; z-index: 999"
     >
-      <button id="a11y-contrast" title="Toggle high contrast" aria-pressed="false">Contrast</button>
-      <button id="a11y-large" title="Toggle large text" aria-pressed="false">Large text</button>
-      <button id="a11y-dyslexic" title="Toggle dyslexia-friendly font" aria-pressed="false">
+      <button
+        id="a11y-contrast"
+        title="Toggle high contrast"
+        aria-pressed="false"
+      >
+        Contrast
+      </button>
+      <button id="a11y-large" title="Toggle large text" aria-pressed="false">
+        Large text
+      </button>
+      <button
+        id="a11y-dyslexic"
+        title="Toggle dyslexia-friendly font"
+        aria-pressed="false"
+      >
         Dyslexic
       </button>
     </div>
     <script src="/a11y.js"></script>
     <script>
-      const form = document.getElementById('login')
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault()
-        const fd = new FormData(form)
-        const body = {email: fd.get('email'), password: fd.get('password')}
-        const res = await fetch('/admin/login', {
-          method: 'POST',
-          headers: {'content-type': 'application/json'},
+      const form = document.getElementById("login");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const body = { email: fd.get("email"), password: fd.get("password") };
+        const res = await fetch("/admin/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
-        })
+        });
         if (res.ok) {
-          window.location.href = '/admin/dashboard'
+          window.location.href = "/admin/dashboard";
         } else {
-          const j = await res.json()
-          document.getElementById('error').textContent = j.error || 'Login failed'
+          const j = await res.json();
+          document.getElementById("error").textContent =
+            j.error || "Login failed";
         }
-      })
+      });
     </script>
   </body>
 </html>

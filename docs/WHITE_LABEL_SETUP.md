@@ -94,7 +94,7 @@ By default, the Studio uses the `main` dataset. For multi-tenant setups:
 Edit `/apps/studio/sanity.config.ts`:
 
 ```typescript
-const dataset = process.env.SANITY_DATASET || 'production'
+const dataset = process.env.SANITY_DATASET || "production";
 ```
 
 Update `.env`:
@@ -199,7 +199,7 @@ The mobile app consumes the CMS API at `/content/*` endpoints.
 1. Set the base URL in your mobile app environment config:
 
 ```javascript
-const CMS_API_URL = 'https://your-cms-domain.com'
+const CMS_API_URL = "https://your-cms-domain.com";
 ```
 
 2. Mobile endpoints:
@@ -229,7 +229,7 @@ For true multi-tenant hosting (multiple brands on one CMS instance):
 
 ```typescript
 // apps/studio/sanity.config.ts
-const dataset = process.env.SANITY_DATASET || 'production'
+const dataset = process.env.SANITY_DATASET || "production";
 ```
 
 5. Deploy multiple Studio instances (one per brand) or use a shared Studio with dataset switching.

@@ -4,10 +4,10 @@ module.exports = {
     es2021: true,
   },
   globals: {
-    process: 'readonly',
-    Buffer: 'readonly',
+    process: "readonly",
+    Buffer: "readonly",
   },
   rules: {
-    '@typescript-eslint/no-var-requires': 'off',
+    "@typescript-eslint/no-var-requires": "off",
   },
-}
+};

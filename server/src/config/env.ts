@@ -1,23 +1,25 @@
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
-export type AppEnv = 'demo' | 'preview' | 'prod'
+export type AppEnv = "demo" | "preview" | "prod";
 
-export const APP_ENV: AppEnv = (process.env.APP_ENV as AppEnv) || 'preview'
-export const PORT: number = Number(process.env.PORT || '8080')
-export const SANITY_DATASET_DEFAULT: string = process.env.SANITY_DATASET_DEFAULT || ''
-const databaseUrl = process.env.DATABASE_URL
-const jwtSecret = process.env.JWT_SECRET
-export const ADMIN_SEED_ENABLED: boolean = (process.env.ADMIN_SEED_ENABLED || 'false') === 'true'
-export const DEMO_TENANT_SLUG: string = process.env.DEMO_TENANT_SLUG || ''
+export const APP_ENV: AppEnv = (process.env.APP_ENV as AppEnv) || "preview";
+export const PORT: number = Number(process.env.PORT || "8080");
+export const SANITY_DATASET_DEFAULT: string =
+  process.env.SANITY_DATASET_DEFAULT || "";
+const databaseUrl = process.env.DATABASE_URL;
+const jwtSecret = process.env.JWT_SECRET;
+export const ADMIN_SEED_ENABLED: boolean =
+  (process.env.ADMIN_SEED_ENABLED || "false") === "true";
+export const DEMO_TENANT_SLUG: string = process.env.DEMO_TENANT_SLUG || "";
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL is required')
+  throw new Error("DATABASE_URL is required");
 }
 if (!jwtSecret) {
-  throw new Error('JWT_SECRET is required')
+  throw new Error("JWT_SECRET is required");
 }
 
-export const DATABASE_URL: string = databaseUrl
-export const JWT_SECRET: string = jwtSecret
+export const DATABASE_URL: string = databaseUrl;
+export const JWT_SECRET: string = jwtSecret;

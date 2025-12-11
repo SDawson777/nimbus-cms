@@ -46,7 +46,11 @@
     <div class="container">
       <div class="site-top">
         <div class="brand">
-          <img class="logo" src="/nimbus-logo.svg" alt="Nimbus Cannabis OS CMS logo" />
+          <img
+            class="logo"
+            src="/nimbus-logo.svg"
+            alt="Nimbus Cannabis OS CMS logo"
+          />
           <strong>Nimbus Cannabis OS CMS</strong>
         </div>
         <div class="nav">
@@ -66,7 +70,13 @@
         </p>
 
         <section aria-live="polite" style="margin-top: 24px">
-          <header style="display: flex; justify-content: space-between; align-items: center">
+          <header
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
             <h3 style="margin: 0">Analytics overview</h3>
             <small id="analytics-cache-status" style="opacity: 0.7"></small>
           </header>
@@ -81,51 +91,64 @@
       aria-hidden="false"
       style="position: fixed; right: 12px; bottom: 12px; z-index: 999"
     >
-      <button id="a11y-contrast" title="Toggle high contrast" aria-pressed="false">Contrast</button>
-      <button id="a11y-large" title="Toggle large text" aria-pressed="false">Large text</button>
-      <button id="a11y-dyslexic" title="Toggle dyslexia-friendly font" aria-pressed="false">
+      <button
+        id="a11y-contrast"
+        title="Toggle high contrast"
+        aria-pressed="false"
+      >
+        Contrast
+      </button>
+      <button id="a11y-large" title="Toggle large text" aria-pressed="false">
+        Large text
+      </button>
+      <button
+        id="a11y-dyslexic"
+        title="Toggle dyslexia-friendly font"
+        aria-pressed="false"
+      >
         Dyslexic
       </button>
     </div>
     <script>
-      const overviewEl = document.getElementById('analytics-overview')
-      const cacheStatusEl = document.getElementById('analytics-cache-status')
+      const overviewEl = document.getElementById("analytics-overview");
+      const cacheStatusEl = document.getElementById("analytics-cache-status");
 
       function metricList(items, labelFormatter) {
-        if (!items || !items.length) return '<p>No data available.</p>'
+        if (!items || !items.length) return "<p>No data available.</p>";
         return `
           <ol>
-            ${items.map((item) => `<li>${labelFormatter(item)}</li>`).join('')}
+            ${items.map((item) => `<li>${labelFormatter(item)}</li>`).join("")}
           </ol>
-        `
+        `;
       }
 
       function productDelta(series) {
-        if (!series || !series.length) return 0
-        const sorted = [...series].sort((a, b) => a.date.localeCompare(b.date))
-        if (sorted.length < 2) return sorted[sorted.length - 1]?.views || 0
-        const latest = sorted[sorted.length - 1]
-        const prev = sorted[sorted.length - 2]
-        return (latest.views || 0) - (prev.views || 0)
+        if (!series || !series.length) return 0;
+        const sorted = [...series].sort((a, b) => a.date.localeCompare(b.date));
+        if (sorted.length < 2) return sorted[sorted.length - 1]?.views || 0;
+        const latest = sorted[sorted.length - 1];
+        const prev = sorted[sorted.length - 2];
+        return (latest.views || 0) - (prev.views || 0);
       }
 
       async function loadOverview() {
         try {
-          const res = await fetch('/api/admin/analytics/overview?limit=5', {
-            credentials: 'include',
-          })
-          if (!res.ok) throw new Error('Request failed')
-          cacheStatusEl.textContent = res.headers.get('X-Analytics-Overview-Cache') || ''
-          const json = await res.json()
-          const productSeriesBySlug = {}
-          ;(json.productSeries || []).forEach((entry) => {
-            productSeriesBySlug[entry.slug] = entry.series || []
-          })
-          const topArticles = json.topArticles || []
-          const topFaqs = json.topFaqs || []
-          const topProducts = json.topProducts || []
-          const productDemand = json.productDemand || []
-          const storeEngagement = json.storeEngagement || []
+          const res = await fetch("/api/admin/analytics/overview?limit=5", {
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error("Request failed");
+          cacheStatusEl.textContent =
+            res.headers.get("X-Analytics-Overview-Cache") || "";
+          const json = await res.json();
+          const productSeriesBySlug = {};
+          (json.productSeries || []).forEach((entry) => {
+            productSeriesBySlug[entry.slug] = entry.series || [];
+          });
+          const topArticles = json.topArticles || [];
+          const topFaqs = json.topFaqs || [];
+          const topProducts = json.topProducts || [];
+          const productDemand = json.productDemand || [];
+          const storeEngagement = json.storeEngagement || [];
 
           overviewEl.innerHTML = `
             <div class="card-grid">
@@ -146,9 +169,11 @@
               <article>
                 <h4>Product demand delta</h4>
                 ${metricList(productDemand, (item) => {
-                  const delta = productDelta(productSeriesBySlug[item.slug] || [])
-                  const trend = delta > 0 ? '▲' : delta < 0 ? '▼' : '•'
-                  return `${item.slug} — ${item.status} (${trend} ${delta} views day-over-day)`
+                  const delta = productDelta(
+                    productSeriesBySlug[item.slug] || [],
+                  );
+                  const trend = delta > 0 ? "▲" : delta < 0 ? "▼" : "•";
+                  return `${item.slug} — ${item.status} (${trend} ${delta} views day-over-day)`;
                 })}
               </article>
               <article>
@@ -156,14 +181,15 @@
                 ${metricList(storeEngagement, (item) => `${item.storeSlug}: ${item.views} views`)}
               </article>
             </div>
-          `
+          `;
         } catch (err) {
-          overviewEl.innerHTML = '<p style="color: #f55">Failed to load analytics data.</p>'
-          cacheStatusEl.textContent = ''
+          overviewEl.innerHTML =
+            '<p style="color: #f55">Failed to load analytics data.</p>';
+          cacheStatusEl.textContent = "";
         }
       }
 
-      loadOverview()
+      loadOverview();
     </script>
     <script src="/a11y.js"></script>
   </body>

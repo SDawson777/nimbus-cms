@@ -1,106 +1,111 @@
-import fs from 'fs'
-import path from 'path'
-import dotenv from 'dotenv'
-import {createClient} from '@sanity/client'
+import fs from "fs";
+import path from "path";
+import dotenv from "dotenv";
+import { createClient } from "@sanity/client";
 
-dotenv.config()
+dotenv.config();
 
 function ensureEnv(name: string) {
   if (!process.env[name]) {
-    console.error(`Missing required env var: ${name}`)
-    process.exit(2)
+    console.error(`Missing required env var: ${name}`);
+    process.exit(2);
   }
 }
 
 async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
-  let lastErr: any
+  let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
-      return await fn()
+      return await fn();
     } catch (e) {
-      lastErr = e
-      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delay * (i + 1)))
+      lastErr = e;
+      if (i < attempts - 1)
+        await new Promise((r) => setTimeout(r, delay * (i + 1)));
     }
   }
-  throw lastErr
+  throw lastErr;
 }
 
 async function main() {
-  ensureEnv('SANITY_PROJECT_ID')
-  ensureEnv('SANITY_DATASET')
+  ensureEnv("SANITY_PROJECT_ID");
+  ensureEnv("SANITY_DATASET");
 
-  const outDir = path.join(process.cwd(), 'backups')
-  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, {recursive: true})
+  const outDir = path.join(process.cwd(), "backups");
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const outFile = path.join(outDir, `export-${date}.json`)
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const outFile = path.join(outDir, `export-${date}.json`);
 
   const client = createClient({
     projectId: process.env.SANITY_PROJECT_ID!,
     dataset: process.env.SANITY_DATASET!,
-    apiVersion: process.env.SANITY_API_VERSION || '2023-07-01',
+    apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
     token: process.env.SANITY_API_TOKEN,
     useCdn: false,
-  })
+  });
 
   // Types we consider relevant for export
   const types = [
-    'organization',
-    'brand',
-    'store',
-    'themeConfig',
-    'legalDoc',
-    'article',
-    'faqItem',
-    'deal',
-    'product',
-    'contentMetric',
-    'personalizationRule',
-  ]
+    "organization",
+    "brand",
+    "store",
+    "themeConfig",
+    "legalDoc",
+    "article",
+    "faqItem",
+    "deal",
+    "product",
+    "contentMetric",
+    "personalizationRule",
+  ];
 
-  console.log('Exporting types:', types.join(', '))
+  console.log("Exporting types:", types.join(", "));
 
-  const results: Record<string, any[]> = {}
-  const pageSize = 1000
+  const results: Record<string, any[]> = {};
+  const pageSize = 1000;
 
   for (const t of types) {
-    console.log('Querying', t)
+    console.log("Querying", t);
     try {
-      const rows: any[] = []
-      let offset = 0
+      const rows: any[] = [];
+      let offset = 0;
       while (true) {
-        const q = `*[_type == "${t}"] | order(_createdAt asc)[${offset}...${offset + pageSize}]`
-        const batch = await retry(() => client.fetch(q))
-        if (!batch || batch.length === 0) break
-        rows.push(...batch)
-        console.log(`  fetched batch ${offset}..${offset + batch.length} (${batch.length})`)
-        offset += pageSize
+        const q = `*[_type == "${t}"] | order(_createdAt asc)[${offset}...${offset + pageSize}]`;
+        const batch = await retry(() => client.fetch(q));
+        if (!batch || batch.length === 0) break;
+        rows.push(...batch);
+        console.log(
+          `  fetched batch ${offset}..${offset + batch.length} (${batch.length})`,
+        );
+        offset += pageSize;
       }
-      results[t] = rows
-      console.log(`  fetched total ${rows.length} ${t}`)
+      results[t] = rows;
+      console.log(`  fetched total ${rows.length} ${t}`);
     } catch (err) {
-      console.error('failed to fetch', t, err)
-      results[t] = []
+      console.error("failed to fetch", t, err);
+      results[t] = [];
     }
   }
 
   // Also export any other top-level docs (safety)
   try {
-    const others = await retry(() => client.fetch('*[!(_type in $types)]', {types}))
-    results.__others = others || []
+    const others = await retry(() =>
+      client.fetch("*[!(_type in $types)]", { types }),
+    );
+    results.__others = others || [];
   } catch (err) {
-    console.warn('failed to fetch other docs', err)
-    results.__others = []
+    console.warn("failed to fetch other docs", err);
+    results.__others = [];
   }
 
   fs.writeFileSync(
     outFile,
-    JSON.stringify({exportedAt: new Date().toISOString(), results}, null, 2),
-  )
-  console.log('Wrote', outFile)
+    JSON.stringify({ exportedAt: new Date().toISOString(), results }, null, 2),
+  );
+  console.log("Wrote", outFile);
 }
 
 main().catch((err) => {
-  console.error('export failed', err)
-  process.exit(1)
-})
+  console.error("export failed", err);
+  process.exit(1);
+});

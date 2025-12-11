@@ -1,5 +1,5 @@
-import React from 'react'
-export default function ChevronDown({size = 20}: {size?: number}) {
+import React from "react";
+export default function ChevronDown({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -13,5 +13,5 @@ export default function ChevronDown({size = 20}: {size?: number}) {
     >
       <path d="M6 9l6 6 6-6" />
     </svg>
-  )
+  );
 }

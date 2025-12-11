@@ -1,25 +1,25 @@
-import {defineField, defineType} from 'sanity'
+import { defineField, defineType } from "sanity";
 
 export default defineType({
-  name: 'complianceMonitor',
-  type: 'document',
-  title: 'Compliance Monitor',
+  name: "complianceMonitor",
+  type: "document",
+  title: "Compliance Monitor",
   fields: [
     defineField({
-      name: 'lastRuns',
-      title: 'Last runs',
-      type: 'array',
+      name: "lastRuns",
+      title: "Last runs",
+      type: "array",
       of: [
         {
-          type: 'object',
+          type: "object",
           fields: [
-            {name: 'scope', type: 'string'},
-            {name: 'snapshotId', type: 'string'},
-            {name: 'ts', type: 'datetime'},
-            {name: 'brandSlug', type: 'string'},
+            { name: "scope", type: "string" },
+            { name: "snapshotId", type: "string" },
+            { name: "ts", type: "datetime" },
+            { name: "brandSlug", type: "string" },
           ],
         },
       ],
     }),
   ],
-})
+});
