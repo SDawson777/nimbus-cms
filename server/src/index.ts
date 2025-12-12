@@ -132,6 +132,11 @@ app.use("/", adminSessionInfoRouter);
 
 // Admin auth routes (login/logout)
 app.use("/admin", adminAuthRouter);
+// Also expose admin auth endpoints under the Nimbus API namespace so frontends
+// that prefix requests with the `VITE_NIMBUS_API_URL` (e.g. `/api/v1/nimbus`)
+// continue to work when they call `/api/v1/nimbus/admin/login` or
+// `/api/v1/nimbus/admin/me`.
+app.use("/api/v1/nimbus/admin", adminAuthRouter);
 // Serve admin static pages (login and dashboard)
 app.get("/admin", (_req, res) =>
   res.sendFile(path.join(staticDir, "admin", "login.html")),
@@ -171,6 +176,18 @@ app.use(
 // admin routes (products used by mobile) - protect all API admin routes with requireAdmin
 app.use(
   "/api/admin",
+  requireAdmin,
+  ensureCsrfCookie,
+  requireCsrfToken,
+  adminRouter,
+);
+
+// Also mount the admin API under the Nimbus namespace to support frontends
+// that build paths like `${API_BASE}/api/admin/...` (where `API_BASE` may be
+// `/api/v1/nimbus`). This provides backward-compatible routing for those
+// callers at `/api/v1/nimbus/api/admin/...`.
+app.use(
+  "/api/v1/nimbus/api/admin",
   requireAdmin,
   ensureCsrfCookie,
   requireCsrfToken,
