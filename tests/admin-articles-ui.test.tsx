@@ -53,10 +53,12 @@ describe("Articles admin UI", () => {
       });
     }
 
-    // initial (All) load
+    // initial (All) load — include a headers.get implementation so
+    // `safeJson` in the app detects JSON responses when tests mock `fetch`.
     // @ts-ignore
     globalThis.fetch.mockResolvedValueOnce({
       ok: true,
+      headers: { get: (_k: string) => "application/json" },
       json: async () => [
         {
           _id: "a1",
@@ -66,6 +68,7 @@ describe("Articles admin UI", () => {
           channels: undefined,
         },
       ],
+      text: async () => JSON.stringify([]),
     });
 
     root.render(React.createElement(Articles));
@@ -75,6 +78,7 @@ describe("Articles admin UI", () => {
     // @ts-ignore
     globalThis.fetch.mockResolvedValueOnce({
       ok: true,
+      headers: { get: (_k: string) => "application/json" },
       json: async () => [
         {
           _id: "m1",
@@ -84,6 +88,7 @@ describe("Articles admin UI", () => {
           channels: ["mobile"],
         },
       ],
+      text: async () => JSON.stringify([]),
     });
 
     // find select and change value

@@ -45,12 +45,14 @@ export default function AdminBanner() {
   );
 
   const openWeatherToken =
-    import.meta.env.VITE_OPENWEATHER_API_TOKEN || import.meta.env.VITE_WEATHER_API_KEY;
+    import.meta.env.VITE_OPENWEATHER_API_TOKEN ||
+    import.meta.env.VITE_WEATHER_API_KEY;
   const openWeatherCity = import.meta.env.VITE_OPENWEATHER_CITY || "Detroit,US";
   const openWeatherUrl = useMemo(() => {
     const token = (openWeatherToken || "").trim();
     const baseUrl =
-      import.meta.env.VITE_OPENWEATHER_API_URL || import.meta.env.VITE_WEATHER_API_URL ||
+      import.meta.env.VITE_OPENWEATHER_API_URL ||
+      import.meta.env.VITE_WEATHER_API_URL ||
       "https://api.openweathermap.org/data/2.5/weather";
     const search = new URLSearchParams({ units: "imperial" });
 

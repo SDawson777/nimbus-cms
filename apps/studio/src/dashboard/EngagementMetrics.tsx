@@ -1,16 +1,16 @@
-import React, {useEffect, useState} from 'react'
-import {Card, Flex, Stack, Text, Badge} from '@sanity/ui'
-import {useClient} from 'sanity'
+import React, { useEffect, useState } from "react";
+import { Card, Flex, Stack, Text, Badge } from "@sanity/ui";
+import { useClient } from "sanity";
 
 type MetricState = {
-  productCount: number
-  contentCount: number
-  orderCount: number
-}
+  productCount: number;
+  contentCount: number;
+  orderCount: number;
+};
 
 const EngagementMetrics: React.FC = () => {
-  const client = useClient({apiVersion: '2024-08-01'})
-  const [metrics, setMetrics] = useState<MetricState | null>(null)
+  const client = useClient({ apiVersion: "2024-08-01" });
+  const [metrics, setMetrics] = useState<MetricState | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -18,16 +18,16 @@ const EngagementMetrics: React.FC = () => {
       const [productCount, contentCount] = await Promise.all([
         client.fetch<number>('count(*[_type == "product"])'),
         client.fetch<number>('count(*[_type == "contentPage"])'),
-      ])
+      ]);
 
       // For orders, we assume an API endpoint; demo uses static value
-      const orderCount = 48
-      setMetrics({productCount, contentCount, orderCount})
-    }
+      const orderCount = 48;
+      setMetrics({ productCount, contentCount, orderCount });
+    };
     run().catch((err) => {
-      console.error('EngagementMetrics error', err)
-    })
-  }, [client])
+      console.error("EngagementMetrics error", err);
+    });
+  }, [client]);
 
   return (
     <Card padding={4} radius={3}>
@@ -62,12 +62,12 @@ const EngagementMetrics: React.FC = () => {
           </Flex>
         )}
         <Text size={1} muted>
-          This gives buyers an instant sense of catalogue size, editorial depth, and commerce
-          activity without leaving the Studio.
+          This gives buyers an instant sense of catalogue size, editorial depth,
+          and commerce activity without leaving the Studio.
         </Text>
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default EngagementMetrics
+export default EngagementMetrics;

@@ -2,7 +2,13 @@
 const pa11y = require("pa11y");
 
 async function main() {
-  const url = process.argv[2] || "http://localhost:8080";
+  const url = process.env.PA11Y_URL || process.argv[2];
+  if (!url) {
+    console.error(
+      "No target URL provided. Set the PA11Y_URL environment variable or pass a URL as the first argument.",
+    );
+    process.exit(2);
+  }
   try {
     const results = await pa11y(url, {
       // pass Chrome args to avoid sandbox issues in CI

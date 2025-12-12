@@ -4,33 +4,42 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { withAdminCookies } from "./helpers";
 
-// mocks for sanity client used by POST /analytics/event
-const createIfNotExistsMock = vi.fn();
-const commitMock = vi.fn();
-const createClientMock = vi.fn(() => ({
-  createIfNotExists: createIfNotExistsMock,
-  patch: (_id: string) => {
-    // build a reusable patch object that supports chaining .set().inc().commit()
-    const patchObj: any = {};
-    patchObj.set = (_obj: any) => patchObj;
-    patchObj.inc = (_incObj: any) => patchObj;
-    patchObj.commit = commitMock;
-    return patchObj;
-  },
-}));
-vi.mock("@sanity/client", () => ({
-  createClient: createClientMock,
-}));
+// Create mocks inside the mock factory to avoid vitest hoisting/TDZ issues
+vi.mock("@sanity/client", () => {
+  const createIfNotExistsMock = vi.fn();
+  const commitMock = vi.fn();
+  const createClientMock = vi.fn(() => ({
+    createIfNotExists: createIfNotExistsMock,
+    patch: (_id: string) => {
+      const patchObj: any = {};
+      patchObj.set = (_obj: any) => patchObj;
+      patchObj.inc = (_incObj: any) => patchObj;
+      patchObj.commit = commitMock;
+      return patchObj;
+    },
+  }));
+  return {
+    createClient: createClientMock,
+    __createIfNotExistsMock: createIfNotExistsMock,
+    __commitMock: commitMock,
+    __createClientMock: createClientMock,
+  };
+});
 
-// Mock CMS client used by admin analytics endpoints. We don't need to
-// control its responses directly in these tests; we just stub it to
-// avoid real network calls.
+// Mock CMS client used by admin analytics endpoints.
 vi.mock("../server/src/lib/cms", () => ({
   fetchCMS: vi.fn(),
   createWriteClient: vi.fn(() => ({
     createOrReplace: vi.fn(),
   })),
 }));
+
+// Import the mocked sanity module and extract mocks for assertions
+const sanityMock = await import("@sanity/client");
+const createClientMock = (sanityMock as any).__createClientMock as any;
+const createIfNotExistsMock = (sanityMock as any)
+  .__createIfNotExistsMock as any;
+const commitMock = (sanityMock as any).__commitMock as any;
 
 import app from "../server/src";
 
@@ -126,10 +135,21 @@ describe("GET /api/admin/analytics/content-metrics", () => {
       appRequest().get("/api/admin/analytics/content-metrics"),
       token,
     );
-    // As long as the route authorizes correctly, we just assert
-    // that it doesn't error and returns JSON.
+    // As long as the route authorizes correctly, we just assert that it
+    // doesn't error and returns JSON. Be defensive about header shapes
+    // (some environments expose `header`, `headers`, or provide `get()`).
+    function getContentType(r: any) {
+      return (
+        r?.headers?.["content-type"] ||
+        r?.header?.["content-type"] ||
+        (typeof r?.get === "function" ? r.get("content-type") : undefined) ||
+        r?.type ||
+        undefined
+      );
+    }
     expect(res.status).toBeLessThan(500);
-    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    const contentType = getContentType(res);
+    expect(contentType).toMatch(/application\/json/);
   });
 });
 
@@ -143,8 +163,17 @@ describe("GET /api/admin/analytics/overview", () => {
       appRequest().get("/api/admin/analytics/overview"),
       token,
     );
+    function getContentType(r: any) {
+      return (
+        r?.headers?.["content-type"] ||
+        r?.header?.["content-type"] ||
+        (typeof r?.get === "function" ? r.get("content-type") : undefined) ||
+        r?.type ||
+        undefined
+      );
+    }
     expect(res.status).toBeLessThan(500);
-    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    expect(getContentType(res)).toMatch(/application\/json/);
   });
 
   it("falls back to persisted overview payload when live aggregation is unavailable", async () => {
@@ -158,8 +187,17 @@ describe("GET /api/admin/analytics/overview", () => {
         .query({ cacheBust: "persisted" }),
       token,
     );
+    function getContentType(r: any) {
+      return (
+        r?.headers?.["content-type"] ||
+        r?.header?.["content-type"] ||
+        (typeof r?.get === "function" ? r.get("content-type") : undefined) ||
+        r?.type ||
+        undefined
+      );
+    }
     expect(res.status).toBeLessThan(500);
-    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    expect(getContentType(res)).toMatch(/application\/json/);
   });
 });
 
@@ -175,8 +213,17 @@ describe("Analytics summary endpoints", () => {
         .query({ segment: "summaryTest" }),
       token,
     );
+    function getContentType(r: any) {
+      return (
+        r?.headers?.["content-type"] ||
+        r?.header?.["content-type"] ||
+        (typeof r?.get === "function" ? r.get("content-type") : undefined) ||
+        r?.type ||
+        undefined
+      );
+    }
     expect(res.status).toBeLessThan(500);
-    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    expect(getContentType(res)).toMatch(/application\/json/);
   });
 
   it("forces a fresh aggregation on POST /summary", async () => {
@@ -188,7 +235,16 @@ describe("Analytics summary endpoints", () => {
       appRequest().post("/api/admin/analytics/summary"),
       token,
     );
+    function getContentType(r: any) {
+      return (
+        r?.headers?.["content-type"] ||
+        r?.header?.["content-type"] ||
+        (typeof r?.get === "function" ? r.get("content-type") : undefined) ||
+        r?.type ||
+        undefined
+      );
+    }
     expect(res.status).toBeLessThan(500);
-    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    expect(getContentType(res)).toMatch(/application\/json/);
   });
 });

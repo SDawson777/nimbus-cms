@@ -1,13 +1,13 @@
-import React from 'react'
-import {Card, Stack, Text, Label} from '@sanity/ui'
+import React from "react";
+import { Card, Stack, Text, Label } from "@sanity/ui";
 
 const EditorialAI: React.FC = () => {
   // For now, static demo topics. Later you can call your AI concierge endpoint.
   const suggestions = [
-    '5 ways to dose Midnight Mints for better sleep',
-    'Detroit — 8 Mile: top-selling hybrids this week',
-    'How CBD tinctures fit into daytime routines',
-  ]
+    "5 ways to dose Midnight Mints for better sleep",
+    "Detroit — 8 Mile: top-selling hybrids this week",
+    "How CBD tinctures fit into daytime routines",
+  ];
 
   return (
     <Card padding={4} tone="caution" radius={3}>
@@ -16,8 +16,8 @@ const EditorialAI: React.FC = () => {
           Editorial assistant (demo)
         </Text>
         <Text size={1} muted>
-          Suggested topics based on demo demand and journal patterns. Buyers see how Nimbus can
-          steer editorial toward high-intent content.
+          Suggested topics based on demo demand and journal patterns. Buyers see
+          how Nimbus can steer editorial toward high-intent content.
         </Text>
         {suggestions.map((s) => (
           <Stack space={1} key={s}>
@@ -27,7 +27,7 @@ const EditorialAI: React.FC = () => {
         ))}
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default EditorialAI
+export default EditorialAI;

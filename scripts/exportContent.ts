@@ -29,11 +29,15 @@ async function retry<T>(fn: () => Promise<T>, attempts = 3, delay = 500) {
 async function main() {
   // Accept either SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID (Studio-specific)
   if (!process.env.SANITY_PROJECT_ID && !process.env.SANITY_STUDIO_PROJECT_ID) {
-    console.error('Missing required env var: SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID');
+    console.error(
+      "Missing required env var: SANITY_PROJECT_ID or SANITY_STUDIO_PROJECT_ID",
+    );
     process.exit(2);
   }
   if (!process.env.SANITY_DATASET && !process.env.SANITY_STUDIO_DATASET) {
-    console.error('Missing required env var: SANITY_DATASET or SANITY_STUDIO_DATASET');
+    console.error(
+      "Missing required env var: SANITY_DATASET or SANITY_STUDIO_DATASET",
+    );
     process.exit(2);
   }
 
@@ -44,11 +48,14 @@ async function main() {
   const outFile = path.join(outDir, `export-${date}.json`);
 
   const client = createClient({
-    projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
+    projectId:
+      process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
     dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
     token:
-      process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
+      process.env.SANITY_API_TOKEN ||
+      process.env.SANITY_AUTH_TOKEN ||
+      process.env.SANITY_TOKEN,
     useCdn: false,
   });
 

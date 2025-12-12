@@ -14,17 +14,23 @@ const CSRF_COOKIE = "admin_csrf";
 const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const isProduction = process.env.NODE_ENV === "production";
 
+// Allow overriding cookie SameSite behavior via env var when needed for cross-site
+// deployments (example: admin app on Vercel calling API on Railway). Modern
+// browsers require `SameSite=None` + `Secure` to accept cross-site cookies.
+const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE ||
+  (isProduction ? "none" : "lax")) as "lax" | "strict" | "none";
+
 const sessionCookieOptions = {
   httpOnly: true,
-  secure: isProduction,
-  sameSite: "lax" as const,
+  secure: isProduction || COOKIE_SAMESITE === "none",
+  sameSite: COOKIE_SAMESITE,
   path: "/",
 };
 
 const csrfCookieOptions = {
   httpOnly: false,
-  secure: isProduction,
-  sameSite: "lax" as const,
+  secure: isProduction || COOKIE_SAMESITE === "none",
+  sameSite: COOKIE_SAMESITE,
   path: "/",
 };
 

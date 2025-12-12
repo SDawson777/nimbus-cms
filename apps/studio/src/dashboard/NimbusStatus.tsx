@@ -1,15 +1,18 @@
-import React from 'react'
-import {Card, Flex, Stack, Text, Badge} from '@sanity/ui'
-import {useClient} from 'sanity'
+import React from "react";
+import { Card, Flex, Stack, Text, Badge } from "@sanity/ui";
+import { useClient } from "sanity";
 
 const NimbusStatus: React.FC = () => {
-  const client = useClient({apiVersion: '2024-08-01'})
-  const projectId = client.config().projectId
-  const dataset = client.config().dataset
+  const client = useClient({ apiVersion: "2024-08-01" });
+  const projectId = client.config().projectId;
+  const dataset = client.config().dataset;
 
   const env =
     (process.env.SANITY_STUDIO_APP_ENV as string) ??
-    (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'development' : 'production')
+    (typeof window !== "undefined" &&
+    window.location.hostname.includes("localhost")
+      ? "development"
+      : "production");
 
   return (
     <Card padding={4} tone="primary" radius={3}>
@@ -34,15 +37,18 @@ const NimbusStatus: React.FC = () => {
             <Text size={1} muted>
               Environment
             </Text>
-            <Badge tone={env === 'production' ? 'positive' : 'caution'}>{env}</Badge>
+            <Badge tone={env === "production" ? "positive" : "caution"}>
+              {env}
+            </Badge>
           </Stack>
         </Flex>
         <Text size={1} muted>
-          This panel gives buyers confidence that Nimbus is multi-tenant, environment-aware, and production-ready.
+          This panel gives buyers confidence that Nimbus is multi-tenant,
+          environment-aware, and production-ready.
         </Text>
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default NimbusStatus
+export default NimbusStatus;

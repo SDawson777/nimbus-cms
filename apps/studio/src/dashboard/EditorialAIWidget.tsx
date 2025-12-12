@@ -1,5 +1,5 @@
-import React from 'react'
-import {Card, Stack, Heading, Text, Inline, Badge} from '@sanity/ui'
+import React from "react";
+import { Card, Stack, Heading, Text, Inline, Badge } from "@sanity/ui";
 
 export function EditorialAIWidget() {
   return (
@@ -8,8 +8,8 @@ export function EditorialAIWidget() {
         <Heading size={2}>Editorial Intelligence</Heading>
         <Text size={1} muted>
           Guidance is generated from your best-performing content segments
-          (sessions, CTR, completion). Use these prompts while editing
-          articles, FAQs, and product copy.
+          (sessions, CTR, completion). Use these prompts while editing articles,
+          FAQs, and product copy.
         </Text>
         <Stack space={3}>
           <Card padding={3} radius={2} tone="primary" shadow={1}>
@@ -40,8 +40,8 @@ export function EditorialAIWidget() {
               </Inline>
               <Text size={1}>
                 Avoid medical claims. Emphasize effects using broad,
-                experiential language and defer to legal pages for any
-                required disclaimers.
+                experiential language and defer to legal pages for any required
+                disclaimers.
               </Text>
             </Stack>
           </Card>
@@ -56,14 +56,14 @@ export function EditorialAIWidget() {
                 </Text>
               </Inline>
               <Text size={1}>
-                Tie promotions to loyalty milestones rather than pure
-                discounts. Position value as “members-only” to protect
-                margin while increasing retention.
+                Tie promotions to loyalty milestones rather than pure discounts.
+                Position value as “members-only” to protect margin while
+                increasing retention.
               </Text>
             </Stack>
           </Card>
         </Stack>
       </Stack>
     </Card>
-  )
+  );
 }

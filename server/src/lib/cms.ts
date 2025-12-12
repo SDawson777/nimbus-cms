@@ -8,12 +8,18 @@ export async function fetchCMS<T>(
   // Adds preview + JSON fallback support (no breaking changes)
   const { preview = false, fallbackPath } = opts || {};
   const client = createClient({
-    projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
+    projectId:
+      process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
     dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
     token: preview
-      ? process.env.SANITY_PREVIEW_TOKEN || process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN
-      : process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
+      ? process.env.SANITY_PREVIEW_TOKEN ||
+        process.env.SANITY_API_TOKEN ||
+        process.env.SANITY_AUTH_TOKEN ||
+        process.env.SANITY_TOKEN
+      : process.env.SANITY_API_TOKEN ||
+        process.env.SANITY_AUTH_TOKEN ||
+        process.env.SANITY_TOKEN,
     useCdn: !preview,
     perspective: preview ? "previewDrafts" : "published",
   });
@@ -31,10 +37,14 @@ export async function fetchCMS<T>(
 
 export function createWriteClient() {
   return createClient({
-    projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
+    projectId:
+      process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
     dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
-    token: process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
+    token:
+      process.env.SANITY_API_TOKEN ||
+      process.env.SANITY_AUTH_TOKEN ||
+      process.env.SANITY_TOKEN,
     useCdn: false,
   });
 }

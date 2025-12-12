@@ -1,35 +1,35 @@
-import React, {useEffect, useState} from 'react'
-import {Card, Stack, Heading, Text, Inline, Badge} from '@sanity/ui'
+import React, { useEffect, useState } from "react";
+import { Card, Stack, Heading, Text, Inline, Badge } from "@sanity/ui";
 
 type EngagementSnapshot = {
-  rolling30dSessions: number
-  rolling30dOrders: number
-  topArticleTitle: string | null
-  topArticleCtr: number | null
-  topStoreName: string | null
-  topStoreShare: number | null
-}
+  rolling30dSessions: number;
+  rolling30dOrders: number;
+  topArticleTitle: string | null;
+  topArticleCtr: number | null;
+  topStoreName: string | null;
+  topStoreShare: number | null;
+};
 
 const apiBase =
   process.env.SANITY_STUDIO_NIMBUS_API_URL ||
   process.env.SANITY_NIMBUS_API_URL ||
-  'https://nimbus-api-demo.up.railway.app'
+  "https://nimbus-api-demo.up.railway.app";
 
 export function EngagementMetricsWidget() {
-  const [snapshot, setSnapshot] = useState<EngagementSnapshot | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [snapshot, setSnapshot] = useState<EngagementSnapshot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     async function load() {
       try {
-        setLoading(true)
+        setLoading(true);
         const res = await fetch(
           `${apiBase}/api/v1/nimbus/admin/analytics/snapshot`,
-        )
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        const json = await res.json()
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const json = await res.json();
         if (!cancelled) {
           setSnapshot({
             rolling30dSessions: json.rolling30dSessions ?? 0,
@@ -38,22 +38,22 @@ export function EngagementMetricsWidget() {
             topArticleCtr: json.topArticleCtr ?? null,
             topStoreName: json.topStoreName ?? null,
             topStoreShare: json.topStoreShare ?? null,
-          })
-          setError(null)
+          });
+          setError(null);
         }
       } catch (e: any) {
-        if (!cancelled) setError(e.message || 'Failed to load metrics')
+        if (!cancelled) setError(e.message || "Failed to load metrics");
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoading(false);
       }
     }
-    load()
-    const id = setInterval(load, 120_000)
+    load();
+    const id = setInterval(load, 120_000);
     return () => {
-      cancelled = true
-      clearInterval(id)
-    }
-  }, [])
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   return (
     <Card padding={4} radius={3} shadow={1} tone="transparent">
@@ -86,9 +86,7 @@ export function EngagementMetricsWidget() {
                 <Text size={1} muted>
                   Top Article
                 </Text>
-                <Text size={2}>
-                  {snapshot.topArticleTitle || 'No data'}
-                </Text>
+                <Text size={2}>{snapshot.topArticleTitle || "No data"}</Text>
                 {snapshot.topArticleCtr != null && (
                   <Badge tone="primary" padding={2} radius={999}>
                     CTR {snapshot.topArticleCtr.toFixed(1)}%
@@ -99,9 +97,7 @@ export function EngagementMetricsWidget() {
                 <Text size={1} muted>
                   Top Store
                 </Text>
-                <Text size={2}>
-                  {snapshot.topStoreName || 'No data'}
-                </Text>
+                <Text size={2}>{snapshot.topStoreName || "No data"}</Text>
                 {snapshot.topStoreShare != null && (
                   <Badge tone="positive" padding={2} radius={999}>
                     {snapshot.topStoreShare.toFixed(1)}% of Orders
@@ -113,5 +109,5 @@ export function EngagementMetricsWidget() {
         )}
       </Stack>
     </Card>
-  )
+  );
 }

@@ -1,9 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// stub sanity client at module level so no real network calls occur
-const fetchMock = vi.fn();
-const createClientMock = vi.fn(() => ({ fetch: fetchMock }));
-vi.mock("@sanity/client", () => ({ createClient: createClientMock }));
+// Avoid TDZ/hoisting issues by creating mocks inside the vi.mock factory and
+// exporting them from the mocked module so tests can import them safely.
+vi.mock("@sanity/client", () => {
+  const fetchMock = vi.fn();
+  const createClientMock = vi.fn(() => ({ fetch: fetchMock }));
+  return {
+    createClient: createClientMock,
+    // expose internals for assertions
+    __fetchMock: fetchMock,
+    __createClientMock: createClientMock,
+  };
+});
+
+// Import the mocked module to get handles to the mocks created above.
+const sanityMock = await import("@sanity/client");
+const fetchMock = (sanityMock as any).__fetchMock as jest.MockedFunction<any>;
+const createClientMock = (sanityMock as any)
+  .__createClientMock as jest.MockedFunction<any>;
 
 // IMPORTANT: fetchCMS import must come *after* vi.mock so the stubbed client is used
 import { fetchCMS } from "../server/src/lib/cms";

@@ -5,7 +5,9 @@ import { getCsrfToken } from "./csrf";
 // Respect the provided base URL; prefer canonical `VITE_NIMBUS_API_URL` but fall
 // back to legacy `VITE_API_URL` for compatibility. Only remove trailing slashes.
 const API_BASE = (
-  (import.meta.env.VITE_NIMBUS_API_URL || import.meta.env.VITE_API_URL || "")
+  import.meta.env.VITE_NIMBUS_API_URL ||
+  import.meta.env.VITE_API_URL ||
+  ""
 )
   .trim()
   .replace(/\/$/, "");

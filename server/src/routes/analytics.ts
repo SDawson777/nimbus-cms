@@ -89,11 +89,14 @@ analyticsRouter.post("/event", analyticsLimiter, async (req, res) => {
       .parse(req.body);
 
     const client = createClient({
-      projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
+      projectId:
+        process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
       dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
       apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
       token:
-        process.env.SANITY_API_TOKEN || process.env.SANITY_AUTH_TOKEN || process.env.SANITY_TOKEN,
+        process.env.SANITY_API_TOKEN ||
+        process.env.SANITY_AUTH_TOKEN ||
+        process.env.SANITY_TOKEN,
       useCdn: false,
     });
 

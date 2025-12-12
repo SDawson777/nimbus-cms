@@ -6,7 +6,8 @@ import { defineField, defineType } from "sanity";
 import { createClient } from "@sanity/client";
 
 const studioClient = createClient({
-  projectId: process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID,
+  projectId:
+    process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID,
   dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET,
   useCdn: false,
 });

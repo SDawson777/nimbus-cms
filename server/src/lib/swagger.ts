@@ -16,16 +16,15 @@ const options: swaggerJsdoc.Options = {
         name: "Proprietary",
       },
     },
-    servers: [
-      {
-        url: "https://nimbus-cms-production.up.railway.app",
-        description: "Production server",
-      },
-      {
-        url: "http://localhost:3001",
-        description: "Development server",
-      },
-    ],
+    servers: ((): { url: string; description?: string }[] => {
+      const prod =
+        process.env.SWAGGER_PROD_URL ||
+        "https://nimbus-cms-production.up.railway.app";
+      const dev = process.env.SWAGGER_DEV_URL;
+      const list = [{ url: prod, description: "Production server" }];
+      if (dev) list.push({ url: dev, description: "Development server" });
+      return list;
+    })(),
     components: {
       securitySchemes: {
         BearerAuth: {

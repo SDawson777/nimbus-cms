@@ -8,10 +8,16 @@ export const CSRF_HEADER = "x-csrf-token";
 export function ensureCsrfCookie(req: any, res: Response, next: NextFunction) {
   if (!req.cookies || !req.cookies[CSRF_COOKIE]) {
     const token = crypto.randomBytes(32).toString("hex");
+    const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE ||
+      (process.env.NODE_ENV === "production" ? "none" : "lax")) as
+      | "lax"
+      | "strict"
+      | "none";
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure:
+        process.env.NODE_ENV === "production" || COOKIE_SAMESITE === "none",
+      sameSite: COOKIE_SAMESITE,
       maxAge: 4 * 60 * 60 * 1000,
       path: "/",
     });
