@@ -11,7 +11,7 @@ type StatusPayload = {
 const apiBase =
   process.env.SANITY_STUDIO_NIMBUS_API_URL ||
   process.env.SANITY_NIMBUS_API_URL ||
-  "https://nimbus-cms-production.up.railway.app";
+  "https://nimbus-api-prod.up.railway.app";
 
 export function NimbusStatusWidget() {
   const [status, setStatus] = useState<StatusPayload | null>(null);

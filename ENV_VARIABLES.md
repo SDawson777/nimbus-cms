@@ -40,7 +40,7 @@ CORS_ORIGINS=https://nimbus-cms-admin.vercel.app,https://nimbus-cms.vercel.app
 ### Required Variables:
 
 ```
-VITE_NIMBUS_API_URL=https://nimbus-cms-production.up.railway.app/api/v1/nimbus
+VITE_NIMBUS_API_URL=https://nimbus-api-prod.up.railway.app/api/v1/nimbus
 VITE_APP_ENV=production
 ```
 
