@@ -31,8 +31,8 @@
     "eslint": "^8.57.1",
     "jsdom": "^27.3.0",
     "prisma": "^5.20.0",
-    "vitest": "^4.0.15",
-    "supertest": "^6.3.3"
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.15"
   },
   "dependencies": {
     "framer-motion": "^12.23.25"

@@ -43,7 +43,20 @@ function buildUrl(path = "") {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const normalized = path ? (path.startsWith("/") ? path : `/${path}`) : "";
   if (!API_BASE) return normalized || "/";
-  return `${API_BASE}${normalized}`;
+  // append tenant query param automatically when present in localStorage
+  let url = `${API_BASE}${normalized}`;
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const tenant = localStorage.getItem("nimbus.activeTenant");
+      if (tenant) {
+        const sep = url.includes("?") ? "&" : "?";
+        url = `${url}${sep}tenant=${encodeURIComponent(tenant)}`;
+      }
+    }
+  } catch (e) {
+    // ignore localStorage errors (e.g., in some test envs)
+  }
+  return url;
 }
 
 export async function apiFetch(path, options = {}) {
