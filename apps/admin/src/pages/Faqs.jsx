@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
+import { useTenant } from "../lib/tenantContext";
 
 const CHANNELS = ["", "mobile", "web", "kiosk", "email", "ads"];
 
 export default function Faqs() {
   const [groups, setGroups] = useState([]);
   const [channel, setChannel] = useState("");
+
+  const { tenantId } = useTenant();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -29,7 +32,7 @@ export default function Faqs() {
     }
     load();
     return () => controller.abort();
-  }, [channel]);
+  }, [channel, tenantId]);
 
   return (
     <div style={{ padding: 20 }}>

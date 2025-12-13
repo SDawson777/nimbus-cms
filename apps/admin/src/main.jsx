@@ -93,7 +93,9 @@ function AppShell() {
             }}
             aria-hidden="true"
           />
-          <span className="suite-title">Nimbus CMS Suite</span>
+          <Link to="/" className="suite-title">
+            Nimbus CMS Suite
+          </Link>
         </div>
         {!isLogin && (
           <div className="header-actions">

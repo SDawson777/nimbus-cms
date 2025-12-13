@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
+import { useTenant } from "../lib/tenantContext";
 
 export default function Legal() {
   const [items, setItems] = useState([]);
+  const { tenantId } = useTenant();
+
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -22,7 +25,7 @@ export default function Legal() {
     }
     load();
     return () => controller.abort();
-  }, []);
+  }, [tenantId]);
 
   return (
     <div style={{ padding: 20 }}>

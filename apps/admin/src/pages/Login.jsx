@@ -17,6 +17,7 @@ const TEST_USER = {
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const nav = useNavigate();
   const location = useLocation();
@@ -31,7 +32,14 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
+        // Call refresh and retry once if admin not populated (addresses occasional double-login)
         await refreshAdmin();
+        const adminCheck = await refreshAdmin();
+        if (!adminCheck) {
+          // Try one more time after short delay
+          await new Promise((r) => setTimeout(r, 250));
+          await refreshAdmin();
+        }
         nav(location.state?.from || "/dashboard");
         return;
       }
@@ -88,13 +96,24 @@ export default function Login() {
         </label>
         <label style={{ display: "grid", gap: "6px" }}>
           <span>Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={TEST_USER.password}
-            autoComplete="current-password"
-          />
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={TEST_USER.password}
+              autoComplete="current-password"
+              style={{ flex: 1 }}
+            />
+            <label style={{ fontSize: 12, color: "#6b7280", display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+              />
+              <span>Show</span>
+            </label>
+          </div>
         </label>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button type="submit" className="primary">

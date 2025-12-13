@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
+import { useTenant } from "../lib/tenantContext";
 
 export default function Products() {
   const [items, setItems] = useState([]);
   const [showRecalled, setShowRecalled] = useState(false);
+
+  const { tenantId } = useTenant();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -27,7 +30,7 @@ export default function Products() {
     }
     load();
     return () => controller.abort();
-  }, [showRecalled]);
+  }, [showRecalled, tenantId]);
 
   return (
     <div style={{ padding: 20 }}>
