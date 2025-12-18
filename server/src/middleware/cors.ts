@@ -16,7 +16,19 @@ export const corsOptions = {
     }
     const appEnv = process.env.APP_ENV || "";
     if (appEnv === "preview") {
-      return callback(null, true);
+      const allowAll = (process.env.PREVIEW_ALLOW_ALL || "false").toLowerCase() === "true";
+      const previewAllowed = (process.env.PREVIEW_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean as any) as string[];
+      if (allowAll) {
+        console.warn("CORS preview allow-all enabled (PREVIEW_ALLOW_ALL=true)");
+        return callback(null, true);
+      }
+      if (previewAllowed.length && previewAllowed.includes(origin || "")) {
+        return callback(null, true);
+      }
+      // Fall through to standard allowlist checks below (disallow by default for preview)
     }
     if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
       return callback(null, true);
