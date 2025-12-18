@@ -7,6 +7,7 @@
 - `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN` – Optional Mapbox static token for 2D heatmap overlays; hide heatmap when unset.
 - `VITE_WEATHER_API_URL` – Optional weather endpoint proxy for the admin banner (e.g., your server wrapper).
 - `VITE_WEATHER_API_KEY` or `VITE_OPENWEATHER_API_TOKEN` – Optional key passed to the weather proxy when needed.
+- `PREVIEW_SECRET` – Server-only secret used to gate preview mode. Do NOT set preview secrets as `VITE_...` (client-side): any `VITE_` env will be bundled into frontend code and could leak. Use `PREVIEW_SECRET` only on the API/server.
 
 ## Studio (Vercel)
 
