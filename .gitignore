@@ -50,3 +50,5 @@ core-api/dist/
 node_modules/
 .turbo/
 .next/
+repo_cleanup_backups/
+server/static/admin/styles.css
