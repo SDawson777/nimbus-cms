@@ -5,10 +5,10 @@ export const contentRouter = Router();
 // add `?preview=true` or `X-Preview: true` passthrough for studio live preview
 // single source of truth for preview mode used by all content routes
 contentRouter.use((req, _res, next) => {
-  // Preview requires both the preview flag and a matching PREVIEW_SECRET
-  // Accept VITE_PREVIEW_SECRET (legacy/dev) as a fallback for local/dev setups
-  const previewSecretEnv =
-    process.env.PREVIEW_SECRET || process.env.VITE_PREVIEW_SECRET;
+  // Preview requires both the preview flag and a matching server-only PREVIEW_SECRET.
+  // Legacy client-side `VITE_PREVIEW_SECRET` fallback has been removed to avoid
+  // leaking preview secrets in frontend bundles.
+  const previewSecretEnv = process.env.PREVIEW_SECRET;
   const previewSecretConfigured =
     typeof previewSecretEnv === "string" && previewSecretEnv.length > 0;
   if (!previewSecretConfigured) {
