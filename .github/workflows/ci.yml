@@ -15,7 +15,6 @@ jobs:
             run_install: false
         - name: Print pnpm version
           run: pnpm --version
-        run: pnpm -w typecheck
       - name: Build
         run: pnpm -w build
       - name: Sanity schema check
@@ -23,4 +22,24 @@ jobs:
           SANITY_STUDIO_PROJECT_ID: ygbu28p2
           SANITY_STUDIO_DATASET: nimbus_demo
           SANITY_STUDIO_READ_TOKEN: ${{ secrets.SANITY_STUDIO_READ_TOKEN }}
-        run: pnpm sanity:check
+      - name: Ensure pnpm is available
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm -w install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -w typecheck
+
+      - name: Build
+        run: pnpm -w build
+
+      - name: Sanity schema check
+        env:
+          SANITY_STUDIO_PROJECT_ID: ygbu28p2
+          SANITY_STUDIO_DATASET: nimbus_demo
+          SANITY_STUDIO_READ_TOKEN: ${{ secrets.SANITY_STUDIO_READ_TOKEN }}
+        run: pnpm -w sanity:check
