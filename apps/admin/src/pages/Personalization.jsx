@@ -90,10 +90,8 @@ export default function Personalization() {
     /\/$/,
     "",
   );
-  const previewSecret = import.meta.env.VITE_PREVIEW_SECRET;
-  const studioPreviewSuffix = previewSecret
-    ? `?secret=${encodeURIComponent(previewSecret)}`
-    : "";
+  // Preview secrets are server-side only; do not include them in client bundles.
+  const studioPreviewSuffix = "";
 
   return (
     <div style={{ padding: 20 }}>
@@ -190,11 +188,7 @@ export default function Personalization() {
                         .join("; ") || "—"}
                     </div>
                     <div>
-                      <a
-                        href={`${studioBaseUrl}/desk/personalizationRule;${r._id}${studioPreviewSuffix}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a href={`${studioBaseUrl}/desk/personalizationRule;${r._id}`} target="_blank" rel="noreferrer">
                         Open in Studio
                       </a>
                     </div>
