@@ -33,6 +33,7 @@ const SAMPLE_STORES = [
 export default function HeatmapPage() {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [svgUrl, setSvgUrl] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,12 +90,60 @@ export default function HeatmapPage() {
 
       <Card>
         <p className="metric-subtle">
-          The heatmap requires server-side Mapbox integration to avoid exposing
-          private tokens to the browser. See documentation for steps to enable
-          the server proxy or provide a sanitized public token.
+          The heatmap is rendered server-side to avoid exposing private tokens.
         </p>
+        {stores.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            {svgUrl ? (
+              <img src={svgUrl} alt="Heatmap" style={{ width: '100%', maxWidth: 1000 }} />
+            ) : (
+              <p className="metric-subtle">Rendering heatmap preview…</p>
+            )}
+          </div>
+        )}
         {loading && <p className="metric-subtle">Loading stores…</p>}
       </Card>
     </div>
   );
 }
+
+// Fetch server-rendered SVG when stores update
+function useSvgForStores(stores, setSvgUrl) {
+  useEffect(() => {
+    if (!stores || stores.length === 0) return undefined;
+    let mounted = true;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/nimbus/heatmap/static', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stores, width: 1000, height: 400 }),
+          signal: controller.signal,
+          credentials: 'include',
+        });
+        if (!mounted) return;
+        if (!res.ok) {
+          setSvgUrl(null);
+          return;
+        }
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        setSvgUrl(url);
+      } catch (e) {
+        if (!mounted) return;
+        setSvgUrl(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+      controller.abort();
+      setSvgUrl((u) => {
+        if (u) URL.revokeObjectURL(u);
+        return null;
+      });
+    };
+  }, [stores]);
+}
+

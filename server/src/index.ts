@@ -30,6 +30,7 @@ import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
 import proxyRouter from "./routes/proxy";
+import heatmapRouter from "./routes/heatmap";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
 import { APP_ENV, JWT_SECRET, PORT } from "./config/env";
@@ -162,6 +163,8 @@ app.use("/personalization", personalizationRouter);
 
 // Proxy endpoints for server-side API calls that should not expose tokens to clients
 app.use("/api/v1/nimbus/proxy", proxyRouter);
+// Static heatmap generation endpoint (server-side rendered SVG)
+app.use("/api/v1/nimbus/heatmap", heatmapRouter);
 
 // Analytics endpoint (collect events)
 app.use("/analytics", analyticsRouter);
