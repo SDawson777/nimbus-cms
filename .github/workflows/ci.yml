@@ -57,3 +57,23 @@ jobs:
           SANITY_STUDIO_DATASET: nimbus_demo
           SANITY_STUDIO_READ_TOKEN: ${{ secrets.SANITY_STUDIO_READ_TOKEN }}
         run: pnpm -w sanity:check
+
+  vuln_scan:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+    needs: secrets_scan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+      - name: Ensure pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Install dependencies
+        run: pnpm -w install --frozen-lockfile
+      - name: Run pnpm audit
+        run: pnpm -w audit --audit-level=moderate
