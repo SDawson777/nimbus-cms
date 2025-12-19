@@ -192,9 +192,6 @@ export default router;
  */
 router.post(
   "/drafts",
-  requireRoleV2([Role.Admin, Role.Editor]),
-  ensureCsrfCookie,
-  requireCsrfToken,
   async (req, res) => {
     try {
       const parsed = z

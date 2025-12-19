@@ -22,9 +22,10 @@ describe('Heatmap endpoint', () => {
       .set('Accept', 'image/svg+xml');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('image/svg+xml');
-    expect(res.text).toContain('<svg');
+    const bodyText = typeof res.text === 'string' ? res.text : (res.body ? String(res.body) : '');
+    expect(bodyText).toContain('<svg');
     // should include one of the store slugs
-    expect(res.text).toContain('a');
+    expect(bodyText).toContain('a');
   });
 
   it('validates input and rejects too-large store arrays', async () => {
