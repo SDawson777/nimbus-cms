@@ -83,6 +83,23 @@ jobs:
       - name: Run pnpm audit
         run: pnpm -w audit --audit-level=moderate
 
+  container_scan:
+    name: Container filesystem scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: vuln_scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy filesystem scan
+        run: |
+          # Scan the repository filesystem for OS/package vulnerabilities
+          trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress .
+
   backup_restore_test:
     name: Backup & Restore test
     runs-on: ubuntu-latest
