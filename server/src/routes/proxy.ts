@@ -71,4 +71,10 @@ router.get("/mapbox", async (req, res) => {
   }
 });
 
+// Helper to report whether Mapbox token is configured server-side
+router.get("/mapbox/has_token", (_req, res) => {
+  const has = Boolean(process.env.MAPBOX_TOKEN || process.env.MAPBOX_SECRET);
+  res.json({ enabled: has });
+});
+
 export default router;

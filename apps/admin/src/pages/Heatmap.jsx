@@ -68,8 +68,11 @@ export default function HeatmapPage() {
     };
   }, []);
 
-  const mapToken = import.meta.env.VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN || "";
-  const canRender = mapToken && stores.length > 1;
+  // Mapbox client tokens are deprecated for production usage to avoid leaking
+  // private credentials. The heatmap currently requires server-side Mapbox
+  // integration (static imagery or proxy). See docs/BACKUP_RESTORE_TESTS.md
+  // and ENVIRONMENT_VARIABLES.md for configuration guidance.
+  const canRender = false; // intentionally disable client-side Mapbox rendering
 
   return (
     <div className="page-shell" style={{ padding: 16 }}>
@@ -85,17 +88,11 @@ export default function HeatmapPage() {
       </div>
 
       <Card>
-        {!mapToken && (
-          <p className="metric-subtle">
-            Add VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN to enable the heatmap.
-          </p>
-        )}
-        {mapToken && stores.length <= 1 && (
-          <p className="metric-subtle">
-            Heatmap activates automatically when you have 2 or more locations.
-          </p>
-        )}
-        {canRender && <Heatmap stores={stores} token={mapToken} />}
+        <p className="metric-subtle">
+          The heatmap requires server-side Mapbox integration to avoid exposing
+          private tokens to the browser. See documentation for steps to enable
+          the server proxy or provide a sanitized public token.
+        </p>
         {loading && <p className="metric-subtle">Loading stores…</p>}
       </Card>
     </div>
