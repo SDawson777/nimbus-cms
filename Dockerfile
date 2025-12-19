@@ -33,7 +33,8 @@ ENV PORT=8080
 COPY --from=api-builder /app/server/dist ./dist
 COPY --from=api-builder /app/server/package.json ./package.json
 COPY --from=api-builder /app/server/node_modules ./node_modules
+COPY --from=api-builder /app/server/init_and_start.sh ./init_and_start.sh
 
 EXPOSE 8080
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "./init_and_start.sh"]
