@@ -1,0 +1,33 @@
+name: Run Undo Tests (Vitest)
+
+on:
+  push:
+    branches: [ 'copilot/add-vuln-scan' ]
+  pull_request:
+    branches: [ 'copilot/add-vuln-scan' ]
+
+jobs:
+  vitest:
+    name: Run Vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable Corepack & prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies (workspace)
+        run: pnpm -w install --frozen-lockfile --no-prefer-frozen-lockfile || pnpm -w install
+
+      - name: Run Vitest
+        run: pnpm -w exec vitest run --run
+        env:
+          CI: true
