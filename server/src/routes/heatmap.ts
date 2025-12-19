@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
+import IORedis from "ioredis";
 
 const router = express.Router();
 
@@ -17,23 +18,55 @@ const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
 type CacheEntry = { svg: string; expiresAt: number };
 const svgCache = new Map<string, CacheEntry>();
 
-function setCache(key: string, svg: string) {
+// Redis client (optional)
+let redisClient: IORedis.Redis | null = null;
+if (process.env.REDIS_URL) {
+  try {
+    redisClient = new IORedis(process.env.REDIS_URL);
+  } catch (e) {
+    // ignore and fall back to in-memory cache
+    // eslint-disable-next-line no-console
+    console.warn("Failed to initialize Redis client, falling back to in-memory cache", e);
+    redisClient = null;
+  }
+}
+
+async function setCacheAsync(key: string, svg: string) {
+  if (redisClient) {
+    try {
+      await redisClient.set(key, svg, "PX", CACHE_TTL_MS);
+      return;
+    } catch (e) {
+      // fallback to in-memory cache
+      // eslint-disable-next-line no-console
+      console.warn("Redis set failed; falling back to in-memory cache", e);
+    }
+  }
+
   if (svgCache.size >= CACHE_MAX_ENTRIES) {
-    // delete oldest entry (Map insertion order)
     const firstKey = svgCache.keys().next().value;
     if (firstKey) svgCache.delete(firstKey);
   }
   svgCache.set(key, { svg, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
-function getCache(key: string) {
+async function getCacheAsync(key: string) {
+  if (redisClient) {
+    try {
+      const v = await redisClient.get(key);
+      if (v) return v;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("Redis get failed; falling back to in-memory cache", e);
+    }
+  }
+
   const e = svgCache.get(key);
   if (!e) return null;
   if (Date.now() > e.expiresAt) {
     svgCache.delete(key);
     return null;
   }
-  // refresh insertion order to make it recently used
   svgCache.delete(key);
   svgCache.set(key, e);
   return e.svg;
@@ -137,6 +170,15 @@ router.post(
       const width = Number(req.body?.width) || 1000;
       const height = Number(req.body?.height) || 400;
       const lang = String(req.body?.lang || "en");
+  "/static",
+  heatmapLimiter,
+  express.json({ limit: "1mb" }),
+  (req, res) => {
+    try {
+      const stores = Array.isArray(req.body?.stores) ? req.body.stores : [];
+      const width = Number(req.body?.width) || 1000;
+      const height = Number(req.body?.height) || 400;
+      const lang = String(req.body?.lang || "en");
 
       // Basic validation
       if (!Array.isArray(stores) || stores.length === 0) {
@@ -167,14 +209,14 @@ router.post(
       const hash = crypto.createHash("sha256");
       hash.update(JSON.stringify({ stores, width, height, lang }));
       const key = hash.digest("hex");
-      const cached = getCache(key);
+      const cached = await getCacheAsync(key);
       if (cached) {
         res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
         return res.send(cached);
       }
 
       const svg = generateSvg(stores, width, height, lang);
-      setCache(key, svg);
+      await setCacheAsync(key, svg);
       res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
       res.send(svg);
     } catch (err) {
@@ -184,5 +226,38 @@ router.post(
     }
   },
 );
+
+/**
+ * @openapi
+ * /api/v1/nimbus/heatmap/static:
+ *   post:
+ *     tags: [Heatmap]
+ *     summary: Generate a static SVG heatmap for given store coordinates
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stores:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     storeSlug: { type: string }
+ *                     longitude: { type: number }
+ *                     latitude: { type: number }
+ *                     engagement: { type: number }
+ *               width: { type: number }
+ *               height: { type: number }
+ *     responses:
+ *       200:
+ *         description: SVG image
+ *         content:
+ *           image/svg+xml: {}
+ *       400:
+ *         description: validation error
+ */
 
 export default router;
