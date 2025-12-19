@@ -1,4 +1,6 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -9,7 +11,35 @@ type Store = {
   engagement?: number;
 };
 
-function generateSvg(stores: Store[], width = 1000, height = 400) {
+// Simple in-memory cache with TTL and LRU-style eviction
+const CACHE_MAX_ENTRIES = 200;
+const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+type CacheEntry = { svg: string; expiresAt: number };
+const svgCache = new Map<string, CacheEntry>();
+
+function setCache(key: string, svg: string) {
+  if (svgCache.size >= CACHE_MAX_ENTRIES) {
+    // delete oldest entry (Map insertion order)
+    const firstKey = svgCache.keys().next().value;
+    if (firstKey) svgCache.delete(firstKey);
+  }
+  svgCache.set(key, { svg, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function getCache(key: string) {
+  const e = svgCache.get(key);
+  if (!e) return null;
+  if (Date.now() > e.expiresAt) {
+    svgCache.delete(key);
+    return null;
+  }
+  // refresh insertion order to make it recently used
+  svgCache.delete(key);
+  svgCache.set(key, e);
+  return e.svg;
+}
+
+function generateSvg(stores: Store[], width = 1000, height = 400, lang = "en") {
   if (!stores || stores.length === 0) {
     return `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><rect width='100%' height='100%' fill='#0b1220'/><text x='50%' y='50%' fill='#fff' font-size='18' text-anchor='middle'>No data</text></svg>`;
   }
@@ -85,20 +115,74 @@ function generateSvg(stores: Store[], width = 1000, height = 400) {
 
   return svg;
 }
-
-router.post("/static", express.json({ limit: "1mb" }), (req, res) => {
-  try {
-    const stores = Array.isArray(req.body?.stores) ? req.body.stores : [];
-    const width = Number(req.body?.width) || 1000;
-    const height = Number(req.body?.height) || 400;
-    const svg = generateSvg(stores, width, height);
-    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
-    res.send(svg);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("heatmap static error", err);
-    res.status(500).json({ error: "failed to render heatmap" });
-  }
+// Rate limiter: allow a small number of requests per IP for this endpoint
+const heatmapLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+
+/**
+ * POST /static
+ * Request body: { stores: Array<{storeSlug, longitude, latitude, engagement}>, width?, height?, lang? }
+ */
+router.post(
+  "/static",
+  heatmapLimiter,
+  express.json({ limit: "1mb" }),
+  (req, res) => {
+    try {
+      const stores = Array.isArray(req.body?.stores) ? req.body.stores : [];
+      const width = Number(req.body?.width) || 1000;
+      const height = Number(req.body?.height) || 400;
+      const lang = String(req.body?.lang || "en");
+
+      // Basic validation
+      if (!Array.isArray(stores) || stores.length === 0) {
+        return res.status(400).json({ error: "stores must be a non-empty array" });
+      }
+      if (stores.length > 500) {
+        return res.status(400).json({ error: "stores array too large (max 500)" });
+      }
+      for (const s of stores) {
+        const lon = Number(s.longitude);
+        const lat = Number(s.latitude);
+        const engagement = s.engagement == null ? 1 : Number(s.engagement);
+        if (Number.isNaN(lon) || Number.isNaN(lat)) {
+          return res.status(400).json({ error: "invalid store coordinates" });
+        }
+        if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+          return res.status(400).json({ error: "store coordinates out of range" });
+        }
+        if (!Number.isFinite(engagement) || engagement < 0 || engagement > 1000000) {
+          return res.status(400).json({ error: "invalid engagement value" });
+        }
+        if (s.storeSlug && String(s.storeSlug).length > 120) {
+          return res.status(400).json({ error: "storeSlug too long" });
+        }
+      }
+
+      // Build cache key from stores payload and dimensions
+      const hash = crypto.createHash("sha256");
+      hash.update(JSON.stringify({ stores, width, height, lang }));
+      const key = hash.digest("hex");
+      const cached = getCache(key);
+      if (cached) {
+        res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+        return res.send(cached);
+      }
+
+      const svg = generateSvg(stores, width, height, lang);
+      setCache(key, svg);
+      res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+      res.send(svg);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("heatmap static error", err);
+      res.status(500).json({ error: "failed to render heatmap" });
+    }
+  },
+);
 
 export default router;

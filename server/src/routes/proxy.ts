@@ -2,6 +2,33 @@ import express from "express";
 
 const router = express.Router();
 
+/**
+ * @openapi
+ * /api/v1/nimbus/proxy/weather:
+ *   get:
+ *     tags: [Proxy]
+ *     summary: Get weather for a city or coordinates (server-proxied)
+ *     parameters:
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: lat
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: lon
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: proxied weather response
+ *       400:
+ *         description: bad request
+ *       500:
+ *         description: server error
+ */
 // Simple weather proxy: forwards requests to configured weather API using server-side key
 router.get("/weather", async (req, res) => {
   try {
@@ -35,6 +62,30 @@ router.get("/weather", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/v1/nimbus/proxy/mapbox:
+ *   get:
+ *     tags: [Proxy]
+ *     summary: Proxy Mapbox API requests (server-side token required)
+ *     parameters:
+ *       - in: query
+ *         name: path
+ *         schema:
+ *           type: string
+ *         required: true
+ *       - in: query
+ *         name: any other Mapbox query params
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: proxied Mapbox response
+ *       400:
+ *         description: bad request
+ *       500:
+ *         description: server error
+ */
 // Mapbox proxy: fetch a given Mapbox URL path (e.g., static tiles) and stream back
 // Usage: /mapbox?path=styles/v1/....&query=<other params>
 router.get("/mapbox", async (req, res) => {
@@ -71,6 +122,22 @@ router.get("/mapbox", async (req, res) => {
   }
 });
 
+// Helper to report whether Mapbox token is configured server-side
+router.get("/mapbox/has_token", (_req, res) => {
+  const has = Boolean(process.env.MAPBOX_TOKEN || process.env.MAPBOX_SECRET);
+  res.json({ enabled: has });
+});
+
+/**
+ * @openapi
+ * /api/v1/nimbus/proxy/mapbox/has_token:
+ *   get:
+ *     tags: [Proxy]
+ *     summary: Returns whether server-side Mapbox token is configured
+ *     responses:
+ *       200:
+ *         description: token status
+ */
 // Helper to report whether Mapbox token is configured server-side
 router.get("/mapbox/has_token", (_req, res) => {
   const has = Boolean(process.env.MAPBOX_TOKEN || process.env.MAPBOX_SECRET);
