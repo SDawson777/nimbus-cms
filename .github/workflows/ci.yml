@@ -2,6 +2,20 @@ name: Nimbus CMS CI
 on: [push, pull_request]
 
 jobs:
+  secrets_scan:
+    name: Secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run gitleaks scan
+        uses: zricethezav/gitleaks-action@v2
+        with:
+          config_path: .gitleaks.toml
+          args: '--redact'
+        # If gitleaks finds leaks this job will fail and block the PR
+
   build:
     runs-on: ubuntu-latest
     steps:
