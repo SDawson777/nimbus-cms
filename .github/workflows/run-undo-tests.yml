@@ -19,10 +19,11 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable Corepack & prepare pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          run_install: false
 
       - name: Install dependencies (workspace)
         run: pnpm -w install --frozen-lockfile --no-prefer-frozen-lockfile || pnpm -w install
