@@ -31,6 +31,7 @@ import analyticsRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
+import undoRouter from "./routes/undo";
 import { metricsHandler } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -166,6 +167,15 @@ app.use("/personalization", personalizationRouter);
 app.use("/api/v1/nimbus/proxy", proxyRouter);
 // Static heatmap generation endpoint (server-side rendered SVG)
 app.use("/api/v1/nimbus/heatmap", heatmapRouter);
+
+// Server-persisted undo/redo events (admin-only)
+app.use(
+  "/api/v1/nimbus/undo",
+  requireAdmin,
+  ensureCsrfCookie,
+  requireCsrfToken,
+  undoRouter,
+);
 
 // Prometheus metrics endpoint
 app.get("/metrics", metricsHandler());
