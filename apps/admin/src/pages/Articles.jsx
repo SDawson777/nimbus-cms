@@ -7,6 +7,9 @@ const CHANNELS = ["", "mobile", "web", "kiosk", "email", "ads"];
 export default function Articles() {
   const [items, setItems] = useState([]);
   const [channel, setChannel] = useState("");
+  const [title, setTitle] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const { tenantId } = useTenant();
 
@@ -37,6 +40,50 @@ export default function Articles() {
   return (
     <div style={{ padding: 20 }}>
       <h1>Articles</h1>
+      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+        <h2 style={{ marginTop: 0 }}>AI Generate + Save Draft</h2>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <textarea
+            placeholder="Prompt (optional)"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={4}
+          />
+          <div>
+            <button
+              className="primary"
+              disabled={saving || !title.trim()}
+              onClick={async () => {
+                setSaving(true);
+                const { ok, data, error } = await apiJson('/api/v1/nimbus/ai/drafts', {
+                  method: 'POST',
+                  body: JSON.stringify({ title: title.trim(), prompt: prompt.trim() || undefined }),
+                });
+                setSaving(false);
+                if (!ok) {
+                  alert(error || 'Failed to generate draft');
+                  return;
+                }
+                if (data?.studioUrl) window.open(data.studioUrl, '_blank');
+                setTitle('');
+                setPrompt('');
+                // Refresh list
+                const q = channel ? `/api/admin/articles?channel=${encodeURIComponent(channel)}` : '/api/admin/articles';
+                const res = await apiJson(q, {}, []);
+                if (res.ok) setItems(Array.isArray(res.data) ? res.data : []);
+              }}
+            >
+              {saving ? 'Generating…' : 'Generate + Save Draft'}
+            </button>
+          </div>
+        </div>
+      </div>
       <div style={{ marginBottom: 12 }}>
         <label style={{ marginRight: 8 }}>Channel:</label>
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>
