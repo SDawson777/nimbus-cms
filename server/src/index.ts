@@ -29,6 +29,7 @@ import adminLogoutRouter from "./routes/adminLogout";
 import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
+import proxyRouter from "./routes/proxy";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
 import { APP_ENV, JWT_SECRET, PORT } from "./config/env";
@@ -158,6 +159,9 @@ app.use("/content", contentRouter);
 
 // personalization public endpoints
 app.use("/personalization", personalizationRouter);
+
+// Proxy endpoints for server-side API calls that should not expose tokens to clients
+app.use("/api/v1/nimbus/proxy", proxyRouter);
 
 // Analytics endpoint (collect events)
 app.use("/analytics", analyticsRouter);
