@@ -25,7 +25,7 @@ jobs:
           run_install: false
 
       - name: Install dependencies (workspace)
-        run: pnpm -w install --frozen-lockfile --no-prefer-frozen-lockfile || pnpm -w install
+        run: pnpm -w install --no-frozen-lockfile
 
       - name: Run Vitest
         run: pnpm -w exec vitest run --run
