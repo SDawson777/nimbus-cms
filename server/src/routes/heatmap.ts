@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
-import IORedis from "ioredis";
+import IORedis, { Redis } from "ioredis";
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ type CacheEntry = { svg: string; expiresAt: number };
 const svgCache = new Map<string, CacheEntry>();
 
 // Redis client (optional)
-let redisClient: IORedis.Redis | null = null;
+let redisClient: Redis | null = null;
 if (process.env.REDIS_URL) {
   try {
     redisClient = new IORedis(process.env.REDIS_URL);

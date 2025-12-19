@@ -1,4 +1,5 @@
 import client from "prom-client";
+import type { Request, Response } from "express";
 
 // Default registry
 const register = new client.Registry();
@@ -36,7 +37,7 @@ export const proxyWeatherRequests = new client.Counter({
 });
 
 export function metricsHandler() {
-  return async (_req, res) => {
+  return async (_req: Request, res: Response) => {
     try {
       res.setHeader("Content-Type", register.contentType);
       res.end(await register.metrics());
