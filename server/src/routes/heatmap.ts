@@ -209,10 +209,19 @@ router.post(
       const hash = crypto.createHash("sha256");
       hash.update(JSON.stringify({ stores, width, height, lang }));
       const key = hash.digest("hex");
-      const cached = await getCacheAsync(key);
-      if (cached) {
-        res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
-        return res.send(cached);
+      // Metrics: count request and cache hits
+      try {
+        // increment heatmap request counter (import lazily to avoid circular deps in tests)
+        const { heatmapRequests, heatmapCacheHits } = await import("../metrics");
+        heatmapRequests.inc();
+        const cached = await getCacheAsync(key);
+        if (cached) {
+          heatmapCacheHits.inc();
+          res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+          return res.send(cached);
+        }
+      } catch (e) {
+        // metrics optional; ignore errors
       }
 
       const svg = generateSvg(stores, width, height, lang);

@@ -54,6 +54,13 @@ router.get("/weather", async (req, res) => {
     const url = `${baseUrl}?${params.toString()}`;
     const r = await fetch(url);
     const body = await r.text();
+    try {
+      const { proxyRequests, proxyWeatherRequests } = await import("../metrics");
+      proxyRequests.inc();
+      proxyWeatherRequests.inc();
+    } catch (e) {
+      // ignore metrics errors
+    }
     res.status(r.status).set("content-type", r.headers.get("content-type") || "application/json").send(body);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -110,6 +117,13 @@ router.get("/mapbox", async (req, res) => {
 
     const url = `https://api.mapbox.com/${mbPath}?${params.toString()}`;
     const r = await fetch(url);
+    try {
+      const { proxyRequests, proxyMapboxRequests } = await import("../metrics");
+      proxyRequests.inc();
+      proxyMapboxRequests.inc();
+    } catch (e) {
+      // ignore metrics errors
+    }
     // Stream response
     res.status(r.status);
     r.headers.forEach((value, name) => res.setHeader(name, value));
