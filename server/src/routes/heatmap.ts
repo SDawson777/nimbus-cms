@@ -164,16 +164,7 @@ router.post(
   "/static",
   heatmapLimiter,
   express.json({ limit: "1mb" }),
-  (req, res) => {
-    try {
-      const stores = Array.isArray(req.body?.stores) ? req.body.stores : [];
-      const width = Number(req.body?.width) || 1000;
-      const height = Number(req.body?.height) || 400;
-      const lang = String(req.body?.lang || "en");
-  "/static",
-  heatmapLimiter,
-  express.json({ limit: "1mb" }),
-  (req, res) => {
+  async (req, res) => {
     try {
       const stores = Array.isArray(req.body?.stores) ? req.body.stores : [];
       const width = Number(req.body?.width) || 1000;
