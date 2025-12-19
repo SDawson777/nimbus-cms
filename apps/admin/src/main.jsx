@@ -31,6 +31,7 @@ import AppFooter from "./components/AppFooter";
 import WelcomeBar from "./components/WelcomeBar";
 import { NotificationProvider } from "./components/NotificationCenter";
 import HeatmapPage from "./pages/Heatmap";
+import UndoPage from "./pages/Undo";
 import { AnimatePresence, motion } from "framer-motion";
 
 function AppShell() {
@@ -53,6 +54,7 @@ function AppShell() {
       { path: "/theme", label: "Theme" },
       { path: "/personalization", label: "Personalization" },
       { path: "/heatmap", label: "Heatmap" },
+      { path: "/undo", label: "Undo" },
     ],
     [],
   );
@@ -251,6 +253,16 @@ function AppShell() {
                     admin={admin}
                     loading={loading}
                     element={<HeatmapPage />}
+                  />
+                }
+              />
+              <Route
+                path="/undo"
+                element={
+                  <ProtectedRoute
+                    admin={admin}
+                    loading={loading}
+                    element={<UndoPage />}
                   />
                 }
               />

@@ -29,6 +29,10 @@ import adminLogoutRouter from "./routes/adminLogout";
 import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
+import proxyRouter from "./routes/proxy";
+import heatmapRouter from "./routes/heatmap";
+import undoRouter from "./routes/undo";
+import { metricsHandler } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
 import { APP_ENV, JWT_SECRET, PORT } from "./config/env";
@@ -158,6 +162,23 @@ app.use("/content", contentRouter);
 
 // personalization public endpoints
 app.use("/personalization", personalizationRouter);
+
+// Proxy endpoints for server-side API calls that should not expose tokens to clients
+app.use("/api/v1/nimbus/proxy", proxyRouter);
+// Static heatmap generation endpoint (server-side rendered SVG)
+app.use("/api/v1/nimbus/heatmap", heatmapRouter);
+
+// Server-persisted undo/redo events (admin-only)
+app.use(
+  "/api/v1/nimbus/undo",
+  requireAdmin,
+  ensureCsrfCookie,
+  requireCsrfToken,
+  undoRouter,
+);
+
+// Prometheus metrics endpoint
+app.get("/metrics", metricsHandler());
 
 // Analytics endpoint (collect events)
 app.use("/analytics", analyticsRouter);

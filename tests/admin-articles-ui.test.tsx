@@ -5,6 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import Articles from "../apps/admin/src/pages/Articles.jsx";
+import { TenantProvider } from "../apps/admin/src/lib/tenantContext.jsx";
 
 let container: HTMLElement | null = null;
 let root: any = null;
@@ -71,7 +72,13 @@ describe("Articles admin UI", () => {
       text: async () => JSON.stringify([]),
     });
 
-    root.render(React.createElement(Articles));
+    root.render(
+      React.createElement(
+        TenantProvider,
+        null,
+        React.createElement(Articles),
+      ),
+    );
     await waitFor(() => container!.innerHTML.includes("All Article"));
 
     // prepare response for mobile channel

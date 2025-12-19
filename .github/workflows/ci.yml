@@ -1,5 +1,5 @@
 name: Nimbus CMS CI
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   secrets_scan:
@@ -45,6 +45,11 @@ jobs:
       - name: Install dependencies
         run: pnpm -w install --frozen-lockfile
 
+      - name: Install runner packages (Postgres client)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
       - name: Typecheck
         run: pnpm -w typecheck
 
@@ -77,3 +82,55 @@ jobs:
         run: pnpm -w install --frozen-lockfile
       - name: Run pnpm audit
         run: pnpm -w audit --audit-level=moderate
+  container_scan:
+    name: Container filesystem scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: vuln_scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy filesystem scan
+        run: |
+          # Scan the repository filesystem for OS/package vulnerabilities
+          trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress .
+
+  backup_restore_test:
+    name: Backup & Restore test
+    runs-on: ubuntu-latest
+    needs: vuln_scan
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Ensure pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm -w install --frozen-lockfile
+
+      - name: Run backup/restore test script
+        env:
+          SANITY_STUDIO_PROJECT_ID: ygbu28p2
+          SANITY_TEST_DATASET: nimbus_demo_test
+          # Allow manual runs with placeholder values when secrets are not configured
+          SANITY_ADMIN_TOKEN: ${{ secrets.SANITY_ADMIN_TOKEN || 'PLACEHOLDER' }}
+          SANITY_EXPORT_TARBALL_URL: ${{ secrets.SANITY_EXPORT_TARBALL_URL || '' }}
+          POSTGRES_TEST_URL: ${{ secrets.POSTGRES_TEST_URL || 'PLACEHOLDER' }}
+          POSTGRES_DUMP_URL: ${{ secrets.POSTGRES_DUMP_URL || '' }}
+        run: |
+          chmod +x ./scripts/backup_restore_test.sh
+          ./scripts/backup_restore_test.sh

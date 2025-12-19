@@ -33,6 +33,7 @@ const SAMPLE_STORES = [
 export default function HeatmapPage() {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [svgUrl, setSvgUrl] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -68,8 +69,11 @@ export default function HeatmapPage() {
     };
   }, []);
 
-  const mapToken = import.meta.env.VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN || "";
-  const canRender = mapToken && stores.length > 1;
+  // Mapbox client tokens are deprecated for production usage to avoid leaking
+  // private credentials. The heatmap currently requires server-side Mapbox
+  // integration (static imagery or proxy). See docs/BACKUP_RESTORE_TESTS.md
+  // and ENVIRONMENT_VARIABLES.md for configuration guidance.
+  const canRender = false; // intentionally disable client-side Mapbox rendering
 
   return (
     <div className="page-shell" style={{ padding: 16 }}>
@@ -85,19 +89,61 @@ export default function HeatmapPage() {
       </div>
 
       <Card>
-        {!mapToken && (
-          <p className="metric-subtle">
-            Add VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN to enable the heatmap.
-          </p>
+        <p className="metric-subtle">
+          The heatmap is rendered server-side to avoid exposing private tokens.
+        </p>
+        {stores.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            {svgUrl ? (
+              <img src={svgUrl} alt="Heatmap" style={{ width: '100%', maxWidth: 1000 }} />
+            ) : (
+              <p className="metric-subtle">Rendering heatmap preview…</p>
+            )}
+          </div>
         )}
-        {mapToken && stores.length <= 1 && (
-          <p className="metric-subtle">
-            Heatmap activates automatically when you have 2 or more locations.
-          </p>
-        )}
-        {canRender && <Heatmap stores={stores} token={mapToken} />}
         {loading && <p className="metric-subtle">Loading stores…</p>}
       </Card>
     </div>
   );
 }
+
+// Fetch server-rendered SVG when stores update
+function useSvgForStores(stores, setSvgUrl) {
+  useEffect(() => {
+    if (!stores || stores.length === 0) return undefined;
+    let mounted = true;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/nimbus/heatmap/static', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stores, width: 1000, height: 400 }),
+          signal: controller.signal,
+          credentials: 'include',
+        });
+        if (!mounted) return;
+        if (!res.ok) {
+          setSvgUrl(null);
+          return;
+        }
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        setSvgUrl(url);
+      } catch (e) {
+        if (!mounted) return;
+        setSvgUrl(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+      controller.abort();
+      setSvgUrl((u) => {
+        if (u) URL.revokeObjectURL(u);
+        return null;
+      });
+    };
+  }, [stores]);
+}
+

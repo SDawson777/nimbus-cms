@@ -44,31 +44,8 @@ export default function AdminBanner() {
     [banner],
   );
 
-  const openWeatherToken =
-    import.meta.env.VITE_OPENWEATHER_API_TOKEN ||
-    import.meta.env.VITE_WEATHER_API_KEY;
+  // Default city fallback (not a secret)
   const openWeatherCity = import.meta.env.VITE_OPENWEATHER_CITY || "Detroit,US";
-  const openWeatherUrl = useMemo(() => {
-    const token = (openWeatherToken || "").trim();
-    const baseUrl =
-      import.meta.env.VITE_OPENWEATHER_API_URL ||
-      import.meta.env.VITE_WEATHER_API_URL ||
-      "https://api.openweathermap.org/data/2.5/weather";
-    const search = new URLSearchParams({ units: "imperial" });
-
-    if (geo?.lat && geo?.lon) {
-      search.set("lat", geo.lat);
-      search.set("lon", geo.lon);
-    } else {
-      search.set("q", openWeatherCity);
-    }
-
-    if (token) {
-      search.set("appid", token);
-    }
-
-    return `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}${search.toString()}`;
-  }, [geo, openWeatherCity, openWeatherToken]);
 
   useEffect(() => {
     if (navigator?.geolocation) {
@@ -92,15 +69,22 @@ export default function AdminBanner() {
           }
         }
 
-        // Client-side preview weather fallback using OpenWeather when API base is absent (e.g., Vercel preview)
-        if (!apiBaseUrl() && openWeatherToken) {
-          const res = await fetch(openWeatherUrl);
-          const json = await res.json().catch(() => null);
-          if (json) {
-            const condition = json?.weather?.[0]?.main || "Clear";
+        // Prefer server-side proxy for weather to avoid exposing API tokens to clients.
+        try {
+          const params = new URLSearchParams({ units: "imperial" });
+          if (geo?.lat && geo?.lon) {
+            params.set("lat", String(geo.lat));
+            params.set("lon", String(geo.lon));
+          } else {
+            params.set("city", openWeatherCity);
+          }
+          const proxyPath = `/api/v1/nimbus/proxy/weather?${params.toString()}`;
+          const { ok, data } = await apiJson(proxyPath);
+          if (ok && data) {
+            const condition = data?.weather?.[0]?.main || data?.condition || "Clear";
             const mood = normalizeCondition(condition);
             const icon = iconForMood(mood);
-            const tempF = Math.round(json?.main?.temp ?? 72);
+            const tempF = Math.round(data?.main?.temp ?? data?.tempF ?? 72);
             setBanner({
               ...FALLBACK_BANNER,
               adminName: admin?.email || "Nimbus Admin",
@@ -108,6 +92,8 @@ export default function AdminBanner() {
             });
             return;
           }
+        } catch (e) {
+          // ignore and fall through to fallback banner
         }
 
         setBanner((prev) => ({
