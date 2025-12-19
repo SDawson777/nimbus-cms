@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import fs from 'fs/promises';
-import path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import undoRouter from '../server/src/routes/undo';
 
 const TEST_PORT = 0;
