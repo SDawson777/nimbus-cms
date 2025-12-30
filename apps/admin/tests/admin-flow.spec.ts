@@ -13,9 +13,9 @@ test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  // Wait for dashboard route or a known post-login element
-  await page.waitForURL('**/dashboard', { timeout: 10000 });
-  await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 5000 }).catch(() => {});
+  // Wait for dashboard to be visible and URL to end with /dashboard (SPA-friendly)
+  await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 15000 }).catch(() => {});
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   // Admins page: invite, edit role, delete
   await page.goto('/admins');

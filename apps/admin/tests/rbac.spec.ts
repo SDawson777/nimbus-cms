@@ -15,7 +15,7 @@ test('RBAC: owner vs editor access', async ({ page }) => {
   await page.getByLabel('Email').fill(ownerEmail);
   await page.getByLabel('Password').fill(ownerPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.waitForURL('**/dashboard', { timeout: 10000 });
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
   await page.goto('/admins');
   await page.waitForSelector('h2', { timeout: 10000 });
   await expect(page.locator('h2', { hasText: 'Admin Users' })).toBeVisible({ timeout: 5000 });

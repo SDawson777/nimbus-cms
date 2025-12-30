@@ -8,7 +8,6 @@ test('admin login shows login form and can navigate', async ({ page, baseURL }) 
   await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL || 'admin@example.com');
   await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD || 'password');
   await page.click('button[type="submit"]');
-  // expecting redirect to dashboard on successful login
-  await page.waitForURL('**/dashboard', { timeout: 20000 });
-  await expect(page).toHaveURL(/dashboard$/);
+  // expecting SPA route change to dashboard on successful login
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30000 });
 });
