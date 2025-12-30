@@ -14,16 +14,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Ensure pnpm on PATH
+        run: |
+          npm install -g pnpm@9
+          pnpm --version
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        run: |
-          npm install -g pnpm@9
-          pnpm --version
+      # pnpm is already ensured earlier so caching/setup can rely on it
 
       - name: Install
         run: pnpm install --frozen-lockfile
