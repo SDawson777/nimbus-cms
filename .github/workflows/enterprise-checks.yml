@@ -73,10 +73,9 @@ jobs:
           echo $! > server.pid
 
           # Start admin preview
-          pushd apps/admin
-          nohup pnpm preview -- --port 5174 > admin.log 2>&1 &
-          echo $! > ../../admin.pid
-          popd
+          # Use a static server with single-page fallback so SPA routes like /login work
+          nohup pnpm -w dlx serve -s apps/admin/dist -l 5174 > admin.log 2>&1 &
+          echo $! > admin.pid
 
           # Persist these environment variables to subsequent workflow steps
           # so Playwright and other steps can access the seeded admin credentials
