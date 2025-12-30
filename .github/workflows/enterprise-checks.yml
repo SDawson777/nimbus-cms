@@ -78,6 +78,21 @@ jobs:
           echo $! > ../../admin.pid
           popd
 
+          # Persist these environment variables to subsequent workflow steps
+          # so Playwright and other steps can access the seeded admin credentials
+          # and runtime settings. `GITHUB_ENV` makes them available to later
+          # steps in the same job.
+          echo "SERVER_JWT_SECRET=${SERVER_JWT_SECRET}" >> $GITHUB_ENV
+          echo "JWT_SECRET=${JWT_SECRET}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_EMAIL=${E2E_ADMIN_EMAIL}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_PASSWORD=${E2E_ADMIN_PASSWORD}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_SECONDARY_EMAIL=${E2E_ADMIN_SECONDARY_EMAIL}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_SECONDARY_PASSWORD=${E2E_ADMIN_SECONDARY_PASSWORD}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_SECONDARY_ROLE=${E2E_ADMIN_SECONDARY_ROLE}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${DATABASE_URL}" >> $GITHUB_ENV
+          echo "CORS_ORIGIN_ADMIN=${CORS_ORIGIN_ADMIN}" >> $GITHUB_ENV
+          echo "NODE_ENV=${NODE_ENV}" >> $GITHUB_ENV
+
       - name: Wait for services
         run: |
           # Wait up to 2 minutes for both services to become available. If they
