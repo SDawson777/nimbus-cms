@@ -50,3 +50,16 @@ If test scripts exist, run via pnpm filters per workspace.
 ## CI Expectations
 
 - PRs must pass CI builds for all workspaces.
+
+## Secrets & environment variables
+
+- Client-visible environment variables are prefixed with `VITE_` and are embedded
+	into browser JavaScript by the build. Do NOT place secrets (API tokens, private
+	Mapbox tokens, JWT secrets, preview secrets) in `VITE_` variables.
+- Keep sensitive values on the server side (no `VITE_` prefix). Example: set
+	`PREVIEW_SECRET`, `JWT_SECRET`, `MAPBOX_TOKEN` in your deployment environment
+	(Kubernetes secret, Railway/Render secret, GitHub Action secret), not in
+	client env files.
+- Use `pnpm run validate-env` locally to check your environment and to detect
+	accidentally exposed `VITE_` secrets. CI already runs `pnpm audit:client-envs`
+	to catch common misconfigurations.

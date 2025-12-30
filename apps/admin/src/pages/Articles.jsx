@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
+import { t } from '../lib/i18n';
 import { useTenant } from "../lib/tenantContext";
 
 const CHANNELS = ["", "mobile", "web", "kiosk", "email", "ads"];
@@ -39,18 +40,18 @@ export default function Articles() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Articles</h1>
+      <h1>{t('articles_title')}</h1>
       <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <h2 style={{ marginTop: 0 }}>AI Generate + Save Draft</h2>
+        <h2 style={{ marginTop: 0 }}>{t('ai_generate_save_draft')}</h2>
         <div style={{ display: 'grid', gap: 8 }}>
           <input
             type="text"
-            placeholder="Title"
+            placeholder={t('placeholder_title')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <textarea
-            placeholder="Prompt (optional)"
+            placeholder={t('placeholder_prompt_optional')}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             rows={4}
@@ -79,7 +80,7 @@ export default function Articles() {
                 if (res.ok) setItems(Array.isArray(res.data) ? res.data : []);
               }}
             >
-              {saving ? 'Generating…' : 'Generate + Save Draft'}
+              {saving ? t('generating') : t('generate_save_draft')}
             </button>
           </div>
         </div>
@@ -89,7 +90,7 @@ export default function Articles() {
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>
           {CHANNELS.map((c) => (
             <option key={c} value={c}>
-              {c === "" ? "All" : c}
+              {c === "" ? t('channel_all') : c}
             </option>
           ))}
         </select>
@@ -97,11 +98,11 @@ export default function Articles() {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Published</th>
-            <th>Status</th>
-            <th>Channels</th>
-            <th>Actions</th>
+            <th>{t('th_title')}</th>
+            <th>{t('th_published')}</th>
+            <th>{t('th_status')}</th>
+            <th>{t('th_channels')}</th>
+            <th>{t('th_actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -111,13 +112,13 @@ export default function Articles() {
               <td>{d.publishedAt}</td>
               <td>{d.status}</td>
               <td>
-                {Array.isArray(d.channels) && d.channels.length
+                  {Array.isArray(d.channels) && d.channels.length
                   ? d.channels.join(", ")
-                  : "Global"}
+                  : t('global')}
               </td>
               <td>
-                <a href="/studio" target="_blank" rel="noreferrer">
-                  Open in Studio
+                  <a href="/studio" target="_blank" rel="noreferrer">
+                  {t('open_in_studio')}
                 </a>
               </td>
             </tr>

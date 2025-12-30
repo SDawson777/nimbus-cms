@@ -56,3 +56,12 @@ pnpm server:build   # server/dist
 - [DEPLOYMENT.md](./DEPLOYMENT.md)
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)
 - [BUYER_HANDBOOK.md](./BUYER_HANDBOOK.md)
+
+## Enterprise readiness checklist
+
+- **Environment validation**: API validates `JWT_SECRET`, `CORS_ORIGINS`, and other required secrets at boot (see `server/src/middleware/validateEnv.ts`).
+- **Global error handling**: centralized JSON error handler logs with correlation IDs (`server/src/middleware/errorHandler.ts`).
+- **Client secret audit**: run `pnpm audit:client-envs` to scan `apps/*/.env.example` for unsafe `VITE_*` secrets.
+- **License report**: generate dependency license summary with `pnpm licenses:generate` (writes `docs/licenses.md`).
+- **Monitoring**: use `/metrics` Prometheus endpoint and wire logs to your aggregator (see `docs/observability.md`).
+

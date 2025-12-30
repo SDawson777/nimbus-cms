@@ -36,6 +36,7 @@ NOTE: The following server-side variables exist to avoid exposing secrets to the
 
 - `REDIS_URL` – If using external rate-limit/backing store (not required by default).
 - `DATABASE_URL` – If enabling relational persistence beyond Sanity.
+- `ADMIN_STORE` – `prisma` to enable DB-backed admin persistence (defaults to file-backed for demos). When set with `DATABASE_URL`, admin users are stored in the `AdminUser` table.
 
 ## Platform notes
 

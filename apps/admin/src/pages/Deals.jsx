@@ -37,7 +37,7 @@ export default function Deals() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Deals</h1>
+      <h1>{t('deals_title')}</h1>
       <div style={{ marginBottom: 12 }}>
         <label style={{ marginRight: 8 }}>Channel:</label>
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>

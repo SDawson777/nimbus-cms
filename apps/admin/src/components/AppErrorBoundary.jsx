@@ -1,4 +1,5 @@
 import React from "react";
+import { t } from "../lib/i18n";
 
 export class AppErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,6 +14,16 @@ export class AppErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     // eslint-disable-next-line no-console
     console.error("App crash captured by boundary", { error, info });
+    try {
+      // If Sentry or a capture function is exposed, forward the error for server-side tracking
+      // eslint-disable-next-line no-undef
+      if (typeof window !== 'undefined' && typeof window.__captureAppError === 'function') {
+        // eslint-disable-next-line no-undef
+        window.__captureAppError(error, info);
+      }
+    } catch (e) {
+      // ignore reporting failures
+    }
   }
 
   handleReset = () => {
@@ -27,7 +38,7 @@ export class AppErrorBoundary extends React.Component {
           className="card"
           style={{ margin: "2rem auto", maxWidth: 560, padding: "2rem" }}
         >
-          <h2 style={{ marginTop: 0 }}>Something went wrong</h2>
+          <h2 style={{ marginTop: 0 }}>{t('something_wrong')}</h2>
           <p style={{ color: "#6b7280" }}>
             We hit a snag rendering this view. Refresh the page or return to the
             dashboard. If the issue persists, clear cached data or contact
@@ -38,10 +49,10 @@ export class AppErrorBoundary extends React.Component {
           </p>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={this.handleReset} className="primary">
-              Reload Nimbus Admin
+              {t('reload')}
             </button>
             <button onClick={() => window.location.assign("/dashboard")}>
-              Go to dashboard
+              {t('go_to_dashboard')}
             </button>
           </div>
         </div>

@@ -36,7 +36,7 @@ export default function Faqs() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>FAQ Groups</h1>
+      <h1>{t('faqs_title')}</h1>
       <div style={{ marginBottom: 12 }}>
         <label style={{ marginRight: 8 }}>Channel:</label>
         <select value={channel} onChange={(e) => setChannel(e.target.value)}>

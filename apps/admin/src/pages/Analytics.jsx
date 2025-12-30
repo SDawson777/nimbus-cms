@@ -115,7 +115,7 @@ export default function Analytics() {
           marginBottom: 16,
         }}
       >
-        <div>
+          <div>
           <div
             style={{
               fontSize: 12,
@@ -123,9 +123,9 @@ export default function Analytics() {
               color: "#6b7280",
             }}
           >
-            Last refresh
+            {t('last_refresh')}
           </div>
-          <strong>{summaryLoading ? "Loading…" : lastRefreshedLabel}</strong>
+          <strong>{summaryLoading ? t('loading') : lastRefreshedLabel}</strong>
           {summaryError && (
             <div style={{ color: "#b91c1c", fontSize: 12 }}>
               Summary error: {summaryError}
@@ -151,11 +151,11 @@ export default function Analytics() {
             disabled={!capabilities?.canRefreshAnalytics || refreshing}
             title={
               capabilities?.canRefreshAnalytics
-                ? "Refresh analytics cache"
-                : "Insufficient role"
+                ? t('refresh_analytics_cache')
+                : t('insufficient_role')
             }
           >
-            {refreshing ? "Refreshing…" : "Refresh analytics"}
+            {refreshing ? t('refreshing') : t('refresh_analytics')}
           </button>
         </div>
       </div>

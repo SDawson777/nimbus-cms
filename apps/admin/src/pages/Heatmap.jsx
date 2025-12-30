@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { t } from '../lib/i18n';
 import Card from "../design-system/Card";
 import Heatmap from "../components/Heatmap";
 import { apiJson, apiBaseUrl } from "../lib/api";
@@ -79,29 +80,24 @@ export default function HeatmapPage() {
     <div className="page-shell" style={{ padding: 16 }}>
       <div className="page-header">
         <div>
-          <p className="eyebrow">Locations</p>
-          <h1>Heatmap</h1>
-          <p className="subdued">
-            Track multi-store engagement across the map. Token-gated for secure
-            previews.
-          </p>
+          <p className="eyebrow">{t('locations')}</p>
+          <h1>{t('heatmap_title')}</h1>
+          <p className="subdued">{t('heatmap_description')}</p>
         </div>
       </div>
 
       <Card>
-        <p className="metric-subtle">
-          The heatmap is rendered server-side to avoid exposing private tokens.
-        </p>
+        <p className="metric-subtle">{t('heatmap_rendered_server')}</p>
         {stores.length > 0 && (
           <div style={{ marginTop: 12 }}>
-            {svgUrl ? (
+              {svgUrl ? (
               <img src={svgUrl} alt="Heatmap" style={{ width: '100%', maxWidth: 1000 }} />
             ) : (
-              <p className="metric-subtle">Rendering heatmap preview…</p>
+              <p className="metric-subtle">{t('heatmap_rendering_preview')}</p>
             )}
           </div>
         )}
-        {loading && <p className="metric-subtle">Loading stores…</p>}
+        {loading && <p className="metric-subtle">{t('loading_stores')}</p>}
       </Card>
     </div>
   );

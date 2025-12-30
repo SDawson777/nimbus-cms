@@ -29,7 +29,7 @@ export default function Legal() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Legal Documents</h1>
+      <h1>{t('legal_title')}</h1>
       <div className="card" style={{ marginBottom: 16 }}>
         <h3 style={{ marginTop: 0 }}>Data &amp; AI Usage</h3>
         <p style={{ margin: "4px 0" }}>

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { t } from '../lib/i18n';
 import { useAdmin } from "../lib/adminContext";
 import { apiFetch, apiJson } from "../lib/api";
 
@@ -202,7 +203,7 @@ export default function Compliance() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Compliance Overview</h1>
+      <h1>{t('compliance_title')}</h1>
 
       <div
         style={{
@@ -226,8 +227,8 @@ export default function Compliance() {
             Last snapshot
           </div>
           <strong>{formatSnapshotLabel(snapshotTs)}</strong>
-          {overviewLoading && (
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Refreshing…</div>
+            {overviewLoading && (
+            <div style={{ fontSize: 12, color: "#6b7280" }}>{t('refreshing')}</div>
           )}
         </div>
 
@@ -261,7 +262,7 @@ export default function Compliance() {
               Scope locked to brand {scopedBrand}
             </div>
           )}
-          {brandsLoading && <div style={{ fontSize: 12 }}>Loading brands…</div>}
+          {brandsLoading && <div style={{ fontSize: 12 }}>{t('loading_brands')}</div>}
           {brandsError && (
             <div style={{ fontSize: 12, color: "#b91c1c" }}>
               Failed to load brands: {brandsError}{" "}
@@ -440,7 +441,7 @@ export default function Compliance() {
         >
           <h3 style={{ margin: 0 }}>Snapshot history</h3>
           <button type="button" onClick={loadHistory} disabled={historyLoading}>
-            {historyLoading ? "Refreshing…" : "Reload history"}
+            {historyLoading ? t('refreshing') : t('reload_history')}
           </button>
         </div>
         {historyError && (
@@ -569,7 +570,7 @@ export default function Compliance() {
                 onClick={handleSnapshot}
                 disabled={!canRunSnapshot || snapshotLoading}
               >
-                {snapshotLoading ? "Running…" : "Confirm and run"}
+                {snapshotLoading ? t('running') : t('confirm_and_run')}
               </button>
             </div>
           </div>

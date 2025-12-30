@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { t } from "../lib/i18n";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAdmin } from "../lib/adminContext";
 import { apiFetch } from "../lib/api";
@@ -86,7 +87,7 @@ export default function Login() {
       </p>
       <form onSubmit={submit} style={{ display: "grid", gap: "14px" }}>
         <label style={{ display: "grid", gap: "6px" }}>
-          <span>Email</span>
+          <span>{t('label_email')}</span>
           <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -95,7 +96,7 @@ export default function Login() {
           />
         </label>
         <label style={{ display: "grid", gap: "6px" }}>
-          <span>Password</span>
+          <span>{t('label_password')}</span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type={showPassword ? "text" : "password"}
@@ -117,11 +118,10 @@ export default function Login() {
         </label>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button type="submit" className="primary">
-            Sign in
+            {t('sign_in')}
           </button>
           <div style={{ fontSize: "12px", color: "#9ca3af" }}>
-            Demo user: <strong>{TEST_USER.email}</strong> /{" "}
-            <strong>{TEST_USER.password}</strong>
+            {t('demo_user')}: <strong>{TEST_USER.email}</strong> / <strong>{TEST_USER.password}</strong>
           </div>
         </div>
         {error && <div style={{ color: "#f87171" }}>{error}</div>}

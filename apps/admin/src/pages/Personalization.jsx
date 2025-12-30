@@ -95,7 +95,7 @@ export default function Personalization() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Personalization Rules</h1>
+      <h1>{t('personalization_title')}</h1>
       {!canView && (
         <div
           style={{
@@ -123,8 +123,8 @@ export default function Personalization() {
               }}
             >
               <h2 style={{ margin: 0 }}>Rules</h2>
-              <button type="button" onClick={loadRules} disabled={rulesLoading}>
-                {rulesLoading ? "Refreshing…" : "Reload"}
+                <button type="button" onClick={loadRules} disabled={rulesLoading}>
+                {rulesLoading ? t('refreshing') : t('reload')}
               </button>
             </div>
             {rulesError && (
@@ -144,7 +144,7 @@ export default function Personalization() {
                 No rules configured for this scope.
               </div>
             )}
-            {rulesLoading && <div style={{ marginTop: 8 }}>Loading rules…</div>}
+            {rulesLoading && <div style={{ marginTop: 8 }}>{t('loading_rules')}</div>}
             {hasRules && (
               <ul style={{ marginTop: 12 }}>
                 {rules.map((r) => (
@@ -209,7 +209,7 @@ export default function Personalization() {
               <h2 style={{ margin: 0 }}>Simulator</h2>
               {!canManage && (
                 <span style={{ fontSize: 12, color: "#b91c1c" }}>
-                  Editor role required to simulate
+                  {t('editor_role_required')}
                 </span>
               )}
             </div>
@@ -236,7 +236,7 @@ export default function Personalization() {
                 onClick={simulate}
                 disabled={!canManage || simulateLoading}
               >
-                {simulateLoading ? "Running…" : "Simulate"}
+                {simulateLoading ? t('running') : t('simulate')}
               </button>
             </div>
             {simulateError && (

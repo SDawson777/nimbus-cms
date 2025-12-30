@@ -34,7 +34,7 @@ export default function Products() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Products</h1>
+      <h1>{t('products_title')}</h1>
       <div style={{ marginBottom: 12 }}>
         <label style={{ marginRight: 8 }}>Show recalled:</label>
         <input

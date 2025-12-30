@@ -9,6 +9,7 @@ import Card from "../design-system/Card";
 import ChartJS from "chart.js/auto";
 import { Line } from "react-chartjs-2";
 import { apiJson, apiBaseUrl } from "../lib/api";
+import { t } from '../lib/i18n';
 import Heatmap2D from "../components/Heatmap2D";
 import {
   fetchDashboardLayout,
@@ -191,8 +192,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (layout?.favorites?.length) {
       notify({
-        title: "Favorites saved",
-        body: "Alerts mirror your favorites. Adjust ordering with the arrows.",
+        title: t('favorites_saved_title'),
+        body: t('favorites_saved_body'),
         tone: "info",
         ttl: 3200,
       });
@@ -215,7 +216,7 @@ export default function Dashboard() {
   );
   const favorites = useMemo(() => new Set(layout.favorites || []), [layout]);
 
-  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (loading) return <div style={{ padding: 20 }}>{t('loading')}</div>;
 
   const productSnapshot = topProducts.map((p, idx) => {
     const ps = productSeries.find((s) => s.slug === p.contentSlug);
@@ -451,7 +452,7 @@ export default function Dashboard() {
       <div className="hero-banner">
         <div className="hero-copy">
           <p className="pill">Nimbus Control Center</p>
-          <h1>Operational analytics cockpit</h1>
+          <h1>{t('dashboard_title_short')}</h1>
           <p>
             Production-ready governance for engagement, commerce, and compliance
             across every surface. Built for real-time operations and buyer

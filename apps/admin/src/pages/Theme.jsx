@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { t } from '../lib/i18n';
 import { apiJson } from "../lib/api";
 
 export default function ThemePage() {
@@ -47,13 +48,13 @@ export default function ThemePage() {
           style={{ background: theme.primaryColor }}
         />
         <div className="preview-text">
-          <div className="preview-title">Nimbus CMS Suite</div>
-          <div className="preview-sub">Live preview</div>
+          <div className="preview-title">{t('suite_title')}</div>
+          <div className="preview-sub">{t('preview_live')}</div>
         </div>
       </div>
       <div className="theme-grid">
         <label>
-          Primary color
+          {t('label_primary_color')}
           <input
             type="color"
             value={theme.primaryColor}
@@ -61,7 +62,7 @@ export default function ThemePage() {
           />
         </label>
         <label>
-          Accent color
+          {t('label_accent_color')}
           <input
             type="color"
             value={theme.accentColor}
@@ -69,7 +70,7 @@ export default function ThemePage() {
           />
         </label>
         <label>
-          Background color
+          {t('label_background_color')}
           <input
             type="color"
             value={theme.backgroundColor}
@@ -77,7 +78,7 @@ export default function ThemePage() {
           />
         </label>
         <label>
-          Surface color
+          {t('label_surface_color')}
           <input
             type="color"
             value={theme.surfaceColor}
@@ -85,7 +86,7 @@ export default function ThemePage() {
           />
         </label>
         <label>
-          Font color
+          {t('label_font_color')}
           <input
             type="color"
             value={theme.fontColor}
@@ -94,7 +95,7 @@ export default function ThemePage() {
         </label>
       </div>
       <button className="btn primary" onClick={save}>
-        Save theme
+        {t('save_theme')}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { t } from '../lib/i18n';
 import Tabs from "../design-system/Tabs";
 import Card from "../design-system/Card";
 import Input from "../design-system/Input";
@@ -126,7 +127,7 @@ export default function Settings() {
       <div className="settings-header">
         <div>
           <p className="eyebrow">Control surface</p>
-          <h1>Admin Settings</h1>
+          <h1>{t('settings_title')}</h1>
           <p className="subdued">
             Align admin and CMS behaviors across datasets, surfaces, and
             authentication. Everything here is safe for handoff—no mystery
@@ -359,43 +360,42 @@ function ExperienceSettings() {
 
         <div className="field-row">
           <Select
-            label="Typography"
+            label={t('label_typography')}
             value={uiPrefs.font}
             onChange={(e) => update("font", e.target.value)}
             options={[
-              { value: "inter", label: "Sans (Inter)" },
-              { value: "serif", label: "Serif" },
-              { value: "mono", label: "Mono" },
+              { value: "inter", label: t('opt_font_sans') },
+              { value: "serif", label: t('opt_font_serif') },
+              { value: "mono", label: t('opt_font_mono') },
             ]}
           />
         </div>
 
         <Select
-          label="Surface style"
+          label={t('label_surface_style')}
           value={uiPrefs.surfaces}
           onChange={(e) => update("surfaces", e.target.value)}
           options={[
-            { value: "glass", label: "Glassmorphic (default)" },
-            { value: "solid", label: "Solid enterprise panels" },
+            { value: "glass", label: t('opt_surface_glass') },
+            { value: "solid", label: t('opt_surface_solid') },
           ]}
         />
 
         <div className="action-row">
           <Button variant="primary" onClick={save}>
-            Save & apply
+            {t('save_apply')}
           </Button>
           <Button variant="ghost" onClick={reset}>
-            Reset
+            {t('reset')}
           </Button>
           {status && <span className="status-chip">{status}</span>}
         </div>
 
         <div className="divider" />
 
-        <h4>Dashboard layout</h4>
+        <h4>{t('dashboard_layout')}</h4>
         <p className="subdued">
-          Choose which widgets show on the dashboard, star your favorites, and
-          reorder them. These settings sync to the dashboard controls.
+          {t('dashboard_layout_description')}
         </p>
 
         <div className="customizer">
@@ -404,8 +404,8 @@ function ExperienceSettings() {
               <div>
                 <strong>{id}</strong>
                 <p className="section-note" style={{ margin: 0 }}>
-                  {DEFAULT_LAYOUT.order.includes(id) ? "Core widget" : "Widget"}{" "}
-                  · Priority and visibility
+                  {DEFAULT_LAYOUT.order.includes(id) ? t('core_widget') : t('widget')}{" "}
+                  · {t('priority_visibility')}
                 </p>
               </div>
               <div className="customizer-actions">
@@ -428,7 +428,7 @@ function ExperienceSettings() {
                   onClick={() => toggleCard(id)}
                   aria-pressed={!layout.hidden.includes(id)}
                 >
-                  {layout.hidden.includes(id) ? "Show" : "Hide"}
+                  {layout.hidden.includes(id) ? t('show') : t('hide')}
                 </button>
                 <button
                   className="ghost"
@@ -443,7 +443,7 @@ function ExperienceSettings() {
         </div>
         <div className="action-row">
           <Button variant="primary" onClick={saveLayoutPrefs}>
-            Save dashboard layout
+            {t('save_dashboard_layout')}
           </Button>
           {layoutStatus && <span className="status-chip">{layoutStatus}</span>}
         </div>
@@ -451,38 +451,37 @@ function ExperienceSettings() {
 
       <div className="settings-preview">
         <div className="preview-card">
-          <p className="eyebrow">Live preview</p>
-          <h4>Suite chrome</h4>
+          <p className="eyebrow">{t('preview_live')}</p>
+          <h4>{t('suite_chrome')}</h4>
           <p className="subdued">
-            Navigation, dashboards, and CMS editors share these tokens. Accent +
-            density updates propagate to every card, nav surface, and CTA.
+            {t('suite_chrome_description')}
           </p>
           <div className="preview-grid">
-            <div className="preview-pill">Navigation</div>
-            <div className="preview-pill">Metrics</div>
-            <div className="preview-pill">Content</div>
-            <div className="preview-pill">AI concierge</div>
-            <div className="preview-pill">Compliance</div>
-            <div className="preview-pill">Analytics</div>
+            <div className="preview-pill">{t('preview_navigation')}</div>
+            <div className="preview-pill">{t('preview_metrics')}</div>
+            <div className="preview-pill">{t('preview_content')}</div>
+            <div className="preview-pill">{t('preview_ai_concierge')}</div>
+            <div className="preview-pill">{t('preview_compliance')}</div>
+            <div className="preview-pill">{t('preview_analytics')}</div>
           </div>
           <div
             className="preview-panel"
             style={{ borderRadius: `calc(${uiPrefs.radius}px)` }}
           >
-            <div className="preview-panel__header">Buttons & cards</div>
+            <div className="preview-panel__header">{t('buttons_cards')}</div>
             <div className="preview-panel__body">
               <button className="primary" style={{ boxShadow: "none" }}>
-                Primary
+                {t('primary')}
               </button>
               <button className="ghost" style={{ marginLeft: 8 }}>
-                Ghost
+                {t('ghost')}
               </button>
               <div className="preview-card-mini" style={{ marginTop: 12 }}>
                 <p className="metric-subtle" style={{ margin: 0 }}>
                   Blur {uiPrefs.blur}px · Radius {uiPrefs.radius}px ·{" "}
                   {uiPrefs.font}
                 </p>
-                <strong>Live preview</strong>
+                <strong>{t('preview_live')}</strong>
               </div>
             </div>
           </div>

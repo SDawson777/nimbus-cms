@@ -1,0 +1,20 @@
+{
+  "admins": [
+    {
+      "id": "1",
+      "email": "owner@example.com",
+      "passwordHash": "",
+      "role": "OWNER",
+      "organizationSlug": "nimbus-org",
+      "brandSlug": "nimbus",
+      "storeSlug": "nimbus-main"
+    },
+    {
+      "id": "2",
+      "email": "editor@example.com",
+      "passwordHash": "",
+      "role": "EDITOR",
+      "brandSlug": "nimbus"
+    }
+  ]
+}

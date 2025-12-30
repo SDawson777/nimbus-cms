@@ -54,3 +54,43 @@ To perform a placeholder/manual run, open the workflow in GitHub Actions and use
 ## Next steps
 - Provide the required test secrets in GitHub and run the workflow manually via Actions -> the workflow -> Run workflow.
 - If you want, I can also add an optional step to upload and store a sanitized exported dataset into GitHub Actions artifacts or a private S3 bucket for reproducible runs — tell me which storage you prefer.
+
+## How to export Sanity datasets and Postgres dumps
+
+Sanity (export dataset):
+
+```bash
+# Export a dataset to a tarball using the Sanity CLI
+npx @sanity/cli dataset export <dataset> ./sanity-export-$(date +%Y%m%d).tar.gz --project <projectId>
+```
+
+Sanity (import dataset):
+
+```bash
+# Import a dataset into a target dataset (requires SANITY_ADMIN_TOKEN)
+npx @sanity/cli dataset import ./sanity-export-2025XXXXX.tar.gz <targetDataset> --project <projectId> --replace
+```
+
+Postgres (logical dump using custom format, recommended):
+
+```bash
+# Dump (custom format):
+pg_dump -Fc --no-acl --no-owner -h <host> -U <user> -d <db> -f dump-$(date +%Y%m%d).dump
+
+# Restore (pg_restore):
+pg_restore -h <host> -U <user> -d <db> -c --if-exists dump-2025XXXXX.dump
+```
+
+Postgres (plain SQL):
+
+```bash
+# Dump (plain SQL):
+pg_dump -h <host> -U <user> -d <db> -f dump.sql
+
+# Restore (psql):
+psql -h <host> -U <user> -d <db> -f dump.sql
+```
+
+Notes:
+- Prefer custom-format `pg_dump -Fc` for faster and more flexible restores with `pg_restore`.
+- Always restore into a non-production test database and verify credentials are ephemeral.

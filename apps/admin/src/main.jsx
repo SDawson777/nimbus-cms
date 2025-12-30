@@ -26,13 +26,16 @@ import { DatasetProvider, DatasetSelector } from "./lib/datasetContext";
 import { AiChatWidget } from "./components/AiChatWidget";
 import Deals from "./pages/Deals";
 import Compliance from "./pages/Compliance";
-import AppErrorBoundary from "./components/AppErrorBoundary";
+import Admins from "./pages/Admins";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { t } from "./lib/i18n";
 import AppFooter from "./components/AppFooter";
 import WelcomeBar from "./components/WelcomeBar";
 import { NotificationProvider } from "./components/NotificationCenter";
 import HeatmapPage from "./pages/Heatmap";
 import UndoPage from "./pages/Undo";
 import { AnimatePresence, motion } from "framer-motion";
+import { initSentry } from "./lib/sentryInit";
 
 function AppShell() {
   const { admin, loading, signOut } = useAdminGuard();
@@ -43,6 +46,7 @@ function AppShell() {
   const navItems = useMemo(
     () => [
       { path: "/dashboard", label: "Dashboard" },
+      { path: "/admins", label: "Admins" },
       { path: "/analytics", label: "Analytics" },
       { path: "/settings", label: "Settings" },
       { path: "/compliance", label: "Compliance" },
@@ -96,7 +100,7 @@ function AppShell() {
             aria-hidden="true"
           />
           <Link to="/" className="suite-title">
-            Nimbus CMS Suite
+            {t('suite_title')}
           </Link>
         </div>
         {!isLogin && (
@@ -183,6 +187,12 @@ function AppShell() {
                     loading={loading}
                     element={<Products />}
                   />
+                }
+              />
+              <Route
+                path="/admins"
+                element={
+                  <ProtectedRoute admin={admin} loading={loading} element={<Admins />} />
                 }
               />
               <Route
@@ -327,7 +337,7 @@ function ProtectedRoute({ element, admin, loading }) {
   if (loading) {
     return (
       <div className="card" style={{ margin: "2rem auto", maxWidth: 520 }}>
-        Loading…
+        {t('loading')}
       </div>
     );
   }
@@ -339,13 +349,15 @@ function ProtectedRoute({ element, admin, loading }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppErrorBoundary>
+    <ErrorBoundary>
+      <BrowserRouter>
         <AppShell />
-      </AppErrorBoundary>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
-}
+
+// Initialize Sentry if configured (optional)
+initSentry();
 
 createRoot(document.getElementById("root")).render(
   <AdminProvider>

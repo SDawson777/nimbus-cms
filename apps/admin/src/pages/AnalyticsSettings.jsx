@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch, apiJson } from "../lib/api";
 import { safeJson } from "../lib/safeJson";
+import { t } from '../lib/i18n';
 
 export default function AnalyticsSettings() {
   const [loading, setLoading] = useState(true);
@@ -80,10 +81,10 @@ export default function AnalyticsSettings() {
       });
       if (!res.ok) throw new Error("save failed");
       const json = await safeJson(res, { settings });
-      alert("Saved");
+      alert(t('saved'));
       setSettings((s) => ({ ...s, ...json.settings }));
     } catch (err) {
-      alert("Save failed");
+      alert(t('save_failed'));
     } finally {
       setSaving(false);
     }
@@ -202,7 +203,7 @@ export default function AnalyticsSettings() {
 
         <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
           <button onClick={save} disabled={saving || !isValid}>
-            {saving ? "Saving…" : "Save settings"}
+            {saving ? t('saving') : t('save_settings')}
           </button>
           <button
             onClick={() => {

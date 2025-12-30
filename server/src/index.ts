@@ -10,6 +10,7 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { logger } from "./lib/logger";
 import adminAuthRouter from "./routes/adminAuth";
+import adminUsersRouter from "./routes/adminUsers";
 import { requireAdmin } from "./middleware/adminAuth";
 import {
   requireCsrfToken,
@@ -35,31 +36,17 @@ import undoRouter from "./routes/undo";
 import { metricsHandler } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
-import { APP_ENV, JWT_SECRET, PORT } from "./config/env";
+import { APP_ENV, PORT } from "./config/env";
+import validateEnv from "./middleware/validateEnv";
+import errorHandler from "./middleware/errorHandler";
 
-const isProduction = process.env.NODE_ENV === "production";
-const jwtSecret = JWT_SECRET;
-const weakJwtValues = new Set([
-  "change_me_in_prod",
-  "changeme",
-  "secret",
-  "placeholder",
-  "your_jwt_secret",
-]);
-if (isProduction) {
-  const normalized = jwtSecret.toLowerCase();
-  if (jwtSecret.length < 24 || weakJwtValues.has(normalized)) {
-    throw new Error(
-      "JWT_SECRET must be at least 24 characters and not a placeholder in production",
-    );
-  }
-} else if (
-  jwtSecret.length < 16 ||
-  weakJwtValues.has(jwtSecret.toLowerCase())
-) {
-  logger.warn(
-    "JWT_SECRET is weak; set a longer secret before deploying to production",
-  );
+// Centralized environment validation (throws in production on fatal misconfig)
+try {
+  validateEnv();
+} catch (err) {
+  logger.error("env.validation.failed", err as any);
+  // Rethrow to stop the bootstrap when env is invalid in production
+  throw err;
 }
 
 const app = express();
@@ -126,7 +113,9 @@ app.get("/", (_req, res) => {
 });
 const staticDir = path.join(__dirname, "..", "static");
 app.use(express.static(staticDir));
-app.get("/", (_req, res) => res.sendFile(path.join(staticDir, "index.html")));
+// Note: keep the custom landing HTML handler above; do not override it with
+// a static index file handler. Static assets will still be served from
+// `staticDir`.
 
 // Serve a lightweight login page for preview/dev
 app.use("/", adminLoginPage);
@@ -203,6 +192,15 @@ app.use(
   adminRouter,
 );
 
+// Admin users management (CRUD) - protected endpoints
+app.use(
+  "/api/admin/users",
+  requireAdmin,
+  ensureCsrfCookie,
+  requireCsrfToken,
+  adminUsersRouter,
+);
+
 // Also mount the admin API under the Nimbus namespace to support frontends
 // that build paths like `${API_BASE}/api/admin/...` (where `API_BASE` may be
 // `/api/v1/nimbus`). This provides backward-compatible routing for those
@@ -214,6 +212,9 @@ app.use(
   requireCsrfToken,
   adminRouter,
 );
+
+// Global error handler - must be mounted after all routes
+app.use(errorHandler);
 
 // Start compliance snapshot scheduler only when explicitly enabled (avoid running during tests)
 if (process.env.ENABLE_COMPLIANCE_SCHEDULER === "true") {

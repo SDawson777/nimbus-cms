@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Card from "../design-system/Card";
 import { apiJson } from "../lib/api";
+import { t } from '../lib/i18n';
 
 export default function UndoPage() {
   const [events, setEvents] = useState([]);
@@ -31,15 +32,15 @@ export default function UndoPage() {
   }
 
   async function execute(id) {
-    if (!confirm('Queue this undo operation for execution? This will not automatically apply external changes.')) return;
+    if (!confirm(t('confirm_queue_undo'))) return;
     setExecuting(id);
     const { ok, data, error } = await apiJson(`/api/v1/nimbus/undo/events/${id}/execute`, { method: 'POST', body: JSON.stringify({ requestedBy: 'ui-admin' }) });
     if (!ok) {
       setExecuting(null);
-      alert(error || 'Failed to enqueue execution');
+      alert(error || t('failed_enqueue_execution'));
       return;
     }
-    alert('Queued: ' + data.queuedId);
+    alert(t('queued') + ': ' + data.queuedId);
     setExecuting(null);
     loadEvents();
   }
@@ -49,15 +50,15 @@ export default function UndoPage() {
       <div className="page-header">
         <div>
           <p className="eyebrow">Operations</p>
-          <h1>Undo / Redo Events</h1>
+          <h1>{t('undo_title')}</h1>
           <p className="subdued">Review recorded events and queue safe undos for operator review.</p>
         </div>
       </div>
 
       <Card>
-        {loading && <p className="metric-subtle">Loading events…</p>}
+          {loading && <p className="metric-subtle">{t('loading_events')}</p>}
         {error && <p className="metric-subtle" style={{ color: 'var(--danger)' }}>{String(error)}</p>}
-        {!loading && events.length === 0 && <p className="metric-subtle">No events recorded yet.</p>}
+        {!loading && events.length === 0 && <p className="metric-subtle">{t('no_events_recorded')}</p>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {events.map((ev) => (
             <li key={ev.id} style={{ borderBottom: '1px solid var(--muted)', padding: '8px 0' }}>
@@ -67,8 +68,8 @@ export default function UndoPage() {
                   <div className="metric-subtle">{ev.resource} {ev.resourceId ? `· ${ev.resourceId}` : ''} · {new Date(ev.createdAt).toLocaleString()}</div>
                 </div>
                 <div>
-                  <button className="ghost" onClick={() => preview(ev.id)}>Preview</button>
-                  <button className="primary" disabled={executing === ev.id} onClick={() => execute(ev.id)} style={{ marginLeft: 8 }}>Queue</button>
+                  <button className="ghost" onClick={() => preview(ev.id)}>{t('preview')}</button>
+                  <button className="primary" disabled={executing === ev.id} onClick={() => execute(ev.id)} style={{ marginLeft: 8 }}>{t('queue')}</button>
                 </div>
               </div>
             </li>
