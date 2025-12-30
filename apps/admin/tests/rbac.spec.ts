@@ -9,18 +9,26 @@ test('RBAC: owner vs editor access', async ({ page }) => {
 
   // Owner can access /admins
   await page.goto('/login');
+  // Wait for login form and inputs
+  await page.waitForSelector('form', { timeout: 10000 });
+  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+  await page.waitForSelector('input[name="password"]', { timeout: 10000 });
   await page.getByLabel('Email').fill(ownerEmail);
   await page.getByLabel('Password').fill(ownerPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL('**/dashboard', { timeout: 10000 });
   await page.goto('/admins');
-  await expect(page.locator('h2', { hasText: 'Admin Users' })).toBeVisible();
+  await page.waitForSelector('h2', { timeout: 10000 });
+  await expect(page.locator('h2', { hasText: 'Admin Users' })).toBeVisible({ timeout: 5000 });
 
   // Logout
   await page.getByRole('button', { name: 'Log out' }).click().catch(()=>{});
   await page.waitForURL('**/login', { timeout: 5000 });
 
   // Editor should not be able to access /admins
+  // Ensure login inputs are present for the editor login
+  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+  await page.waitForSelector('input[name="password"]', { timeout: 10000 });
   await page.getByLabel('Email').fill(editorEmail);
   await page.getByLabel('Password').fill(editorPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();

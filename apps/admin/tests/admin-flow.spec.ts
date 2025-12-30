@@ -6,6 +6,10 @@ test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
 
   // Login
   await page.goto('/login');
+  // Ensure login form and inputs are present
+  await page.waitForSelector('form', { timeout: 10000 });
+  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+  await page.waitForSelector('input[name="password"]', { timeout: 10000 });
   await page.getByLabel('Email').fill(adminEmail);
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -16,10 +20,13 @@ test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
 
   // Admins page: invite, edit role, delete
   await page.goto('/admins');
-  await expect(page.locator('h2', { hasText: 'Admin Users' })).toBeVisible();
+  // Wait for admins header to appear
+  await page.waitForSelector('h2', { timeout: 10000 });
+  await expect(page.locator('h2', { hasText: 'Admin Users' })).toBeVisible({ timeout: 5000 });
 
   const unique = `e2e+${Date.now()}@example.com`;
   const inviteInput = page.locator('form input[placeholder="user@example.com"]');
+  await inviteInput.waitFor({ timeout: 10000 });
   await inviteInput.fill(unique);
   await page.getByRole('button', { name: 'Invite' }).click();
 

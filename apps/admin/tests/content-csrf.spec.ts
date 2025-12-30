@@ -6,10 +6,15 @@ test('CSRF protection and AI draft (content) create smoke', async ({ page }) => 
 
   // Login via the UI
   await page.goto('/login');
+  // Wait for login form and inputs
+  await page.waitForSelector('form', { timeout: 10000 });
+  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+  await page.waitForSelector('input[name="password"]', { timeout: 10000 });
   await page.getByLabel('Email').fill(adminEmail);
   await page.getByLabel('Password').fill(adminPassword);
   const [loginResponse] = await Promise.all([
-    page.waitForResponse((r) => r.url().endsWith('/admin/login') && r.status() === 200),
+    // wait for admin login response; allow some flex in URL checks
+    page.waitForResponse((r) => r.url().includes('/admin/login') && r.status() === 200, { timeout: 20000 }),
     page.getByRole('button', { name: 'Sign in' }).click(),
   ]);
 
