@@ -43,7 +43,8 @@ jobs:
       - name: Build server and admin
         run: |
           pnpm -C server build
-          pnpm -C apps/admin build
+          # Build admin with API base pointing to the server on 8080
+          VITE_NIMBUS_API_URL="http://localhost:8080" pnpm -C apps/admin build
 
       - name: Start server and admin preview (background)
         run: |
