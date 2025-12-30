@@ -6,10 +6,9 @@ test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
 
   // Login
   await page.goto('/login');
-  // Ensure login form and inputs are present
+  // Ensure login form and primary controls are present
   await page.waitForSelector('form', { timeout: 10000 });
-  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
-  await page.waitForSelector('input[name="password"]', { timeout: 10000 });
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible({ timeout: 10000 });
   await page.getByLabel('Email').fill(adminEmail);
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
