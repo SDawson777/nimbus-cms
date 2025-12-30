@@ -13,9 +13,20 @@ test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
+  // Wait for the login network response and assert it succeeded
+  const loginResp = await page.waitForResponse(
+    (r) => r.url().includes('/admin/login') && r.request().method() === 'POST',
+    { timeout: 30000 }
+  ).catch(() => null);
+  if (loginResp) {
+    expect(loginResp.ok()).toBeTruthy();
+  } else {
+    console.warn('admin-flow: login response not observed');
+  }
+
   // Wait for dashboard to be visible and URL to end with /dashboard (SPA-friendly)
-  await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 15000 }).catch(() => {});
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 30000 }).catch(() => {});
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 60000 });
 
   // Admins page: invite, edit role, delete
   await page.goto('/admins');

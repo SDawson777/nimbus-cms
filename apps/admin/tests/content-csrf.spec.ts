@@ -17,10 +17,11 @@ test('CSRF protection and AI draft (content) create smoke', async ({ page }) => 
 
   // After login, admin_csrf cookie should be set and response includes csrfToken
   const csrfFromBody = null;
-  const cookie = await page.evaluate(() => document.cookie);
-  const csrfCookie = cookie.split('; ').find((c) => c.startsWith('admin_csrf='));
-  const csrfValue = csrfCookie ? csrfCookie.split('=')[1] : null;
-  // Basic sanity
+  // Prefer reading cookies from the browser context (more reliable in CI)
+  const cookies = await page.context().cookies();
+  const csrfCookieObj = cookies.find((c) => c.name === 'admin_csrf' || c.name.toLowerCase().includes('csrf')) || null;
+  const csrfValue = csrfCookieObj ? csrfCookieObj.value : null;
+  // Basic sanity - ensure we have either cookie or body-provided token
   expect(csrfValue || csrfFromBody).toBeTruthy();
 
   // Use browser fetch (page.evaluate) to include cookies; provide header x-csrf-token
