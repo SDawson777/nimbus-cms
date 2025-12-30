@@ -108,17 +108,18 @@ jobs:
 
       - name: Preflight admin login readiness
         run: |
-          echo "Preflight: waiting for /login to render email input"
+          echo "Preflight: waiting for /login to return 200 and index markup"
           for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174/login || true)
             HTML=$(curl -s http://localhost:5174/login || true)
-            if echo "$HTML" | grep -q 'name="email"'; then
-              echo "Login email input found. Proceeding to tests.";
+            if [ "$STATUS" = "200" ] && (echo "$HTML" | grep -q '<div id="root">' || echo "$HTML" | grep -qi '<html'); then
+              echo "Login route is served (status $STATUS) and index markup detected. Proceeding to tests.";
               exit 0
             fi
-            echo "Waiting for login page to include email input... ($i/30)";
+            echo "Waiting for login route: status=$STATUS, attempt ($i/30)";
             sleep 2
           done
-          echo "Preflight failed: login page did not render the email input.";
+          echo "Preflight failed: /login did not return index markup or status 200 within timeout.";
           # Show what we saved earlier if present
           if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; fi
           exit 1
