@@ -78,7 +78,17 @@ jobs:
 
       - name: Wait for services
         run: |
-          pnpm -w dlx wait-on http://localhost:8080/healthz http://localhost:5174 || (cat server.log && cat apps/admin/dist/index.html && false)
+          # Wait up to 2 minutes for both services to become available. If they
+          # don't respond in time, dump the server and admin logs to help
+          # diagnose the failure and fail the job.
+          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:5174 || (
+            echo "\nERROR: Services did not become ready within timeout. Dumping logs...\n";
+            echo "---- server.log (last 200 lines) ----";
+            if [ -f server.log ]; then tail -n 200 server.log; else echo "(no server.log)"; fi;
+            echo "---- admin dist index.html (head) ----";
+            if [ -f apps/admin/dist/index.html ]; then sed -n '1,200p' apps/admin/dist/index.html; else echo "(no apps/admin/dist/index.html)"; fi;
+            exit 1
+          )
 
       - name: Run admin e2e tests (blocking)
         working-directory: apps/admin
