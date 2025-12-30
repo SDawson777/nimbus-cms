@@ -106,6 +106,23 @@ jobs:
             exit 1
           )
 
+      - name: Preflight admin login readiness
+        run: |
+          echo "Preflight: waiting for /login to render email input"
+          for i in $(seq 1 30); do
+            HTML=$(curl -s http://localhost:5174/login || true)
+            if echo "$HTML" | grep -q 'name="email"'; then
+              echo "Login email input found. Proceeding to tests.";
+              exit 0
+            fi
+            echo "Waiting for login page to include email input... ($i/30)";
+            sleep 2
+          done
+          echo "Preflight failed: login page did not render the email input.";
+          # Show what we saved earlier if present
+          if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; fi
+          exit 1
+
       - name: Dump admin preview and server logs (debug)
         run: |
             echo "Checking admin preview /login -> status and head"

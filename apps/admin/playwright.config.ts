@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 30_000,
-  expect: { timeout: 5000 },
+  timeout: isCI ? 60_000 : 30_000,
+  expect: { timeout: isCI ? 8000 : 5000 },
   fullyParallel: true,
   // Use list + html reporter so CI can collect an HTML report artifact
   reporter: [ ['list'], ['html', { outputFolder: 'playwright-report' }] ],
