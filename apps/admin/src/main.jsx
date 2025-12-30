@@ -355,6 +355,7 @@ function App() {
       </BrowserRouter>
     </ErrorBoundary>
   );
+}
 
 // Initialize Sentry if configured (optional)
 initSentry();
