@@ -15,6 +15,7 @@ describe('validateEnv middleware', () => {
     process.env.NODE_ENV = 'production';
     process.env.DATABASE_URL = 'postgresql://user@localhost/db';
     process.env.JWT_SECRET = 'short-secret';
+    process.env.STRICT_ENV_VALIDATION = 'true';
     // load module dynamically after env is set
     const mod = await import('../src/middleware/validateEnv');
     expect(() => mod.validateEnv()).toThrow();
@@ -28,6 +29,15 @@ describe('validateEnv middleware', () => {
     process.env.SANITY_STUDIO_PROJECT_ID = 'proj';
     process.env.SANITY_STUDIO_DATASET = 'dataset';
     process.env.SANITY_API_TOKEN = 'token';
+    const mod = await import('../src/middleware/validateEnv');
+    expect(() => mod.validateEnv()).not.toThrow();
+  });
+
+  it('only warns (does not throw) for weak JWT when strict validation is disabled', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgresql://user@localhost/db';
+    process.env.JWT_SECRET = 'short-secret';
+    delete process.env.STRICT_ENV_VALIDATION;
     const mod = await import('../src/middleware/validateEnv');
     expect(() => mod.validateEnv()).not.toThrow();
   });

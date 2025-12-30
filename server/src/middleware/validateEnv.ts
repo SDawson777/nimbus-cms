@@ -2,6 +2,7 @@ import { APP_ENV } from "../config/env";
 
 export function validateEnv() {
   const isProduction = process.env.NODE_ENV === "production";
+  const strict = process.env.STRICT_ENV_VALIDATION === "true";
 
   // JWT secret validation
   const jwt = process.env.JWT_SECRET || "";
@@ -14,7 +15,13 @@ export function validateEnv() {
   ]);
   if (isProduction) {
     if (jwt.length < 24 || weakJwtValues.has(jwt.toLowerCase())) {
-      throw new Error("JWT_SECRET must be at least 24 characters and not a placeholder in production");
+      const msg = "JWT_SECRET should be at least 24 characters and not a placeholder in production";
+      if (strict) {
+        throw new Error(msg);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
   } else {
     if (jwt.length < 16 || weakJwtValues.has(jwt.toLowerCase())) {
@@ -39,17 +46,30 @@ export function validateEnv() {
 
   if (isProduction) {
     if (!corsList.length) {
-      throw new Error(
-        "CORS_ORIGINS must be configured in production (comma-separated list of allowed origins)",
-      );
+      const msg =
+        "CORS_ORIGINS is not configured in production; configure it to restrict allowed origins";
+      if (strict) {
+        throw new Error(
+          "CORS_ORIGINS must be configured in production (comma-separated list of allowed origins)",
+        );
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
 
     // Ensure any explicitly-configured frontend origins are included in the CORS allowlist.
     const missing = frontendOriginsToCheck.filter((origin) => !corsList.includes(origin));
     if (missing.length) {
-      throw new Error(
-        `CORS_ORIGINS is missing required frontend origins: ${missing.join(", ")}`,
-      );
+      const msg = `CORS_ORIGINS is missing configured frontend origins: ${missing.join(", ")}`;
+      if (strict) {
+        throw new Error(
+          `CORS_ORIGINS is missing required frontend origins: ${missing.join(", ")}`,
+        );
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
   }
 
@@ -60,15 +80,36 @@ export function validateEnv() {
 
   // Sanity optional - warn if missing in demo environments
   if (isProduction) {
-    // Sanity must be configured in production
+    // Sanity should be configured in production, but only fail hard in strict mode.
     if (!process.env.SANITY_STUDIO_PROJECT_ID) {
-      throw new Error("SANITY_STUDIO_PROJECT_ID is required in production");
+      const msg = "SANITY_STUDIO_PROJECT_ID is not set; Sanity-backed content may not load";
+      if (strict) {
+        throw new Error("SANITY_STUDIO_PROJECT_ID is required in production");
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
     if (!process.env.SANITY_STUDIO_DATASET && !process.env.SANITY_DATASET_DEFAULT) {
-      throw new Error("SANITY_DATASET is required in production (SANITY_STUDIO_DATASET or SANITY_DATASET_DEFAULT)");
+      const msg =
+        "SANITY_STUDIO_DATASET or SANITY_DATASET_DEFAULT is not set; default dataset will be used or content may be unavailable";
+      if (strict) {
+        throw new Error(
+          "SANITY_DATASET is required in production (SANITY_STUDIO_DATASET or SANITY_DATASET_DEFAULT)",
+        );
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
     if (!process.env.SANITY_API_TOKEN) {
-      throw new Error("SANITY_API_TOKEN is required in production");
+      const msg = "SANITY_API_TOKEN is not set; server-side Sanity operations may fail";
+      if (strict) {
+        throw new Error("SANITY_API_TOKEN is required in production");
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(msg);
+      }
     }
   } else {
     if (APP_ENV === "demo" && !process.env.SANITY_STUDIO_PROJECT_ID) {
