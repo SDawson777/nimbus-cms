@@ -106,8 +106,8 @@ jobs:
             exit 1
           )
 
-        - name: Dump admin preview and server logs (debug)
-          run: |
+      - name: Dump admin preview and server logs (debug)
+        run: |
             echo "Checking admin preview /login -> status and head"
             # Try to fetch the login page and save it for inspection
             mkdir -p apps/admin/test-ci-output || true
@@ -119,15 +119,15 @@ jobs:
             echo "---- admin.log (tail) ----"
             tail -n 200 admin.log || true
 
-        - name: Upload CI debug page
-          if: always()
-          uses: actions/upload-artifact@v4
-          with:
-            name: ci-admin-debug
-            path: |
-              apps/admin/test-ci-output/ci-login.html
-              server.log
-              admin.log
+      - name: Upload CI debug page
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-admin-debug
+          path: |
+            apps/admin/test-ci-output/ci-login.html
+            server.log
+            admin.log
 
       - name: Run admin e2e tests (blocking)
         working-directory: apps/admin
