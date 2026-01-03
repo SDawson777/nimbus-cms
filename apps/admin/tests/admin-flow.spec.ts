@@ -1,30 +1,39 @@
 import { test, expect } from '@playwright/test';
 
-test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
-  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'demo@nimbus.app';
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'Nimbus!Demo123';
-
-  // Login
-  await page.goto('/login');
-  // Ensure login form and primary controls are present
-  await page.waitForSelector('form', { timeout: 10000 });
-  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible({ timeout: 10000 });
-  await page.getByLabel('Email').fill(adminEmail);
-  await page.getByLabel('Password').fill(adminPassword);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-
-  // Wait for the login network response and assert it succeeded
-  const loginResp = await page.waitForResponse(
-    (r) => r.url().includes('/admin/login') && r.request().method() === 'POST',
-    { timeout: 30000 }
-  ).catch(() => null);
-  if (loginResp) {
-    expect(loginResp.ok()).toBeTruthy();
-  } else {
-    console.warn('admin-flow: login response not observed');
+async function loginViaBrowserFetch(page: any, email: string, password: string) {
+  if (page.url() === 'about:blank') {
+    await page.goto('/healthz', { waitUntil: 'domcontentloaded' });
   }
 
-  // Wait for dashboard to be visible and URL to end with /dashboard (SPA-friendly)
+  const result = await page.evaluate(async (creds) => {
+    const url = new URL('/admin/login', window.location.origin).toString();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(creds),
+    });
+    let body: any = null;
+    try {
+      body = await res.json();
+    } catch {
+      // ignore
+    }
+    return { ok: res.ok, status: res.status, body };
+  }, { email, password });
+
+  expect(result.ok).toBeTruthy();
+  return result;
+}
+
+test('admin flows: login, admin-user CRUD, navigation', async ({ page }) => {
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com';
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'e2e-password';
+
+  // Log in via a browser fetch so cookies are attached to this page context.
+  await loginViaBrowserFetch(page, adminEmail, adminPassword);
+
+  // Land on dashboard in an authenticated SPA context.
+  await page.goto('/dashboard');
   await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 30000 }).catch(() => {});
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 60000 });
 

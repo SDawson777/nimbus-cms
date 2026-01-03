@@ -26,9 +26,9 @@ export interface AdminStore {
 class FileAdminStore implements AdminStore {
   private configPath: string;
   constructor() {
-    // Use CWD so paths resolve correctly in both TS (src) and compiled JS (dist).
-    // Expected CWD is the server package root.
-    this.configPath = path.join(process.cwd(), 'config', 'admins.json');
+    // Keep file-backed admin CRUD aligned with the admin auth implementation,
+    // which reads from `dist/config/admins.json` at runtime.
+    this.configPath = path.join(__dirname, "..", "config", "admins.json");
   }
   private read() {
     if (!fs.existsSync(this.configPath)) return { admins: [] as any[] };
@@ -41,6 +41,7 @@ class FileAdminStore implements AdminStore {
   }
   private write(cfg: any) {
     try {
+      fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
       fs.writeFileSync(this.configPath, JSON.stringify(cfg, null, 2), 'utf8');
       return true;
     } catch (e) {

@@ -52,3 +52,21 @@ node_modules/
 .next/
 repo_cleanup_backups/
 server/static/admin/styles.css
+
+# Playwright (local/CI artifacts)
+apps/admin/playwright-report/
+apps/admin/test-results/
+apps/admin/test-ci-output/
+
+# Local server/runtime artifacts
+*.pid
+server.pid
+apps/server.pid
+apps/admin/server.pid
+
+# Seed script backups
+server/config/admins.json.bak.*
+
+# Built admin assets copied into server/static during E2E/CI
+server/static/assets/
+server/static/favicon.ico

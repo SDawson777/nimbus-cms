@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { t } from '../lib/i18n';
+import { apiFetch } from '../lib/api';
 
 export default function Admins() {
   const [admins, setAdmins] = useState([]);
@@ -10,7 +11,7 @@ export default function Admins() {
   useEffect(() => {
     async function load() {
       try {
-        const r = await fetch('/api/admin/users/admins');
+        const r = await apiFetch('/api/admin/users');
         if (!r.ok) throw new Error('failed to fetch admins');
         const data = await r.json();
         setAdmins(data.admins || []);
@@ -27,9 +28,8 @@ export default function Admins() {
     e.preventDefault();
     setMessage(null);
     try {
-      const r = await fetch('/api/admin/users/admins/invite', {
+      const r = await apiFetch('/api/admin/users/invite', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       if (!r.ok) {
@@ -48,9 +48,8 @@ export default function Admins() {
   async function updateAdmin(id, updates) {
     setMessage(null);
     try {
-      const r = await fetch(`/api/admin/users/${id}`, {
+      const r = await apiFetch(`/api/admin/users/${id}` , {
         method: 'PUT',
-        headers: { 'content-type': 'application/json' },
         body: JSON.stringify(updates),
       });
       if (!r.ok) {
@@ -69,7 +68,7 @@ export default function Admins() {
     if (!confirm(t('confirm_delete_admin'))) return;
     setMessage(null);
     try {
-      const r = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      const r = await apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
       if (!r.ok) throw new Error('delete failed');
       setAdmins((s) => s.filter((a) => a.id !== id));
       setMessage({ type: 'success', text: t('deleted') });

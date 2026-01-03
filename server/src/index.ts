@@ -79,14 +79,28 @@ app.use(
   }),
 );
 app.use(compression());
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
+const globalRateLimitWindowMs = (() => {
+  const raw = process.env.GLOBAL_RATE_LIMIT_WINDOW_MS;
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : 15 * 60 * 1000;
+})();
+const globalRateLimitMax = (() => {
+  const raw = process.env.GLOBAL_RATE_LIMIT_MAX;
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : 100;
+})();
+// Allow disabling the global limiter by setting GLOBAL_RATE_LIMIT_MAX=0
+// (useful for E2E/CI where asset fan-out can exceed default thresholds).
+if (globalRateLimitMax > 0) {
+  app.use(
+    rateLimit({
+      windowMs: globalRateLimitWindowMs,
+      max: globalRateLimitMax,
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
+  );
+}
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms"),
 );
@@ -131,15 +145,45 @@ app.use("/admin", adminAuthRouter);
 // `/api/v1/nimbus/admin/me`.
 app.use("/api/v1/nimbus/admin", adminAuthRouter);
 // Serve admin static pages (login and dashboard)
-app.get("/admin", (_req, res) =>
-  res.sendFile(path.join(staticDir, "admin", "login.html")),
+// The built admin `index.html` is copied into `static/` root so assets
+// resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
+const adminIndex = path.join(staticDir, "index.html");
+// Use a route pattern that is compatible with path-to-regexp: use a named
+// parameter with a wildcard to capture any admin subpath.
+// Serve SPA index for base admin route and any nested admin paths
+app.get("/admin", (_req, res) => res.sendFile(adminIndex));
+app.get(/^\/admin\/.*$/, (_req, res) => res.sendFile(adminIndex));
+
+// Also serve the SPA index for legacy top-level admin routes
+app.get("/login", (_req, res) => res.sendFile(adminIndex));
+app.get("/dashboard", (_req, res) => res.sendFile(adminIndex));
+app.get("/settings", (_req, res) => res.sendFile(adminIndex));
+// Support additional SPA routes that use top-level paths.
+// Note: some of these paths overlap with API routers (e.g. /analytics, /personalization).
+// We only serve HTML for GET navigations; API calls use non-GET methods and/or subpaths.
+app.get(
+  [
+    "/admins",
+    "/products",
+    "/articles",
+    "/faqs",
+    "/deals",
+    "/compliance",
+    "/legal",
+    "/analytics",
+    "/analytics/settings",
+    "/heatmap",
+    "/undo",
+    "/theme",
+    "/personalization",
+  ],
+  (_req, res) => res.sendFile(adminIndex),
 );
 app.get("/admin/dashboard", requireAdmin, (_req, res) =>
   res.sendFile(path.join(staticDir, "admin", "dashboard.html")),
 );
-app.get("/admin/settings", requireAdmin, (_req, res) =>
-  res.sendFile(path.join(staticDir, "admin", "settings.html")),
-);
+// All admin routes are handled by the SPA entrypoint; do not attempt to
+// serve separate dashboard/settings HTML files (the SPA renders these).
 
 // content routes (existing + new)
 // Mount content routes for legacy API consumers

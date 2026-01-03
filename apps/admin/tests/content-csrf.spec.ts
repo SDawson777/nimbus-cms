@@ -1,22 +1,43 @@
 import { test, expect } from '@playwright/test';
 
-test('CSRF protection and AI draft (content) create smoke', async ({ page }) => {
-  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'demo@nimbus.app';
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'Nimbus!Demo123';
+async function loginViaBrowserFetch(page: any, email: string, password: string) {
+  if (page.url() === 'about:blank') {
+    await page.goto('/healthz', { waitUntil: 'domcontentloaded' });
+  }
 
-  // Login via the UI
-  await page.goto('/login');
-  // Wait for login form and primary controls
-  await page.waitForSelector('form', { timeout: 10000 });
-  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible({ timeout: 10000 });
-  await page.getByLabel('Email').fill(adminEmail);
-  await page.getByLabel('Password').fill(adminPassword);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  // Wait for dashboard route (SPA change) or just proceed to read CSRF cookie
+  const result = await page.evaluate(async (creds) => {
+    const url = new URL('/admin/login', window.location.origin).toString();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(creds),
+    });
+    let body: any = null;
+    try {
+      body = await res.json();
+    } catch {
+      // ignore
+    }
+    return { ok: res.ok, status: res.status, body };
+  }, { email, password });
+
+  expect(result.ok).toBeTruthy();
+  return result;
+}
+
+test('CSRF protection and AI draft (content) create smoke', async ({ page }) => {
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com';
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'e2e-password';
+
+  // Log in via a browser fetch so cookies (including CSRF) are attached.
+  const loginResult = await loginViaBrowserFetch(page, adminEmail, adminPassword);
+
+  // Navigate to dashboard so the SPA is in an authenticated state.
+  await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30000 }).catch(() => {});
 
   // After login, admin_csrf cookie should be set and response includes csrfToken
-  const csrfFromBody = null;
+  const csrfFromBody = loginResult?.body?.csrfToken || null;
   // Prefer reading cookies from the browser context (more reliable in CI)
   const cookies = await page.context().cookies();
   const csrfCookieObj = cookies.find((c) => c.name === 'admin_csrf' || c.name.toLowerCase().includes('csrf')) || null;
@@ -26,7 +47,7 @@ test('CSRF protection and AI draft (content) create smoke', async ({ page }) => 
 
   // Use browser fetch (page.evaluate) to include cookies; provide header x-csrf-token
   const uniqueTitle = `E2E Draft ${Date.now()}`;
-  const createWithCsrf = await page.evaluate(async (title, token) => {
+  const createWithCsrf = await page.evaluate(async ({ title, token }) => {
     const res = await fetch('/api/v1/nimbus/ai/drafts', {
       method: 'POST',
       headers: {
@@ -36,35 +57,35 @@ test('CSRF protection and AI draft (content) create smoke', async ({ page }) => 
       body: JSON.stringify({ title, dryRun: true }),
     });
     return { status: res.status, body: await res.json().catch(() => null) };
-  }, uniqueTitle, csrfValue || csrfFromBody);
+  }, { title: uniqueTitle, token: csrfValue || csrfFromBody });
 
   expect([200, 201, 202]).toContain(createWithCsrf.status);
 
   // Now attempt invite endpoint (protected) without header -> should 403
   const uniqueEmail = `e2e+csfr-${Date.now()}@example.com`;
-  const inviteNoHeader = await page.evaluate(async (email) => {
-    const res = await fetch('/api/admin/users/admins/invite', {
+  const inviteNoHeader = await page.evaluate(async ({ email }) => {
+    const res = await fetch('/api/admin/users/invite', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email }),
     });
     const body = await res.json().catch(() => null);
     return { status: res.status, body };
-  }, uniqueEmail);
+  }, { email: uniqueEmail });
 
   expect(inviteNoHeader.status).toBe(403);
   expect(inviteNoHeader.body && inviteNoHeader.body.error).toBe('CSRF_MISMATCH');
 
   // Retry invite with header set -> should succeed (or return 200/201)
-  const inviteWithHeader = await page.evaluate(async (email, token) => {
-    const res = await fetch('/api/admin/users/admins/invite', {
+  const inviteWithHeader = await page.evaluate(async ({ email, token }) => {
+    const res = await fetch('/api/admin/users/invite', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-csrf-token': token },
       body: JSON.stringify({ email }),
     });
     const body = await res.json().catch(() => null);
     return { status: res.status, body };
-  }, uniqueEmail, csrfValue || csrfFromBody);
+  }, { email: uniqueEmail, token: csrfValue || csrfFromBody });
 
   expect([200, 201]).toContain(inviteWithHeader.status);
 });

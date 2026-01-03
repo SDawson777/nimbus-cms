@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdmin } from "../lib/adminContext";
 import { apiFetch, apiJson } from "../lib/api";
 import { safeJson } from "../lib/safeJson";
+import { t } from "../lib/i18n";
 
 export default function Personalization() {
   const { capabilities } = useAdmin();

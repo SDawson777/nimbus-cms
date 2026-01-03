@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAdmin } from "../lib/adminContext";
 import { apiFetch, apiJson } from "../lib/api";
+import { t } from "../lib/i18n";
 
 export default function Analytics() {
   const [metrics, setMetrics] = useState([]);

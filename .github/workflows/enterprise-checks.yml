@@ -46,7 +46,7 @@ jobs:
           # Build admin with API base pointing to the server on 8080
           VITE_NIMBUS_API_URL="http://localhost:8080" pnpm -C apps/admin build
 
-      - name: Start server and admin preview (background)
+      - name: Start server and serve admin from API (background)
         run: |
           # Seed test admin via env vars and write to server/config/admins.json for deterministic E2E
           # If you want to override these defaults in GitHub Actions, add an
@@ -60,23 +60,38 @@ jobs:
           export E2E_ADMIN_SECONDARY_PASSWORD="e2e-editor-pass"
           export E2E_ADMIN_SECONDARY_ROLE="EDITOR"
           export DATABASE_URL="file:./dev.db"
-          export CORS_ORIGIN_ADMIN="http://localhost:5174"
+          export ADMIN_STORE="file"
+          export CORS_ORIGIN_ADMIN="http://localhost:8080"
+          # Relax global rate limits for CI so SPA asset fan-out won't be blocked by 429s
+          export GLOBAL_RATE_LIMIT_MAX=10000
+          export GLOBAL_RATE_LIMIT_WINDOW_MS=600000
+          # Relax rate limits for CI so E2E won't be blocked by 429s
+          export ADMIN_GLOBAL_RATE_LIMIT_MAX=1000
+          export ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS=600000
+          export ADMIN_LOGIN_RATE_LIMIT_MAX=1000
+          export ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS=600000
           export NODE_ENV=development
 
           # Write seeded admin into server/config/admins.json so the server uses file-backed admin auth
           pnpm -C server run seed:e2e
 
+          # Copy seeded admins into built runtime path so the compiled server sees them
+          mkdir -p server/dist/config
+          cp -a server/config/admins.json server/dist/config/admins.json || true
+
           # Validate the seeded admin exists in the file
           node -e "const fs=require('fs');const p='server/config/admins.json';const e=process.env.E2E_ADMIN_EMAIL||'e2e-admin@example.com';if(!fs.existsSync(p)){console.error('admins.json missing');process.exit(2);}const j=JSON.parse(fs.readFileSync(p,'utf8'));if(!Array.isArray(j.admins)||!j.admins.find(a=>a.email===e)){console.error('Seeded admin not found in '+p);console.error(JSON.stringify(j,null,2));process.exit(2);}console.log('Seeded admin validated');"
 
-          # Start server
+          # Start server (it will serve static admin from server/static/admin)
           nohup node server/dist/index.js > server.log 2>&1 &
           echo $! > server.pid
 
-          # Start admin preview
-          # Use a static server with single-page fallback so SPA routes like /login work
-          nohup pnpm -w dlx serve -s apps/admin/dist -l 5174 > admin.log 2>&1 &
-          echo $! > admin.pid
+          # Copy built admin into the server static folder so it's served same-origin
+          mkdir -p server/static
+          cp -a apps/admin/dist/. server/static/
+
+          # Export the Playwright base URL to point at the API server admin path (same-origin)
+          echo "E2E_BASE_URL=http://localhost:8080" >> $GITHUB_ENV
 
           # Persist these environment variables to subsequent workflow steps
           # so Playwright and other steps can access the seeded admin credentials
@@ -90,7 +105,15 @@ jobs:
           echo "E2E_ADMIN_SECONDARY_PASSWORD=${E2E_ADMIN_SECONDARY_PASSWORD}" >> $GITHUB_ENV
           echo "E2E_ADMIN_SECONDARY_ROLE=${E2E_ADMIN_SECONDARY_ROLE}" >> $GITHUB_ENV
           echo "DATABASE_URL=${DATABASE_URL}" >> $GITHUB_ENV
+          echo "ADMIN_STORE=${ADMIN_STORE}" >> $GITHUB_ENV
           echo "CORS_ORIGIN_ADMIN=${CORS_ORIGIN_ADMIN}" >> $GITHUB_ENV
+          echo "GLOBAL_RATE_LIMIT_MAX=${GLOBAL_RATE_LIMIT_MAX}" >> $GITHUB_ENV
+          echo "GLOBAL_RATE_LIMIT_WINDOW_MS=${GLOBAL_RATE_LIMIT_WINDOW_MS}" >> $GITHUB_ENV
+          echo "E2E_BASE_URL=http://localhost:8080" >> $GITHUB_ENV
+          echo "ADMIN_GLOBAL_RATE_LIMIT_MAX=${ADMIN_GLOBAL_RATE_LIMIT_MAX}" >> $GITHUB_ENV
+          echo "ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS=${ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS}" >> $GITHUB_ENV
+          echo "ADMIN_LOGIN_RATE_LIMIT_MAX=${ADMIN_LOGIN_RATE_LIMIT_MAX}" >> $GITHUB_ENV
+          echo "ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS=${ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS}" >> $GITHUB_ENV
           echo "NODE_ENV=${NODE_ENV}" >> $GITHUB_ENV
 
       - name: Wait for services
@@ -98,7 +121,7 @@ jobs:
           # Wait up to 2 minutes for both services to become available. If they
           # don't respond in time, dump the server and admin logs to help
           # diagnose the failure and fail the job.
-          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:5174 || (
+          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
             echo "\nERROR: Services did not become ready within timeout. Dumping logs...\n";
             echo "---- server.log (last 200 lines) ----";
             if [ -f server.log ]; then tail -n 200 server.log; else echo "(no server.log)"; fi;
@@ -109,10 +132,10 @@ jobs:
 
       - name: Preflight admin login readiness
         run: |
-          echo "Preflight: waiting for /login to return 200 and index markup"
+          echo "Preflight: waiting for /admin/login to return 200 and index markup"
           for i in $(seq 1 30); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174/login || true)
-            HTML=$(curl -s http://localhost:5174/login || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/admin/login || true)
+            HTML=$(curl -s http://localhost:8080/admin/login || true)
             if [ "$STATUS" = "200" ] && (echo "$HTML" | grep -q '<div id="root">' || echo "$HTML" | grep -qi '<html'); then
               echo "Login route is served (status $STATUS) and index markup detected. Proceeding to tests.";
               exit 0
@@ -120,7 +143,7 @@ jobs:
             echo "Waiting for login route: status=$STATUS, attempt ($i/30)";
             sleep 2
           done
-          echo "Preflight failed: /login did not return index markup or status 200 within timeout.";
+          echo "Preflight failed: /admin/login did not return index markup or status 200 within timeout.";
           # Show what we saved earlier if present
           if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; fi
           exit 1
@@ -130,7 +153,7 @@ jobs:
             echo "Checking admin preview /login -> status and head"
             # Try to fetch the login page and save it for inspection
             mkdir -p apps/admin/test-ci-output || true
-            curl -s -D - http://localhost:5174/login -o apps/admin/test-ci-output/ci-login.html || true
+            curl -s -D - http://localhost:8080/admin/login -o apps/admin/test-ci-output/ci-login.html || true
             echo "---- admin login (head) ----"
             head -n 200 apps/admin/test-ci-output/ci-login.html || true
             echo "---- server.log (tail) ----"
