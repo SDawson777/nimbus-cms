@@ -16,14 +16,19 @@ const projectId =
 const dataset =
   process.env.SANITY_DATASET ||
   process.env.SANITY_STUDIO_DATASET ||
-  "nimbus_demo";
+  "production";
+
+// For Sanity-hosted Studios (e.g. *.sanity.studio) the Studio is typically
+// served at the domain root. Allow overriding via env for reverse-proxied
+// deployments (e.g. hosting under /studio on an API domain).
+const basePath = process.env.SANITY_STUDIO_BASE_PATH || "/";
 
 export default defineConfig({
   name: "nimbus-studio",
   title: "Nimbus Cannabis OS CMS",
   projectId,
   dataset,
-  basePath: "/studio",
+  basePath,
   plugins: [
     deskTool(),
     visionTool(),
