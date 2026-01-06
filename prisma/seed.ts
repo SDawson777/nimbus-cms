@@ -1,263 +1,417 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ProductStatus, ProductType, UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log("Seeding Nimbus demo data...");
+function requiredEnv(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing ${name}`);
+  return v;
+}
 
-  // ---------- TENANTS ----------
-  const demoTenant = await prisma.tenant.upsert({
-    where: { slug: "demo-operator" },
-    update: {},
-    create: {
-      slug: "demo-operator",
-      name: "Demo Operator",
-      region: "MI",
-      sanityDataset: "demo-operator",
-      primaryDomain: "demo.nimbus.app",
-    },
-  });
+function pickEnv(...names: string[]) {
+  for (const n of names) {
+    const v = process.env[n];
+    if (v) return v;
+  }
+  return undefined;
+}
 
-  const globalTenant = await prisma.tenant.upsert({
-    where: { slug: "global-corp" },
-    update: {},
-    create: {
-      slug: "global-corp",
-      name: "Global Cannabis Corp",
-      region: "US",
-      sanityDataset: "global",
-      primaryDomain: "global.nimbus.app",
-    },
-  });
+function boolEnv(name: string, defaultValue: boolean) {
+  const v = process.env[name];
+  if (!v) return defaultValue;
+  return v === "true" || v === "1";
+}
 
-  const labsTenant = await prisma.tenant.upsert({
-    where: { slug: "nimbus-labs" },
-    update: {},
-    create: {
-      slug: "nimbus-labs",
-      name: "Nimbus Labs",
-      region: "US",
-      sanityDataset: "labs",
-      primaryDomain: "labs.nimbus.app",
-    },
-  });
+export async function seedDemoDatabase() {
+  const allowInsecure = boolEnv("ALLOW_INSECURE_DEMO_PASSWORDS", false);
 
-  // ---------- STORES ----------
-  const stores = await prisma.$transaction([
-    prisma.store.upsert({
-      where: { id: "store-detroit-8mile" },
-      update: {},
-      create: {
-        id: "store-detroit-8mile",
-        tenantId: demoTenant.id,
-        name: "Detroit — 8 Mile",
-        address: "12345 8 Mile Rd",
-        city: "Detroit",
-        state: "MI",
-        zip: "48201",
-        latitude: 42.4098,
-        longitude: -83.0585,
-      },
-    }),
-    prisma.store.upsert({
-      where: { id: "store-scottsdale-north" },
-      update: {},
-      create: {
-        id: "store-scottsdale-north",
-        tenantId: demoTenant.id,
-        name: "Scottsdale — North",
-        address: "777 Desert View",
-        city: "Scottsdale",
-        state: "AZ",
-        zip: "85255",
-        latitude: 33.7189,
-        longitude: -111.953,
-      },
-    }),
-    prisma.store.upsert({
-      where: { id: "store-boulder-pearl" },
-      update: {},
-      create: {
-        id: "store-boulder-pearl",
-        tenantId: globalTenant.id,
-        name: "Boulder — Pearl",
-        address: "1500 Pearl St",
-        city: "Boulder",
-        state: "CO",
-        zip: "80302",
-        latitude: 40.0185,
-        longitude: -105.278,
-      },
-    }),
-    prisma.store.upsert({
-      where: { id: "store-la-melrose" },
-      update: {},
-      create: {
-        id: "store-la-melrose",
-        tenantId: labsTenant.id,
-        name: "Los Angeles — Melrose",
-        address: "8200 Melrose Ave",
-        city: "Los Angeles",
-        state: "CA",
-        zip: "90046",
-        latitude: 34.0837,
-        longitude: -118.3617,
-      },
-    }),
-  ]);
+  const demoTenantSlug = pickEnv("DEMO_TENANT_SLUG") || "demo-operator";
+  const demoSanityDataset = pickEnv("DEMO_SANITY_DATASET", "SANITY_DATASET_DEFAULT") || "nimbus_demo";
 
-  const [detroit, scottsdale, boulder, la] = stores;
+  const adminEmail = pickEnv("DEMO_ADMIN_EMAIL") || "demo.admin@nimbus.local";
+  const customerEmail = pickEnv("DEMO_CUSTOMER_EMAIL") || "demo.customer@nimbus.local";
 
-  // ---------- PRODUCTS ----------
-  type SeedProduct = {
-    id: string;
-    name: string;
-    category: string;
-    subcategory?: string;
-    thcPercent?: number;
-    cbdPercent?: number;
-    price: number;
-    tags: string[];
-  };
+  const adminPassword =
+    pickEnv("DEMO_ADMIN_PASSWORD") ||
+    (allowInsecure ? "demo-admin-change-me" : undefined);
+  const customerPassword =
+    pickEnv("DEMO_CUSTOMER_PASSWORD") ||
+    (allowInsecure ? "demo-customer-change-me" : undefined);
 
-  const baseProducts: SeedProduct[] = [
-    {
-      id: "prod-nimbus-og-35",
-      name: "Nimbus OG (1/8 oz)",
-      category: "Flower",
-      subcategory: "Hybrid",
-      thcPercent: 23.5,
-      price: 35,
-      tags: ["euphoric", "relaxed", "evening"],
-    },
-    {
-      id: "prod-midnight-mints",
-      name: "Midnight Mints 5mg",
-      category: "Edibles",
-      subcategory: "Gummies",
-      thcPercent: 5,
-      price: 18,
-      tags: ["sleep", "relief", "discreet"],
-    },
-    {
-      id: "prod-sunrise-sativa",
-      name: "Sunrise Sativa (1g preroll)",
-      category: "Pre-roll",
-      subcategory: "Sativa",
-      thcPercent: 21,
-      price: 12,
-      tags: ["creative", "focus", "daytime"],
-    },
-    {
-      id: "prod-glass-510-battery",
-      name: "Nimbus Glass 510 Battery",
-      category: "Gear",
-      price: 30,
-      tags: ["hardware", "battery", "accessory"],
-    },
-    {
-      id: "prod-calm-cbd-tincture",
-      name: "Calm 20:1 CBD Tincture",
-      category: "Wellness",
-      subcategory: "Tincture",
-      cbdPercent: 20,
-      price: 45,
-      tags: ["anxiety", "daytime", "non-intoxicating"],
-    },
-    {
-      id: "prod-limonene-live-resin",
-      name: "Limonene Live Resin Cart",
-      category: "Vapes",
-      subcategory: "Hybrid",
-      thcPercent: 78,
-      price: 55,
-      tags: ["uplifting", "flavor-forward"],
-    },
-    {
-      id: "prod-indigo-indica-oz",
-      name: "Indigo Indica (1/4 oz)",
-      category: "Flower",
-      subcategory: "Indica",
-      thcPercent: 25,
-      price: 65,
-      tags: ["sleep", "heavy", "night"],
-    },
-    {
-      id: "prod-cold-brew-10mg",
-      name: "Cold Brew 10mg",
-      category: "Edibles",
-      subcategory: "Drink",
-      thcPercent: 10,
-      price: 10,
-      tags: ["daytime", "coffee", "social"],
-    },
-  ];
-
-  const allProducts: any[] = [];
-
-  for (const seed of baseProducts) {
-    const p = await prisma.product.upsert({
-      where: { id: seed.id },
-      update: {},
-      create: {
-        id: seed.id,
-        tenantId: demoTenant.id,
-        name: seed.name,
-        description: `${seed.name} — demo product showcasing Nimbus recommendations and analytics.`,
-        category: seed.category,
-        subcategory: seed.subcategory,
-        thcPercent: seed.thcPercent,
-        cbdPercent: seed.cbdPercent,
-        price: seed.price,
-        tags: seed.tags,
-      },
-    });
-    allProducts.push(p);
+  if (!adminPassword) {
+    throw new Error(
+      "Missing DEMO_ADMIN_PASSWORD (or set ALLOW_INSECURE_DEMO_PASSWORDS=true for local-only demo passwords)",
+    );
+  }
+  if (!customerPassword) {
+    throw new Error(
+      "Missing DEMO_CUSTOMER_PASSWORD (or set ALLOW_INSECURE_DEMO_PASSWORDS=true for local-only demo passwords)",
+    );
   }
 
-  // ---------- STORE / PRODUCT INVENTORY ----------
-  const inventoryCombos = [
+  // Ensure required app envs are present early (so failures are obvious)
+  requiredEnv("DATABASE_URL");
+
+  const tenant = await prisma.tenant.upsert({
+    where: { slug: demoTenantSlug },
+    update: {
+      name: "Demo Operator",
+      status: "active",
+      sanityDataset: demoSanityDataset,
+      primaryDomain: pickEnv("DEMO_PRIMARY_DOMAIN") || "demo.nimbus.app",
+      region: pickEnv("DEMO_REGION") || "US-MI",
+    },
+    create: {
+      slug: demoTenantSlug,
+      name: "Demo Operator",
+      status: "active",
+      sanityDataset: demoSanityDataset,
+      primaryDomain: pickEnv("DEMO_PRIMARY_DOMAIN") || "demo.nimbus.app",
+      region: pickEnv("DEMO_REGION") || "US-MI",
+    },
+  });
+
+  const store1 = await prisma.store.upsert({
+    where: { tenantId_slug: { tenantId: tenant.id, slug: "downtown-detroit" } },
+    update: {
+      name: "Downtown Detroit",
+      address1: "123 Demo Ave",
+      city: "Detroit",
+      state: "MI",
+      postalCode: "48201",
+      country: "US",
+      phone: "+1-555-0100",
+      timezone: "America/Detroit",
+      isPickupEnabled: true,
+      isDeliveryEnabled: false,
+    },
+    create: {
+      tenantId: tenant.id,
+      slug: "downtown-detroit",
+      name: "Downtown Detroit",
+      address1: "123 Demo Ave",
+      city: "Detroit",
+      state: "MI",
+      postalCode: "48201",
+      country: "US",
+      phone: "+1-555-0100",
+      timezone: "America/Detroit",
+      isPickupEnabled: true,
+      isDeliveryEnabled: false,
+    },
+  });
+
+  const store2 = await prisma.store.upsert({
+    where: { tenantId_slug: { tenantId: tenant.id, slug: "eastside" } },
+    update: {
+      name: "Eastside",
+      address1: "456 Demo Blvd",
+      city: "Detroit",
+      state: "MI",
+      postalCode: "48202",
+      country: "US",
+      phone: "+1-555-0101",
+      timezone: "America/Detroit",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+    create: {
+      tenantId: tenant.id,
+      slug: "eastside",
+      name: "Eastside",
+      address1: "456 Demo Blvd",
+      city: "Detroit",
+      state: "MI",
+      postalCode: "48202",
+      country: "US",
+      phone: "+1-555-0101",
+      timezone: "America/Detroit",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+  });
+
+  // Default tenant theme
+  const existingDefaultTheme = await prisma.theme.findFirst({
+    where: { tenantId: tenant.id, isDefault: true },
+  });
+  if (existingDefaultTheme) {
+    await prisma.theme.update({
+      where: { id: existingDefaultTheme.id },
+      data: {
+        name: "Nimbus Demo",
+        configJson: {
+          palette: {
+            primary: "#00A86B",
+            secondary: "#FFC20A",
+            background: "#FFFFFF",
+            accent: "#3F7AFC",
+          },
+        },
+      },
+    });
+  } else {
+    await prisma.theme.create({
+      data: {
+        tenantId: tenant.id,
+        name: "Nimbus Demo",
+        isDefault: true,
+        configJson: {
+          palette: {
+            primary: "#00A86B",
+            secondary: "#FFC20A",
+            background: "#FFFFFF",
+            accent: "#3F7AFC",
+          },
+        },
+      },
+    });
+  }
+
+  // Admin user (Admin SPA)
+  await prisma.adminUser.upsert({
+    where: { email: adminEmail },
+    update: {
+      passwordHash: await bcrypt.hash(adminPassword, 10),
+      role: "OWNER",
+    },
+    create: {
+      email: adminEmail,
+      passwordHash: await bcrypt.hash(adminPassword, 10),
+      role: "OWNER",
+    },
+  });
+
+  // Consumer users (Mobile)
+  const customer = await prisma.user.upsert({
+    where: { email: customerEmail },
+    update: {
+      tenantId: tenant.id,
+      storeId: store1.id,
+      name: "Demo Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+    create: {
+      tenantId: tenant.id,
+      storeId: store1.id,
+      email: customerEmail,
+      name: "Demo Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "demo.staff@nimbus.local" },
+    update: {
+      tenantId: tenant.id,
+      storeId: store1.id,
+      name: "Demo Staff",
+      role: UserRole.STAFF,
+      isActive: true,
+    },
+    create: {
+      tenantId: tenant.id,
+      storeId: store1.id,
+      email: "demo.staff@nimbus.local",
+      name: "Demo Staff",
+      role: UserRole.STAFF,
+      isActive: true,
+    },
+  });
+
+  // Products + variants
+  const demoProducts = [
     {
-      store: detroit,
-      productId: "prod-nimbus-og-35",
-      inventory: 120,
+      slug: "demo-nimbus-og",
+      name: "Nimbus OG",
+      type: ProductType.FLOWER,
+      category: "Flower",
+      brand: "Nimbus",
       price: 35,
+      variants: [
+        { sku: "DD-NIMBUSOG-1G", name: "1g", price: 12, stock: 200 },
+        { sku: "DD-NIMBUSOG-3_5G", name: "3.5g", price: 35, stock: 120 },
+      ],
     },
     {
-      store: detroit,
-      productId: "prod-midnight-mints",
-      inventory: 80,
+      slug: "demo-midnight-mints",
+      name: "Midnight Mints Gummies",
+      type: ProductType.EDIBLE,
+      category: "Edibles",
+      brand: "Nimbus",
       price: 18,
+      variants: [{ sku: "DD-MINTS-10PK", name: "10 pack", price: 18, stock: 80 }],
     },
     {
-      store: detroit,
-      productId: "prod-sunrise-sativa",
-      inventory: 60,
+      slug: "demo-sunrise-preroll",
+      name: "Sunrise Sativa Pre-Roll",
+      type: ProductType.FLOWER,
+      category: "Pre-roll",
+      brand: "Nimbus",
       price: 12,
+      variants: [{ sku: "DD-SUNRISE-PR-1G", name: "1g", price: 12, stock: 60 }],
     },
     {
-      store: scottsdale,
-      productId: "prod-limonene-live-resin",
-      inventory: 40,
+      slug: "demo-live-resin-cart",
+      name: "Limonene Live Resin Cart",
+      type: ProductType.VAPE,
+      category: "Vapes",
+      brand: "Nimbus",
       price: 55,
+      variants: [{ sku: "DD-LIVE-RESIN-1G", name: "1g", price: 55, stock: 40 }],
     },
     {
-      store: scottsdale,
-      productId: "prod-glass-510-battery",
-      inventory: 30,
-      price: 30,
-    },
-    {
-      store: boulder,
-      productId: "prod-calm-cbd-tincture",
-      inventory: 50,
+      slug: "demo-cbd-tincture",
+      name: "Calm CBD Tincture",
+      type: ProductType.TOPICAL,
+      category: "Wellness",
+      brand: "Nimbus",
       price: 45,
+      variants: [{ sku: "DD-CBD-30ML", name: "30ml", price: 45, stock: 50 }],
     },
-    { store: la, productId: "prod-indigo-indica-oz", inventory: 35, price: 65 },
-    { store: la, productId: "prod-cold-brew-10mg", inventory: 70, price: 10 },
   ];
 
-  await Promise.all(
+  for (const p of demoProducts) {
+    const product = await prisma.product.upsert({
+      where: { slug: `${store1.slug}-${p.slug}` },
+      update: {
+        storeId: store1.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description:
+          "Seeded demo product for Nimbus canonical demo environment.",
+        isActive: true,
+      },
+      create: {
+        storeId: store1.id,
+        slug: `${store1.slug}-${p.slug}`,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description:
+          "Seeded demo product for Nimbus canonical demo environment.",
+        isActive: true,
+      },
+    });
+
+    for (const v of p.variants) {
+      await prisma.productVariant.upsert({
+        where: { sku: v.sku },
+        update: {
+          productId: product.id,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+        create: {
+          productId: product.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+      });
+    }
+  }
+
+  // Demo order with sample items
+  const firstProduct = await prisma.product.findFirst({
+    where: { storeId: store1.id },
+    orderBy: { createdAt: "asc" },
+  });
+  if (firstProduct) {
+    const variant = await prisma.productVariant.findFirst({
+      where: { productId: firstProduct.id },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const orderId = "order-demo-0001";
+    await prisma.order.upsert({
+      where: { id: orderId },
+      update: {
+        userId: customer.id,
+        storeId: store1.id,
+        status: "FULFILLED",
+        total: firstProduct.price,
+      },
+      create: {
+        id: orderId,
+        userId: customer.id,
+        storeId: store1.id,
+        status: "FULFILLED",
+        total: firstProduct.price,
+        items: {
+          create: [
+            {
+              productId: firstProduct.id,
+              variantId: variant?.id,
+              quantity: 1,
+              price: firstProduct.price,
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  // Loyalty
+  await prisma.loyaltyStatus.upsert({
+    where: { userId: customer.id },
+    update: { storeId: store1.id, status: "Gold", points: 420 },
+    create: {
+      userId: customer.id,
+      storeId: store1.id,
+      status: "Gold",
+      points: 420,
+    },
+  });
+
+  await prisma.loyaltyBadge.upsert({
+    where: { id: "badge-demo-early-adopter" },
+    update: { userId: customer.id, storeId: store1.id, name: "Early Adopter" },
+    create: {
+      id: "badge-demo-early-adopter",
+      userId: customer.id,
+      storeId: store1.id,
+      name: "Early Adopter",
+    },
+  });
+
+  // eslint-disable-next-line no-console
+  console.log("✔ Demo DB seeded", {
+    tenant: tenant.slug,
+    sanityDataset: demoSanityDataset,
+    stores: [store1.slug, store2.slug],
+    adminEmail,
+    customerEmail,
+  });
+}
+
+async function main() {
+  await seedDemoDatabase();
+}
+
+main()
+  .catch((e) => {
+    // eslint-disable-next-line no-console
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
     inventoryCombos.map((combo) =>
       prisma.storeProduct.upsert({
         where: { id: `${combo.store.id}-${combo.productId}` },

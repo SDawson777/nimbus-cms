@@ -20,13 +20,15 @@ describe("errorHandler", () => {
   it("returns structured JSON for thrown errors", async () => {
     const app = express();
 
+    const client = request(app as any) as any;
+
     app.get("/boom", (_req, _res) => {
       throw new Error("boom");
     });
 
     app.use(errorHandler);
 
-    const res = await request(app).get("/boom");
+    const res = await client.get("/boom");
     expect(res.status).toBe(500);
     expect(res.headers["content-type"]).toMatch(/application\/json/);
     expect(res.body).toHaveProperty("ok", false);
@@ -41,13 +43,15 @@ describe("errorHandler", () => {
 
     const app = express();
 
+    const client = request(app as any) as any;
+
     app.get("/boom", (_req, _res) => {
       throw new Error("boom");
     });
 
     app.use(errorHandler);
 
-    const res = await request(app).get("/boom");
+    const res = await client.get("/boom");
     expect(res.status).toBe(500);
     expect(sentry.captureException).toHaveBeenCalledTimes(1);
   });

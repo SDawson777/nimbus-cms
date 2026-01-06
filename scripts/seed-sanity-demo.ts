@@ -1,159 +1,139 @@
-import sanityClient from "@sanity/client";
-import { v4 as uuid } from "uuid";
+import { createClient } from "@sanity/client";
+import { randomUUID } from "crypto";
 
-const projectId =
-  process.env.SANITY_PROJECT_ID ||
-  process.env.SANITY_STUDIO_PROJECT_ID ||
-  "ygbu28p2";
+function pickEnv(...names: string[]) {
+  for (const n of names) {
+    const v = process.env[n];
+    if (v) return v;
+  }
+  return undefined;
+}
+
+function requiredEnv(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing ${name}`);
+  return v;
+}
+
+function key() {
+  return randomUUID();
+}
+
+function ptParagraph(text: string) {
+  return {
+    _key: key(),
+    _type: "block",
+    style: "normal",
+    markDefs: [],
+    children: [{ _key: key(), _type: "span", text }],
+  };
+}
+
+function ptHeading(text: string) {
+  return {
+    _key: key(),
+    _type: "block",
+    style: "h2",
+    markDefs: [],
+    children: [{ _key: key(), _type: "span", text }],
+  };
+}
+
+const projectId = pickEnv("SANITY_PROJECT_ID", "SANITY_STUDIO_PROJECT_ID");
 const dataset =
-  process.env.SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  "production";
-const token =
-  process.env.SANITY_WRITE_TOKEN ||
-  process.env.SANITY_API_TOKEN ||
-  process.env.SANITY_AUTH_TOKEN;
+  pickEnv("SANITY_DATASET", "SANITY_STUDIO_DATASET") || "nimbus_demo";
+const token = pickEnv(
+  "SANITY_WRITE_TOKEN",
+  "SANITY_API_TOKEN",
+  "SANITY_AUTH_TOKEN",
+  "SANITY_TOKEN",
+);
 
+if (!projectId) {
+  // eslint-disable-next-line no-console
+  console.error(
+    "Missing SANITY_PROJECT_ID (or SANITY_STUDIO_PROJECT_ID). Set it before seeding.",
+  );
+  process.exit(1);
+}
 if (!token) {
   // eslint-disable-next-line no-console
   console.error(
-    "Missing SANITY_WRITE_TOKEN. Set a write-enabled token in env before seeding.",
+    "Missing SANITY_API_TOKEN (or SANITY_WRITE_TOKEN). Set a write-enabled token before seeding.",
   );
   process.exit(1);
 }
 
-const client = sanityClient({
+const client = createClient({
   projectId,
   dataset,
   token,
   useCdn: false,
-  apiVersion: "2025-01-01",
+  apiVersion: process.env.SANITY_API_VERSION || "2025-01-01",
 });
 
 async function main() {
-  // Minimal, opinionated demo data for buyer demo.
   const tx = client.transaction();
 
-  const tenantDemoId = `tenant-demo-operator`;
-  const tenantCorpId = `tenant-global-corp`;
-  const tenantLabsId = `tenant-nimbus-labs`;
+  // Canonical demo stack documents (Studio schema)
+  const orgId = "org-nimbus-demo";
+  const brandId = "brand-nimbus-demo";
+  const store1Id = "store-nimbus-demo-downtown";
+  const store2Id = "store-nimbus-demo-eastside";
 
   tx.createOrReplace({
-    _id: tenantDemoId,
-    _type: "tenant",
-    title: "Demo Operator",
-    slug: { current: "demo-operator" },
-    region: "MI",
-    primaryDomain: "demo.nimbus.app",
-    status: "active",
+    _id: orgId,
+    _type: "organization",
+    name: "Nimbus Demo Organization",
+    slug: { current: "nimbus-demo" },
+    primaryContact: "Demo Operator",
+    notes: "Demo org seeded by scripts/seed-sanity-demo.ts",
   });
 
   tx.createOrReplace({
-    _id: tenantCorpId,
-    _type: "tenant",
-    title: "Global Cannabis Corp",
-    slug: { current: "global-corp" },
-    region: "US",
-    primaryDomain: "corp.nimbus.app",
-    status: "active",
+    _id: brandId,
+    _type: "brand",
+    name: "Nimbus Demo Brand",
+    slug: { current: "nimbus-demo" },
+    organization: { _type: "reference", _ref: orgId },
+    primaryColor: "#00A86B",
+    secondaryColor: "#FFC20A",
+    notes: "Demo brand seeded by scripts/seed-sanity-demo.ts",
   });
 
   tx.createOrReplace({
-    _id: tenantLabsId,
-    _type: "tenant",
-    title: "Nimbus Labs",
-    slug: { current: "nimbus-labs" },
-    region: "US",
-    primaryDomain: "labs.nimbus.app",
-    status: "sandbox",
+    _id: store1Id,
+    _type: "store",
+    name: "Downtown Detroit (Demo)",
+    slug: { current: "downtown-detroit" },
+    brand: { _type: "reference", _ref: brandId },
+    address: "123 Demo Ave",
+    city: "Detroit",
+    stateCode: "MI",
+    zip: "48201",
+    phone: "+1-555-0100",
+    isActive: true,
   });
 
-  // Example homepage contentPage
   tx.createOrReplace({
-    _id: "page-home",
-    _type: "contentPage",
-    title: "Nimbus Commerce Hub",
-    slug: { current: "home" },
-    heroTitle: "Your Cannabis Commerce OS",
-    heroSubtitle:
-      "Multi-store, AI-assisted operations and compliant content in one place.",
-    layout: [
-      {
-        _key: uuid(),
-        _type: "section",
-        kind: "featureRow",
-        heading: "Operational Intelligence",
-        body: [
-          {
-            _key: uuid(),
-            _type: "block",
-            style: "normal",
-            children: [
-              {
-                _key: uuid(),
-                _type: "span",
-                text: "See stores, content, and analytics in a single pane of glass.",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    tenant: { _type: "reference", _ref: tenantDemoId },
+    _id: store2Id,
+    _type: "store",
+    name: "Eastside (Demo)",
+    slug: { current: "eastside" },
+    brand: { _type: "reference", _ref: brandId },
+    address: "456 Demo Blvd",
+    city: "Detroit",
+    stateCode: "MI",
+    zip: "48202",
+    phone: "+1-555-0101",
+    isActive: true,
   });
 
-  // Example FAQ
+  // Brand-level theme
   tx.createOrReplace({
-    _id: "faq-age-verification",
-    _type: "faq",
-    question: "How does age verification work?",
-    answer: [
-      {
-        _key: uuid(),
-        _type: "block",
-        style: "normal",
-        children: [
-          {
-            _key: uuid(),
-            _type: "span",
-            text: "The Nimbus mobile app enforces a 21+ gate with configurable flows per market.",
-          },
-        ],
-      },
-    ],
-    category: "Compliance",
-    tenant: { _type: "reference", _ref: tenantDemoId },
-  });
-
-  // Example Legal docs
-  tx.createOrReplace({
-    _id: "legal-terms-v1",
-    _type: "legalDocument",
-    title: "Terms & Conditions",
-    slug: { current: "terms" },
-    version: "1.0.0",
-    type: "terms",
-    body: [
-      {
-        _key: uuid(),
-        _type: "block",
-        style: "normal",
-        children: [
-          {
-            _key: uuid(),
-            _type: "span",
-            text: "These demo terms illustrate how legal documents are versioned and scoped by tenant.",
-          },
-        ],
-      },
-    ],
-    tenant: { _type: "reference", _ref: tenantDemoId },
-  });
-
-  // Global theme config (used by /content/theme when no brand/store is provided)
-  tx.createOrReplace({
-    _id: "themeConfig-global",
+    _id: "themeConfig-brand-nimbus-demo",
     _type: "themeConfig",
+    brand: { _type: "reference", _ref: brandId },
     primaryColor: "#00A86B",
     secondaryColor: "#FFC20A",
     accentColor: "#3F7AFC",
@@ -164,101 +144,128 @@ async function main() {
     darkModeEnabled: false,
     cornerRadius: "8px",
     elevationStyle: "flat",
+    logoUrl: "https://placehold.co/256x256/png?text=Nimbus%20Demo",
   });
 
-  // Product types + products (used by Admin product views and public listings)
-  tx.createOrReplace({
-    _id: "productType-flower",
-    _type: "productType",
-    title: "Flower",
-    description: "Premium flower products",
-  });
-  tx.createOrReplace({
-    _id: "productType-edible",
-    _type: "productType",
-    title: "Edible",
-    description: "Gummies, chocolates, and infused treats",
-  });
-
-  tx.createOrReplace({
-    _id: "product-nimbus-og-35",
-    _type: "product",
-    name: "Nimbus OG (1/8 oz)",
-    slug: { current: "nimbus-og-35" },
-    price: 35,
-    effects: ["euphoric", "relaxed"],
-    productType: { _type: "reference", _ref: "productType-flower" },
-    availability: "in_stock",
-    channels: ["mobile", "web"],
-    isRecalled: false,
-  });
-
-  tx.createOrReplace({
-    _id: "product-gummies-10mg",
-    _type: "product",
-    name: "Nimbus Gummies (10mg)",
-    slug: { current: "nimbus-gummies-10mg" },
-    price: 18,
-    effects: ["calm", "sleep"],
-    productType: { _type: "reference", _ref: "productType-edible" },
-    availability: "in_stock",
-    channels: ["mobile", "web", "email"],
-    isRecalled: false,
-  });
-
-  // Example Deal
+  // Deals
   tx.createOrReplace({
     _id: "deal-demo-bogo-flower",
     _type: "deal",
-    title: "BOGO 50% Off — Nimbus Flower",
+    title: "BOGO 50% Off — Demo Flower",
     slug: { current: "bogo-flower" },
-    description: "Buy one, get the second 50% off on select Nimbus OG strains.",
-    badge: "High Intent",
-    priority: 10,
-    startsAt: new Date().toISOString(),
-    endsAt: null,
-    tenant: { _type: "reference", _ref: tenantDemoId },
+    description: [
+      ptParagraph(
+        "Buy one, get the second 50% off on select demo flower items.",
+      ),
+    ],
+    startDate: new Date().toISOString(),
+    endDate: null,
+    tags: ["promo", "high-intent"],
+    reason: "Drive trial + basket size",
+    channels: ["mobile", "web"],
+    schedule: { isScheduled: false },
+    brand: { _type: "reference", _ref: brandId },
+    stores: [
+      { _type: "reference", _ref: store1Id },
+      { _type: "reference", _ref: store2Id },
+    ],
   });
 
-  // Example Editorial article
+  // Articles
   tx.createOrReplace({
     _id: "article-getting-started-nimbus",
     _type: "article",
-    title: "Getting Started with Nimbus Cannabis OS",
-    slug: { current: "getting-started-nimbus" },
-    tenant: { _type: "reference", _ref: tenantDemoId },
+    title: "Getting Started with Nimbus Cannabis OS (Demo)",
+    slug: { current: "getting-started" },
+    excerpt:
+      "A quick overview of the demo stack and how the pieces fit together.",
     body: [
-      {
-        _key: uuid(),
-        _type: "block",
-        style: "h2",
-        children: [
-          {
-            _key: uuid(),
-            _type: "span",
-            text: "Launch in Weeks, Not Months",
-          },
-        ],
-      },
-      {
-        _key: uuid(),
-        _type: "block",
-        style: "normal",
-        children: [
-          {
-            _key: uuid(),
-            _type: "span",
-            text: "Connect your POS, configure your stores, and publish your first campaign in under 21 days.",
-          },
-        ],
-      },
+      ptHeading("Launch in Weeks, Not Months"),
+      ptParagraph(
+        "This is seeded demo content to showcase Articles, Deals, FAQs, and Legal docs in the Studio.",
+      ),
+      ptHeading("One Canonical Demo Environment"),
+      ptParagraph(
+        "Admin points at the Demo API, which points at the Demo DB and the nimbus_demo Sanity dataset.",
+      ),
     ],
+    publishedAt: new Date().toISOString(),
+    readingTime: "3 min",
+    tags: ["demo", "onboarding"],
+    channels: ["mobile", "web"],
+    schedule: { isScheduled: false },
+    brand: { _type: "reference", _ref: brandId },
+    stores: [{ _type: "reference", _ref: store1Id }],
+    published: true,
+  });
+
+  // FAQs
+  tx.createOrReplace({
+    _id: "faq-age-verification",
+    _type: "faqItem",
+    question: "How does age verification work?",
+    answer: [
+      ptParagraph(
+        "Nimbus enforces a 21+ gate with configurable flows per market (demo content).",
+      ),
+    ],
+    brand: { _type: "reference", _ref: brandId },
+    stores: [{ _type: "reference", _ref: store1Id }],
+    channels: ["mobile", "web"],
+  });
+
+  // Legal docs
+  const now = new Date().toISOString();
+  tx.createOrReplace({
+    _id: "tos-demo",
+    _type: "legalDoc",
+    title: "SAMPLE TEMPLATE – REPLACE: Terms of Service",
+    slug: { current: "terms" },
+    type: "terms",
+    version: "0.0-demo",
+    effectiveFrom: now,
+    notes: "Seeded demo legal content. Replace before production use.",
+    body: [
+      ptParagraph(
+        "This is placeholder demo legal content. Replace with counsel-approved Terms of Service before production use.",
+      ),
+    ],
+    brand: { _type: "reference", _ref: brandId },
+    stores: [{ _type: "reference", _ref: store1Id }],
+    channels: ["mobile", "web"],
+  });
+
+  tx.createOrReplace({
+    _id: "privacy-demo",
+    _type: "legalDoc",
+    title: "SAMPLE TEMPLATE – REPLACE: Privacy Policy",
+    slug: { current: "privacy" },
+    type: "privacy",
+    version: "0.0-demo",
+    effectiveFrom: now,
+    notes: "Seeded demo legal content. Replace before production use.",
+    body: [
+      ptParagraph(
+        "This is placeholder demo legal content. Replace with your real Privacy Policy before production use.",
+      ),
+    ],
+    brand: { _type: "reference", _ref: brandId },
+    stores: [{ _type: "reference", _ref: store1Id }],
+    channels: ["mobile", "web"],
   });
 
   await tx.commit();
   // eslint-disable-next-line no-console
-  console.log("✔ Seeded Sanity demo content for Nimbus Studio");
+  console.log(
+    `✔ Seeded Sanity demo content (dataset=${dataset}, projectId=${projectId})`,
+  );
 }
+
+main().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error(err);
+  process.exit(1);
+});
 
 main().catch((err) => {
   // eslint-disable-next-line no-console
