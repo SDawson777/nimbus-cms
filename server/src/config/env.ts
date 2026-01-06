@@ -1,5 +1,20 @@
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
+// Load env files deterministically regardless of process cwd.
+// 1) Repo root `.env` (fallback/shared)
+// 2) `server/.env` (server-specific overrides)
+const repoRootEnvPath = path.resolve(__dirname, "..", "..", "..", ".env");
+const serverEnvPath = path.resolve(__dirname, "..", "..", ".env");
+if (fs.existsSync(repoRootEnvPath)) {
+  dotenv.config({ path: repoRootEnvPath, override: false });
+}
+if (fs.existsSync(serverEnvPath)) {
+  dotenv.config({ path: serverEnvPath, override: true });
+}
+
+// Backward-compatible fallback (in case callers rely on cwd-based loading).
 dotenv.config();
 
 export type AppEnv = "demo" | "preview" | "prod";

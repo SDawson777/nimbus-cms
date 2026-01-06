@@ -1,0 +1,80 @@
+name: Daily backups
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  backups:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
+      SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
+      SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export Sanity dataset (JSON)
+        run: pnpm cms:export
+
+      - name: Compress Sanity export
+        run: |
+          set -euo pipefail
+          ls -la backups
+          gzip -9 backups/export-*.json
+
+      - name: Upload Sanity export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-export
+          path: backups/export-*.json.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Install postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump Postgres database (custom format)
+        run: |
+          set -euo pipefail
+          if [[ -z "${PGHOST:-}" || -z "${PGDATABASE:-}" || -z "${PGUSER:-}" ]]; then
+            echo "PG* secrets not set; skipping pg_dump"
+            exit 0
+          fi
+          mkdir -p backups
+          DATE=$(date -u +%Y%m%d)
+          FILE="backups/pgdump-${DATE}.dump"
+          pg_dump -Fc --no-acl --no-owner -f "$FILE"
+          ls -la "$FILE"
+
+      - name: Upload Postgres dump artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-dump
+          path: backups/pgdump-*.dump
+          if-no-files-found: ignore
+          retention-days: 30

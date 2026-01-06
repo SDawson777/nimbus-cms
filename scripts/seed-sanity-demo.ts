@@ -150,6 +150,62 @@ async function main() {
     tenant: { _type: "reference", _ref: tenantDemoId },
   });
 
+  // Global theme config (used by /content/theme when no brand/store is provided)
+  tx.createOrReplace({
+    _id: "themeConfig-global",
+    _type: "themeConfig",
+    primaryColor: "#00A86B",
+    secondaryColor: "#FFC20A",
+    accentColor: "#3F7AFC",
+    backgroundColor: "#FFFFFF",
+    surfaceColor: "#F8FAFC",
+    textColor: "#111827",
+    mutedTextColor: "#6B7280",
+    darkModeEnabled: false,
+    cornerRadius: "8px",
+    elevationStyle: "flat",
+  });
+
+  // Product types + products (used by Admin product views and public listings)
+  tx.createOrReplace({
+    _id: "productType-flower",
+    _type: "productType",
+    title: "Flower",
+    description: "Premium flower products",
+  });
+  tx.createOrReplace({
+    _id: "productType-edible",
+    _type: "productType",
+    title: "Edible",
+    description: "Gummies, chocolates, and infused treats",
+  });
+
+  tx.createOrReplace({
+    _id: "product-nimbus-og-35",
+    _type: "product",
+    name: "Nimbus OG (1/8 oz)",
+    slug: { current: "nimbus-og-35" },
+    price: 35,
+    effects: ["euphoric", "relaxed"],
+    productType: { _type: "reference", _ref: "productType-flower" },
+    availability: "in_stock",
+    channels: ["mobile", "web"],
+    isRecalled: false,
+  });
+
+  tx.createOrReplace({
+    _id: "product-gummies-10mg",
+    _type: "product",
+    name: "Nimbus Gummies (10mg)",
+    slug: { current: "nimbus-gummies-10mg" },
+    price: 18,
+    effects: ["calm", "sleep"],
+    productType: { _type: "reference", _ref: "productType-edible" },
+    availability: "in_stock",
+    channels: ["mobile", "web", "email"],
+    isRecalled: false,
+  });
+
   // Example Deal
   tx.createOrReplace({
     _id: "deal-demo-bogo-flower",

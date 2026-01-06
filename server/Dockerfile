@@ -40,14 +40,14 @@ RUN cd server && npm install
 COPY server ./server
 RUN cd server && npm run build
 
-# Copy Admin SPA output into server + root dist locations
-RUN mkdir -p server/admin-dist dist
-COPY --from=admin-builder /app/apps/admin/dist ./server/admin-dist
+# Copy Admin SPA output into server/static so the API can serve the SPA at /admin
+RUN mkdir -p server/static dist
+COPY --from=admin-builder /app/apps/admin/dist ./server/static
 COPY --from=admin-builder /app/apps/admin/dist ./dist
 
-# Verify both admin-dist targets exist and are non-empty
-RUN test -d server/admin-dist && test "$(ls -A server/admin-dist)" || \
-	(echo "server/admin-dist missing after copy" && exit 1)
+# Verify both targets exist and are non-empty
+RUN test -d server/static && test "$(ls -A server/static)" || \
+	(echo "server/static missing after copy" && exit 1)
 RUN test -d dist && test "$(ls -A dist)" || \
 	(echo "dist missing after copy" && exit 1)
 
@@ -59,6 +59,7 @@ RUN test -d dist && test "$(ls -A dist)" || \
 FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=4010
 
 # Install system dependency for Prisma runtime
 RUN apt-get update -y && apt-get install -y openssl
@@ -73,7 +74,6 @@ RUN cd server && npm install --omit=dev
 # Copy compiled server + admin static assets from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist
 COPY --from=api-builder /app/server/static ./server/static
-COPY --from=api-builder /app/server/admin-dist ./server/admin-dist
 COPY --from=api-builder /app/dist ./dist
 
 EXPOSE 4010

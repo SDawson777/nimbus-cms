@@ -39,6 +39,9 @@ import { seedControlPlane } from "./seed";
 import { APP_ENV, PORT } from "./config/env";
 import validateEnv from "./middleware/validateEnv";
 import errorHandler from "./middleware/errorHandler";
+import { initSentry } from "./lib/sentry";
+import getPrisma from "./lib/prisma";
+import { fetchCMS } from "./lib/cms";
 
 // Centralized environment validation (throws in production on fatal misconfig)
 try {
@@ -48,6 +51,9 @@ try {
   // Rethrow to stop the bootstrap when env is invalid in production
   throw err;
 }
+
+// Optional: capture server-side exceptions to Sentry if configured.
+initSentry();
 
 const app = express();
 app.use(cors(corsOptions));
@@ -116,6 +122,57 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Serve a small static landing page for human visitors / buyers
 app.get("/healthz", (_req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Readiness endpoint (DB + Sanity).
+// - Used by uptime monitors and deploy platforms.
+// - Returns 200 only when the service can talk to core dependencies.
+app.get("/ready", async (_req, res) => {
+  const startedAt = Date.now();
+  const checks: Record<
+    string,
+    { ok: boolean; ms: number; error?: string }
+  > = {
+    db: { ok: false, ms: 0 },
+    sanity: { ok: false, ms: 0 },
+  };
+
+  // DB check
+  {
+    const t0 = Date.now();
+    try {
+      const prisma = getPrisma();
+      // Lightweight liveness query
+      await prisma.$queryRaw`SELECT 1`;
+      checks.db = { ok: true, ms: Date.now() - t0 };
+    } catch (e: any) {
+      checks.db = {
+        ok: false,
+        ms: Date.now() - t0,
+        error: e?.message ? String(e.message) : "db check failed",
+      };
+    }
+  }
+
+  // Sanity check
+  {
+    const t0 = Date.now();
+    try {
+      // Minimal query that does not assume specific schemas.
+      await fetchCMS<number>("count(*[])", {});
+      checks.sanity = { ok: true, ms: Date.now() - t0 };
+    } catch (e: any) {
+      checks.sanity = {
+        ok: false,
+        ms: Date.now() - t0,
+        error: e?.message ? String(e.message) : "sanity check failed",
+      };
+    }
+  }
+
+  const ok = Object.values(checks).every((c) => c.ok);
+  const status = ok ? 200 : 503;
+  res.status(status).json({ ok, checks, ms: Date.now() - startedAt });
 });
 app.get("/", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -256,6 +313,16 @@ app.use(
   requireCsrfToken,
   adminRouter,
 );
+
+
+// DEV-ONLY: Intentionally throw an error for test purposes
+if (process.env.NODE_ENV !== "production") {
+  app.get("/dev/trigger-error", (_req, _res, next) => {
+    // eslint-disable-next-line no-console
+    console.warn("[DEV] Triggering intentional error for test");
+    next(new Error("Intentional test error from /dev/trigger-error"));
+  });
+}
 
 // Global error handler - must be mounted after all routes
 app.use(errorHandler);

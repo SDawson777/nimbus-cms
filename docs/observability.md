@@ -178,6 +178,9 @@ When you are on-call and an alert fires (for example, "5xx rate > 2% on /content
 Key environment variables related to observability:
 
 - `LOG_LEVEL` — controls verbosity; set to `debug` for temporary deep dives.
+- `SENTRY_DSN` — when set, server 5xx errors captured by the global error handler are reported to Sentry.
+- `SENTRY_ENVIRONMENT` / `SENTRY_RELEASE` — optional tags for grouping issues.
+- `SENTRY_TRACES_SAMPLE_RATE` — optional performance sampling rate (number between 0 and 1).
 - `ENABLE_COMPLIANCE_SCHEDULER` — not directly observability-related, but when enabled, the scheduler emits logs via `logger` so you can trace snapshot runs.
 - `COMPLIANCE_OVERVIEW_CACHE_TTL_MS` — influences how often live compliance computations occur vs reading from cache; can affect perceived latency.
 

@@ -41,6 +41,20 @@ Use the provided npm scripts (see `scripts/README.md`):
    - Upload it to a secure object store (S3, GCS, etc.) with lifecycle policies.
 4. Periodically prune old backups according to your compliance policy (e.g., keep 30 days).
 
+### Scheduled backups (GitHub Actions)
+
+This repo includes a scheduled workflow at `.github/workflows/daily-backups.yml` that:
+
+- Runs `pnpm cms:export` daily and uploads the compressed export as a workflow artifact.
+- Optionally runs `pg_dump` (if `PG*` secrets are configured) and uploads the dump as a workflow artifact.
+
+Required GitHub secrets:
+
+- `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`
+- Optional for Postgres dumps: `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`
+
+> Recommendation: artifacts are convenient but not long-term storage; forward these outputs to your object store for retention and compliance.
+
 ### Validating backups
 
 At least monthly, perform a **restore drill**:

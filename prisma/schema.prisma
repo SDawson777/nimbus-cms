@@ -1,4 +1,4 @@
-// Prisma schema for Nimbus CMS control-plane models
+// Prisma schema for Nimbus Cannabis Suite (Enterprise: Mobile, CMS, Admin, API)
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -8,6 +8,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// --- ENUMS ---
 enum AdminRole {
   OWNER
   ORG_ADMIN
@@ -15,17 +16,37 @@ enum AdminRole {
   VIEWER
 }
 
-model AdminUser {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  passwordHash     String?
-  role             AdminRole @default(EDITOR)
-  organizationSlug String?
-  brandSlug        String?
-  storeSlug        String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+enum UserRole {
+  CUSTOMER
+  STAFF
+  MANAGER
+  ADMIN
 }
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+enum ProductType {
+  FLOWER
+  EDIBLE
+  CONCENTRATE
+  VAPE
+  TOPICAL
+  ACCESSORY
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+// --- MODELS ---
 
 model Tenant {
   id            String   @id @default(uuid())
@@ -37,10 +58,19 @@ model Tenant {
   region        String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+  createdBy     String?
+  updatedBy     String?
+  meta          Json?
 
-  stores       Store[]
-  themes       Theme[]
-  featureFlags FeatureFlag[]
+  stores        Store[]
+  themes        Theme[]
+  featureFlags  FeatureFlag[]
+  users         User[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  apiKeys       ApiKey[]
+  contentPages  ContentPage[]
 }
 
 model Store {
@@ -67,10 +97,331 @@ model Store {
   posStoreId       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+  createdBy        String?
+  updatedBy        String?
+  meta             Json?
+
+  themes           Theme[]
+  products         Product[]
+  orders           Order[]
+  staff            User[]
+  carts            Cart[]
+  loyaltyBadges    LoyaltyBadge[]
+  loyaltyStatuses  LoyaltyStatus[]
 
   @@unique([tenantId, slug], map: "tenant_store_slug")
+}
 
-  themes Theme[]
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId      String?
+  store        Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  email        String    @unique
+  phone        String?
+  name         String?
+  passwordHash String?
+  role         UserRole  @default(CUSTOMER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  createdBy    String?
+  updatedBy    String?
+  meta         Json?
+
+  carts             Cart[]
+  orders            Order[]
+  reviews           Review[]
+  events            UserEvent[]
+  preferences       UserPreference[]
+  loyaltyBadges     LoyaltyBadge[]
+  loyaltyStatus     LoyaltyStatus[]
+  paymentMethods    PaymentMethod[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+}
+
+model AdminUser {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String?
+  role             AdminRole @default(EDITOR)
+  organizationSlug String?
+  brandSlug        String?
+  storeSlug        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  createdBy        String?
+  updatedBy        String?
+  meta             Json?
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  storeId      String
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String        @unique
+  description  String?
+  brand        String?
+  category     String?
+  type         ProductType
+  status       ProductStatus @default(ACTIVE)
+  price        Float
+  imageUrl     String?
+  isActive     Boolean       @default(true)
+  purchasesLast30d Int?      @default(0)
+  strainType   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  createdBy    String?
+  updatedBy    String?
+  meta         Json?
+  version      Int           @default(1)
+
+  variants     ProductVariant[]
+  reviews      Review[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@index([brand])
+  @@index([category])
+  @@index([name])
+  @@index([purchasesLast30d])
+  @@index([strainType])
+  @@index([status])
+}
+
+model ProductVariant {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String   @unique
+  name       String
+  price      Float
+  stock      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
+  createdBy  String?
+  updatedBy  String?
+  meta       Json?
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  items     CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([cartId])
+  @@index([productId])
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status    OrderStatus @default(PENDING)
+  total     Float
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+  version   Int         @default(1)
+
+  items     OrderItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([storeId])
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  details   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([userId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([productId])
+  @@index([rating])
+  @@index([userId])
+}
+
+model LoyaltyBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  awardedAt DateTime @default(now())
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([userId])
+}
+
+model LoyaltyStatus {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status    String
+  points    Int      @default(0)
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([userId])
+}
+
+model UserEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  data      Json?
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([userId, type, createdAt])
+}
+
+model UserPreference {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  value     String?
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@unique([userId, key])
+}
+
+model ContentPage {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type      String
+  locale    String
+  slug      String
+  title     String
+  body      String?
+  isPublished Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+  version   Int      @default(1)
+
+  @@index([type, locale])
+  @@unique([type, locale, slug])
 }
 
 model Theme {
@@ -94,6 +445,67 @@ model FeatureFlag {
   valueJson Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
 
   @@unique([tenantId, key])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  action    String
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  details   Json?
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([tenantId, action, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  createdBy String?
+  updatedBy String?
+  meta      Json?
+
+  @@index([tenantId, userId, type, read])
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String   @unique
+  label     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+}
+
+model NotificationPreference {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
 }

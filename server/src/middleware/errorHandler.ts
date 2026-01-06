@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { logger } from "../lib/logger";
+import { captureException } from "../lib/sentry";
 
 type AppError = {
   status?: number;
@@ -40,15 +41,24 @@ export function errorHandler(
   const message = status === 500 ? "Internal server error" : e.message || "Error";
 
   // Log full error with stack for server-side debugging / observability
+  let sentryEventId: string | undefined;
   if (status >= 500) {
     log.error("unhandled.error", { requestId, error: err instanceof Error ? err.message : String(err), stack: (err as any)?.stack });
+    sentryEventId = captureException(err, req) as any;
   } else {
     log.warn("handled.error", { requestId, code, message });
   }
 
   return res.status(status).json({
     ok: false,
-    error: { code, message, details: e.details ?? undefined },
+    error: {
+      code,
+      message,
+      details:
+        status >= 500 && process.env.NODE_ENV !== "production"
+          ? { ...(typeof e.details === "object" && e.details ? (e.details as any) : {}), sentryEventId }
+          : e.details ?? undefined,
+    },
     requestId,
   });
 }

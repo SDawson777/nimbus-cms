@@ -7,6 +7,30 @@ services:
       dockerfile: server/Dockerfile
     ports:
       - "4010:4010"
-    env_file:
-      - ../.env
-    depends_on: []
+    environment:
+      # Demo defaults for local/dev; override via your shell env or `docker compose --env-file <path>`
+      PORT: 4010
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/nimbus?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nimbus
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - nimbus_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  nimbus_pgdata:

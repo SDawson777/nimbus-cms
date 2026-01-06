@@ -17,10 +17,19 @@
     "seed": "pnpm -C server run seed",
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
     "seed:sanity:demo": "ts-node --transpile-only scripts/seed-sanity-demo.ts",
+    "sanity:dataset:export": "pnpm -C apps/studio exec sanity dataset export",
+    "sanity:dataset:import": "pnpm -C apps/studio exec sanity dataset import",
+    "sanity:export-demo": "node scripts/sanity-export-demo.mjs",
+    "sanity:import-demo-restore": "node scripts/sanity-import-demo-restore.mjs",
+    "sanity:seed-legal-demo": "pnpm -C server exec ts-node --transpile-only ../scripts/sanity-seed-legal-demo.ts",
+    "cms:export": "pnpm -C server exec ts-node --transpile-only ../scripts/exportContent.ts",
+    "cms:import": "pnpm -C server exec ts-node --transpile-only ../scripts/importContent.ts",
+    "cms:promote": "pnpm -C server exec ts-node --transpile-only ../scripts/promoteDataset.ts",
     "audit:client-envs": "node scripts/audit-client-envs.js",
     "licenses:generate": "node scripts/generate-license-report.js",
     "lint:types": "pnpm -C server run lint:types",
-    "validate-env": "node scripts/validate-env.js"
+    "validate-env": "node scripts/validate-env.js",
+    "smoke:check": "node scripts/smoke-check-deploy.mjs"
   },
   "ci": {
     "enterpriseChecks": "pnpm audit:client-envs && pnpm licenses:generate"
@@ -65,5 +74,8 @@
   },
   "dependencies": {
     "framer-motion": "^12.23.25"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   }
 }

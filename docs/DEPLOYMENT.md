@@ -18,32 +18,36 @@ cp .env.example .env
 2. Install dependencies:
 
 ```bash
-npm install
+# Prefer pnpm in this workspace.
+# If you don't have pnpm installed, this repo works fine with:
+#   npx -y pnpm@9.15.0 install --frozen-lockfile
+pnpm install --frozen-lockfile
 ```
 
 3. Start the Studio and API in development (parallel):
 
 ```bash
-npm run dev
+pnpm studio:dev
+pnpm server:dev
 ```
 
 4. Start Admin SPA (admin UI) in dev:
 
 ```bash
-npm run dev:admin
+pnpm admin:dev
 ```
 
 5. Start API only in dev (watch + ts-node):
 
 ```bash
-npm run dev:api
+pnpm server:dev
 ```
 
 6. Build & run production API locally:
 
 ```bash
-npm run build:api
-npm run start:api
+pnpm server:build
+pnpm -C server start
 ```
 
 ## Build Admin SPA
@@ -51,13 +55,13 @@ npm run start:api
 - Build the Admin SPA (Vite/React) for production:
 
 ```bash
-npm run build:admin
+pnpm admin:build
 ```
 
 - Preview the built Admin SPA (runs the preview server from the admin app):
 
 ```bash
-npm run start:admin
+pnpm -C apps/admin preview
 ```
 
 ## Build Admin SPA
@@ -109,9 +113,9 @@ docker run -p 4010:4010 --env-file .env nimbus-cms-server:latest
 
 ## Export / Import / Promote scripts
 
-- `npm run cms:export` — export a snapshot of documents to `backups/`
-- `npm run cms:import` — import a snapshot into the configured `SANITY_DATASET`
-- `npm run cms:promote` — promote documents from one dataset to another (set `SANITY_SOURCE_DATASET` and `SANITY_TARGET_DATASET`)
+- `pnpm cms:export` — export a snapshot of documents to `backups/`
+- `pnpm cms:import` — import a snapshot into the configured `SANITY_DATASET`
+- `pnpm cms:promote` — promote documents from one dataset to another (set `SANITY_SOURCE_DATASET` and `SANITY_TARGET_DATASET`)
 
 Safety flags supported by those scripts: `--dry-run`, `--force`.
 
@@ -126,7 +130,7 @@ export SANITY_DATASET=production
 export SANITY_API_TOKEN=xxxx
 
 # run export (writes backups/export-YYYYMMDD.json)
-npm run cms:export
+pnpm cms:export
 ```
 
 2. Import into a dataset (dry-run first)
@@ -138,10 +142,10 @@ export SANITY_DATASET=staging
 export SANITY_API_TOKEN=xxxx
 
 # run a dry-run to see what would change
-npm run cms:import -- ./backups/export-20251119.json --dry-run
+pnpm cms:import -- ./backups/export-20251119.json --dry-run
 
 # To actually apply and force replacements of existing docs
-npm run cms:import -- ./backups/export-20251119.json --force
+pnpm cms:import -- ./backups/export-20251119.json --force
 ```
 
 3. Promote from one dataset to another (dry-run first)
@@ -154,10 +158,10 @@ export SANITY_TARGET_DATASET=production
 export SANITY_API_TOKEN=xxxx
 
 # dry-run to preview changes
-npm run cms:promote -- --dry-run
+pnpm cms:promote -- --dry-run
 
 # perform promotion (use --force to overwrite existing ids)
-npm run cms:promote -- --force
+pnpm cms:promote -- --force
 ```
 
 ### Caveats and notes
@@ -219,3 +223,65 @@ Recommendation: Configure these vars in your host's secret manager (Vercel, Netl
 - Each request surfaces lifecycle events (`request.start`, `request.complete`, `request.aborted`) with latency, status code, and response byte size, which makes it easy to build RED dashboards.
 - All route handlers call `req.log.*` so structured error fields (e.g., `error.message`, `stack`) stay machine-readable. Avoid `console.*` outside of the logger to maintain consistent output.
 - Flip `LOG_LEVEL=debug` temporarily during incidents to capture verbose insights; remember to remove it or revert to the default level after debugging to keep logs lean.
+
+## Staging deploy checklist (Demo/Preview)
+
+This repo supports a "demo" (`nimbus_demo`) and "preview" (`nimbus_preview`) staging posture.
+See `ENV_VARIABLES.md` for the recommended URL/dataset mapping.
+
+**API (Railway) – demo/preview**
+
+- Set `APP_ENV` to `demo` or `preview`.
+- Set `SANITY_PROJECT_ID` and `SANITY_DATASET` to match (e.g. `nimbus_demo`).
+- Ensure `CORS_ORIGINS` includes your Vercel Admin + Vercel Studio hosts.
+- Ensure `DATABASE_URL` is set (Railway Postgres) and run migrations (`prisma migrate deploy`).
+- If using Redis-backed caching/rate-limits, set `REDIS_URL`.
+
+**Admin (Vercel) – demo/preview**
+
+- Set `VITE_NIMBUS_API_URL` to your Railway API base (example: `https://<railway-host>/api/v1/nimbus`).
+- Deploy using the repo-root `vercel.json` (configured for `apps/admin`).
+
+**Studio (Vercel) – demo**
+
+- Set `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET=nimbus_demo`.
+- In Vercel, set the Project Root Directory to `apps/studio`.
+
+### Verification
+
+Run the smoke check against your deployment:
+
+```bash
+pnpm smoke:check -- https://your-api-host
+# or without installing pnpm globally:
+# npx -y pnpm@9.15.0 smoke:check -- https://your-api-host
+```
+
+### One-shot local staging loop (Docker)
+
+If you have Docker Desktop installed, this repo includes a single command to:
+bring up Postgres+Redis+API, run Prisma migrate/seed, and smoke-check `/healthz`,
+`/api/v1/status`, and `/admin`.
+
+```bash
+./scripts/run-local-staging-check.sh
+```
+
+### Seeding (demo)
+
+Seed Sanity demo content (products, legal docs, theme):
+
+```bash
+export SANITY_PROJECT_ID=yourProject
+export SANITY_DATASET=nimbus_demo
+export SANITY_WRITE_TOKEN=yourWriteToken
+pnpm seed:sanity:demo
+```
+
+Seed relational DB (if used):
+
+```bash
+pnpm install
+pnpm prisma migrate deploy
+pnpm prisma db seed
+```

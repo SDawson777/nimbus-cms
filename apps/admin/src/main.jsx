@@ -155,6 +155,16 @@ function AppShell() {
       {!isLogin && admin && (
         <div className="banner-shell" aria-live="polite">
           <WelcomeBar />
+          {process.env.NODE_ENV !== "production" && (
+            <button
+              style={{ marginLeft: 16, background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: 4, padding: '4px 12px', cursor: 'pointer' }}
+              onClick={() => { throw new Error('Nimbus Admin test error'); }}
+              title="Trigger a test error (dev only)"
+              data-testid="debug-trigger-error"
+            >
+              Trigger Test Error
+            </button>
+          )}
         </div>
       )}
       <main style={{ flex: 1 }}>
