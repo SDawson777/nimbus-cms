@@ -10,6 +10,22 @@ on:
 jobs:
   enterprise-checks:
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nimbus_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,7 +75,7 @@ jobs:
           export E2E_ADMIN_SECONDARY_EMAIL="e2e-editor@example.com"
           export E2E_ADMIN_SECONDARY_PASSWORD="e2e-editor-pass"
           export E2E_ADMIN_SECONDARY_ROLE="EDITOR"
-          export DATABASE_URL="file:./dev.db"
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nimbus_test"
           export ADMIN_STORE="file"
           export CORS_ORIGIN_ADMIN="http://localhost:8080"
           # Relax global rate limits for CI so SPA asset fan-out won't be blocked by 429s
@@ -76,7 +92,7 @@ jobs:
           pnpm -C server run seed:e2e
 
           # Apply Prisma migrations to create database schema
-          pnpm prisma migrate deploy
+          pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
 
           # Seed Prisma database (for orders, tenants, stores, users, etc.)
           # This is required for E2E tests that query the database
