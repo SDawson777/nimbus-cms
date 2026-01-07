@@ -75,6 +75,14 @@ jobs:
           # Write seeded admin into server/config/admins.json so the server uses file-backed admin auth
           pnpm -C server run seed:e2e
 
+          # Apply Prisma migrations to create database schema
+          pnpm prisma migrate deploy
+
+          # Seed Prisma database (for orders, tenants, stores, users, etc.)
+          # This is required for E2E tests that query the database
+          export ALLOW_INSECURE_DEMO_PASSWORDS=true
+          pnpm run seed
+
           # Copy seeded admins into built runtime path so the compiled server sees them
           mkdir -p server/dist/config
           cp -a server/config/admins.json server/dist/config/admins.json || true
