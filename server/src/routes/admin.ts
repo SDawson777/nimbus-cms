@@ -1473,7 +1473,13 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
 
     const where: any = {};
     if (storeId) where.storeId = storeId;
-    if (tenant) where.store = { tenant: { slug: tenant } };
+    
+    // Tenant filter: use nested relation filter only if tenant is provided
+    if (tenant) {
+      where.store = { 
+        tenant: { slug: tenant } 
+      };
+    }
 
     if (statusRaw) {
       const parts = statusRaw
@@ -1503,7 +1509,14 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
       take,
       include: {
         user: { select: { id: true, email: true, name: true } },
-        store: { select: { id: true, name: true, slug: true } },
+        store: { 
+          select: { 
+            id: true, 
+            name: true, 
+            slug: true,
+            tenant: { select: { slug: true } }
+          } 
+        },
         _count: { select: { items: true } },
       },
     });
@@ -1525,8 +1538,8 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
       sourceOfTruth: "Nimbus database",
     });
   } catch (err) {
-    req.log.error("admin.orders.list_failed", err);
-    res.status(500).json({ error: "FAILED" });
+    req.log.error("admin.orders.list_failed", { err, message: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: "FAILED", details: err instanceof Error ? err.message : "Unknown error" });
   }
 });
 

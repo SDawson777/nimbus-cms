@@ -20,7 +20,11 @@ trap cleanup EXIT
 
 cleanup
 
+# Seed admin users to JSON config (for authentication)
 npx -y pnpm -C server seed:e2e
+
+# Seed Prisma database (for orders, tenants, stores, users, etc.)
+ALLOW_INSECURE_DEMO_PASSWORDS=true npx -y pnpm run seed
 
 # Ensure the built Admin SPA talks to the local server (same-origin) during E2E.
 # Otherwise `vite build` defaults to `.env.production`, which points at prod APIs.
