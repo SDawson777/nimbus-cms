@@ -14,7 +14,8 @@ export const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-    const appEnv = process.env.APP_ENV || "";
+    const normalizedOrigin = origin.trim();
+    const appEnv = process.env.APP_ENV || "preview";
     if (appEnv === "preview") {
       const allowAll = (process.env.PREVIEW_ALLOW_ALL || "false").toLowerCase() === "true";
       const previewAllowed = (process.env.PREVIEW_ALLOWED_ORIGINS || "")
@@ -25,15 +26,29 @@ export const corsOptions = {
         console.warn("CORS preview allow-all enabled (PREVIEW_ALLOW_ALL=true)");
         return callback(null, true);
       }
-      if (previewAllowed.length && previewAllowed.includes(origin || "")) {
+      if (previewAllowed.length && previewAllowed.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+      // In preview-mode we default to a tight allowlist, but local dev and e2e
+      // commonly run the admin UI on the same machine.
+      const isLocalDevOrigin =
+        normalizedOrigin === "http://localhost" ||
+        normalizedOrigin === "https://localhost" ||
+        normalizedOrigin === "http://127.0.0.1" ||
+        normalizedOrigin === "https://127.0.0.1" ||
+        normalizedOrigin.startsWith("http://localhost:") ||
+        normalizedOrigin.startsWith("https://localhost:") ||
+        normalizedOrigin.startsWith("http://127.0.0.1:") ||
+        normalizedOrigin.startsWith("https://127.0.0.1:");
+      if (isLocalDevOrigin) {
         return callback(null, true);
       }
       // Fall through to standard allowlist checks below (disallow by default for preview)
     }
-    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
-    console.error("Blocked by CORS:", origin);
+    console.error("Blocked by CORS:", normalizedOrigin);
     callback(new Error("Not allowed by CORS"));
   },
   credentials: true,

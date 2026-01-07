@@ -1,6 +1,20 @@
 {
   "admins": [
     {
+      "id": "e2e-1767770282152",
+      "email": "e2e-admin@example.com",
+      "passwordHash": "$2a$10$Pukg6idtwwbKkcqSVKR0uO.QQwmD5CqC1mYBUt8IBaYSJ8ZgtzXLm",
+      "role": "OWNER",
+      "organizationSlug": "e2e-org"
+    },
+    {
+      "id": "e2e-secondary-1767765932050",
+      "email": "e2e-editor@example.com",
+      "passwordHash": "$2a$10$xrNkOXSg6/Urb/2XiOoRjeNP0S7bbjFlRM/DoQqEKqR9o7J8thJI.",
+      "role": "EDITOR",
+      "organizationSlug": "e2e-org"
+    },
+    {
       "id": "1",
       "email": "owner@example.com",
       "passwordHash": "",

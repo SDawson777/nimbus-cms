@@ -42,9 +42,9 @@ function redirectToLogin() {
 function buildUrl(path = "") {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const normalized = path ? (path.startsWith("/") ? path : `/${path}`) : "";
-  if (!API_BASE) return normalized || "/";
-  // append tenant query param automatically when present in localStorage
-  let url = `${API_BASE}${normalized}`;
+  // Build a URL relative to the current origin when no API base is provided.
+  // Always append tenant query param automatically when present in localStorage.
+  let url = API_BASE ? `${API_BASE}${normalized}` : normalized || "/";
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       const tenant = localStorage.getItem("nimbus.activeTenant");

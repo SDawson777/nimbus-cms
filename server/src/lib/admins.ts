@@ -26,7 +26,10 @@ export type AdminsConfig = { admins: AdminUser[] };
 
 let cached: AdminsConfig | null = null;
 
-const CONFIG_PATH = path.join(__dirname, "..", "config", "admins.json");
+// Note: config is stored outside of src/ so it exists in both TS dev and built dist.
+// - In dev: __dirname = server/src/lib -> server/config/admins.json
+// - In prod: __dirname = server/dist/lib -> server/config/admins.json
+const CONFIG_PATH = path.join(__dirname, "..", "..", "config", "admins.json");
 
 export function loadAdmins(): AdminsConfig | null {
   if (cached) return cached;

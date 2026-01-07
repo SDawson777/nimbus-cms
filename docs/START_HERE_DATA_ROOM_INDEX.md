@@ -16,23 +16,31 @@ This index is a structured table of contents for buyer diligence. Replace `TBD` 
 
 | Item | Link | Description |
 |---|---|---|
-| Architecture Diagram | [TBD](#) | Visual diagram of Admin, API, Sanity, Postgres, Sentry, hosting. (Repo reference: `ARCHITECTURE.md`, `docs/ARCHITECTURE.md`) |
-| Data Flow Diagram | [TBD](#) | Content flow (Sanity → API → clients) and auth flows (Admin JWT/CSRF). |
-| System Inventory | [TBD](#) | Services, repos, third-party dependencies, data stores, secrets locations. |
-| Security Memo | [TBD](#) | Security posture summary, RBAC, auditability, and operational controls. (Repo reference: `docs/SECURITY_NOTES.md`) |
-| SDLC Proof | [TBD](#) | Evidence of development process: PRs, CI checks, release checklist, lint/test. (Repo reference: `CONTRIBUTING.md`, `RELEASING.md`) |
-| Deployment Guides | [TBD](#) | How to deploy demo/preview/prod, env var matrix, and runtime ops. (Repo reference: `DEPLOYMENT.md`, `ENV_VARIABLES.md`) |
-| Backup & DR Runbook | [TBD](#) | Postgres + Sanity backup procedures and restore drills. (Repo reference: `docs/BACKUP_AND_DR_RUNBOOK.md`) |
-| Observability/Monitoring | [TBD](#) | Sentry setup, uptime checks, logs, alerting, runbooks. (Repo reference: `docs/OPS_MONITORING_AND_ALERTS.md`) |
-| Buyer Smoke Test | [TBD](#) | 30-minute acceptance checklist for Admin/CMS/Mobile/API/Sentry. (Repo reference: `BUYER_SMOKE_TEST.md`, `docs/BUYER_SMOKE_TEST.md`) |
+| Architecture Diagram | [../ARCHITECTURE.md](../ARCHITECTURE.md) | Visual diagram of Admin, API, Sanity, Postgres, Sentry, hosting. |
+| Architecture (Environments) | [ARCHITECTURE_ENVIRONMENTS.md](ARCHITECTURE_ENVIRONMENTS.md) | Environment-specific deployment architecture and configuration. |
+| Data Flow Diagram | [../ARCHITECTURE.md#data-flow](../ARCHITECTURE.md) | Content flow (Sanity → API → clients) and auth flows (Admin JWT/CSRF). |
+| System Inventory | [SYSTEM_INVENTORY.md](SYSTEM_INVENTORY.md) | Services, repos, third-party dependencies, data stores, secrets locations. |
+| **Asset List & Support** | [**ASSET_LIST_AND_SUPPORT.md**](ASSET_LIST_AND_SUPPORT.md) | **Comprehensive asset inventory: repos, scripts, artifacts; what buyer must provision (Sanity, Sentry, Stripe, hosting).** |
+| Security Posture Memo | [SECURITY_POSTURE_MEMO.md](SECURITY_POSTURE_MEMO.md) | Security posture summary, auth flow, RBAC, tenant isolation, Sentry config, DB/logging policies. |
+| Security Notes | [SECURITY_NOTES.md](SECURITY_NOTES.md) | Detailed security controls: rate limiting, CSRF, CORS, upload validation, analytics HMAC. |
+| RBAC Matrix | [RBAC_MATRIX.md](RBAC_MATRIX.md) | Role-based access control matrix for Admin users (OWNER, ORG_ADMIN, EDITOR, VIEWER). |
+| SDLC Proof | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Development process: PRs, CI checks, testing, linting. Also see [../RELEASING.md](../RELEASING.md). |
+| Deployment Guides | [../DEPLOYMENT.md](../DEPLOYMENT.md) | How to deploy demo/preview/prod, env var matrix, and runtime ops. |
+| Environment Variables | [ENV_VARIABLES.md](ENV_VARIABLES.md) | Canonical reference for all environment configuration (server, admin, studio). |
+| Backup & DR Runbook | [BACKUP_AND_DR_RUNBOOK.md](BACKUP_AND_DR_RUNBOOK.md) | Postgres + Sanity backup procedures, restore steps, and verification drills. |
+| Observability/Monitoring | [OPS_MONITORING_AND_ALERTS.md](OPS_MONITORING_AND_ALERTS.md) | Sentry setup, uptime checks, logs, alerting, runbooks. |
+| Sentry Setup | [SENTRY_SETUP.md](SENTRY_SETUP.md) | Sentry configuration for server and Admin SPA error tracking. |
+| Buyer Smoke Test | [BUYER_SMOKE_TEST.md](BUYER_SMOKE_TEST.md) | 30-minute acceptance checklist for Admin/CMS/Mobile/API/Sentry. |
+| Software Bill of Materials | [SBOM-nimbus-cms.json](SBOM-nimbus-cms.json) | CycloneDX SBOM with all dependencies and licenses (1,696 components). |
 
 ## Commercial / Legal Pack
 
 | Item | Link | Description |
 |---|---|---|
 | IP Assignment Packet | [TBD](#) | Chain-of-title: assignments, contributor agreements, work-for-hire documents. |
-| License Summary | [TBD](#) | Third-party OSS/commercial licenses, obligations, and notices. |
+| License Summary | [licenses.md](licenses.md) | Third-party OSS/commercial licenses, obligations, and notices. Generate with `pnpm licenses:generate`. |
 | Asset Purchase Outline | [TBD](#) | Draft outline of transaction structure, assets, liabilities, and transition plan. |
+| Legal Compliance Notes | [LEGAL_COMPLIANCE_NOTES.md](LEGAL_COMPLIANCE_NOTES.md) | Age verification, privacy/terms docs, CCPA/GDPR considerations. |
 
 ## Notes
 

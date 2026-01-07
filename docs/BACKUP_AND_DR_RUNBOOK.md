@@ -104,28 +104,173 @@ Tips:
 - If the dataset doesn’t exist, create it first in the Sanity dashboard or via CLI (depending on your permissions).
 - Use `--replace` only for non-production drills.
 
+## Postgres Restore Steps
+
+### From Railway Snapshot (Fastest)
+
+1. Log into Railway dashboard.
+2. Navigate to your Postgres service.
+3. Go to **Backups** or **Snapshots** section.
+4. Select the snapshot closest to your desired recovery point.
+5. Click **Restore** (typically creates a new database instance or overwrites the existing one).
+6. Update `DATABASE_URL` in your API deployment to point at the restored database.
+7. Restart the API service.
+
+### From `pg_dump` Backup (Custom/Hourly)
+
+If you've implemented hourly `pg_dump` backups (recommended for enterprise):
+
+1. **Identify the backup file**:
+   ```bash
+   ls -lh s3://your-bucket/postgres-backups/ | grep "pgdump-"
+   ```
+
+2. **Download the backup**:
+   ```bash
+   aws s3 cp s3://your-bucket/postgres-backups/pgdump-20260107T120000Z.dump ./restore.dump
+   ```
+
+3. **Restore to a new database** (do NOT restore directly to production during first attempt):
+   ```bash
+   # Create a new empty database (example: nimbus_restore)
+   psql "$POSTGRES_ADMIN_URL" -c "CREATE DATABASE nimbus_restore;"
+   
+   # Restore the dump
+   pg_restore -d "postgres://user:pass@host:port/nimbus_restore" --no-acl --no-owner restore.dump
+   ```
+
+4. **Validate the restored database**:
+   - Check row counts: `SELECT COUNT(*) FROM "Tenant";` (and other key tables).
+   - Verify recent records exist.
+
+5. **Point your API at the restored database**:
+   - Update `DATABASE_URL` to the restore database.
+   - Run Prisma migrations if needed: `pnpm prisma migrate deploy`.
+   - Restart the API.
+
+6. **Promote to production** (if validation passes):
+   - Option A: Rename databases (swap `nimbus_restore` → `nimbus_production`).
+   - Option B: Update `DATABASE_URL` permanently.
+
 ## Dry Run Restore Procedure (Checklist)
 
 Use this checklist for a repeatable restore drill. Record the outcome in `docs/DRY_RUN_RESTORE_LOG.md`.
 
-### Dry Run Restore Procedure
+### Postgres Restore Drill
+
+1. **Export a recent `pg_dump` backup** (or use an existing one).
+2. **Create a temporary database**: `nimbus_restore_drill`.
+3. **Restore the dump** into the temporary database (see steps above).
+4. **Run validation queries**:
+   ```sql
+   SELECT COUNT(*) FROM "Tenant";
+   SELECT COUNT(*) FROM "Store";
+   SELECT COUNT(*) FROM "Order";
+   SELECT MAX("createdAt") FROM "Order"; -- verify recent data
+   ```
+5. **Spin up a test API instance** pointing at `nimbus_restore_drill`.
+6. **Test critical endpoints**:
+   - `GET /healthz` → 200
+   - `GET /ready` → 200
+   - `POST /admin/login` → successful login
+   - `GET /api/admin/orders?tenant=tenant-a` → returns orders
+7. **Log the drill** in `docs/DRY_RUN_RESTORE_LOG.md`:
+   - date/time, operator, backup filename, database name, pass/fail, issues, follow-ups.
+8. **Clean up**: drop `nimbus_restore_drill` database after validation.
+
+### Sanity Restore Drill
 
 1. **Choose the source dataset**: `nimbus_demo` (or production).
 2. **Export Sanity dataset** to `backups/sanity/` (see export command above).
 3. **Create a restore target dataset** (example): `nimbus_demo_restore`.
 4. **Import** the export into the restore target dataset (see import command above).
 5. **Point Studio** at the restore dataset temporarily:
-  - Set `SANITY_STUDIO_DATASET=nimbus_demo_restore` (or equivalent in your deployment).
+   - Set `SANITY_STUDIO_DATASET=nimbus_demo_restore` (or equivalent in your deployment).
 6. **Validate content exists**:
-  - Brand/store docs load
-  - Theme config resolves
-  - Deals/articles/FAQs/legal docs render
+   - Brand/store docs load
+   - Theme config resolves
+   - Deals/articles/FAQs/legal docs render
 7. **Validate API readiness** (if the API uses Sanity in readiness checks):
-  - `GET /healthz` returns 200
-  - `GET /ready` returns 200
+   - `GET /healthz` returns 200
+   - `GET /ready` returns 200
 8. **Roll back** Studio (and any clients) to the original dataset.
 9. **Log the drill** in `docs/DRY_RUN_RESTORE_LOG.md`:
-  - date/time, operator, export filename, target dataset, pass/fail, issues, follow-ups.
+   - date/time, operator, export filename, target dataset, pass/fail, issues, follow-ups.
+
+## Verification Steps for Restored Environments
+
+After restoring either Postgres or Sanity (or both), verify the environment is fully operational:
+
+### API Health Checks
+
+```bash
+# Liveness (always returns 200 if server is up)
+curl -i http://localhost:8080/healthz
+
+# Readiness (checks DB + Sanity connectivity)
+curl -i http://localhost:8080/ready
+```
+
+Expected: both return `200 OK`.
+
+### Admin Login Test
+
+```bash
+# Login with E2E admin credentials (or a known admin)
+curl -i -X POST http://localhost:8080/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"e2e-admin@example.com","password":"e2e-password"}'
+```
+
+Expected: `200 OK` with `Set-Cookie: admin_token=...` and `Set-Cookie: admin_csrf=...`.
+
+### Database Query Test
+
+```bash
+# Check that tenant data is present
+curl -i http://localhost:8080/api/admin/tenants \
+  -H "Cookie: admin_token=<TOKEN_FROM_LOGIN>" \
+  -H "X-CSRF-Token: <CSRF_FROM_LOGIN>"
+```
+
+Expected: JSON array of tenants.
+
+### Sanity Content Test
+
+```bash
+# Fetch a known brand/store document from Sanity (via API)
+curl -i http://localhost:8080/api/content/brands
+```
+
+Expected: JSON array of brands/stores (depending on your API routes).
+
+### End-to-End Test (Admin UI)
+
+1. Open Admin SPA: `http://localhost:8080/admin` (if served by API) or Vercel URL.
+2. Log in with admin credentials.
+3. Navigate to **Dashboard** → verify metrics load.
+4. Navigate to **Orders** → verify orders list loads.
+5. Navigate to **Settings** → verify theme/personalization loads.
+
+### Sanity Studio Test
+
+1. Open Studio: `http://localhost:3333` (local) or Vercel URL.
+2. Verify brand/store documents are visible.
+3. Create a test document (e.g., a new article).
+4. Publish it.
+5. Verify the document appears in the API (if applicable).
+
+### Log the Results
+
+Record all test results in `docs/DRY_RUN_RESTORE_LOG.md`:
+
+- Date/time of drill
+- Operator name
+- Backup files used (Postgres dump filename, Sanity export filename)
+- Target environment (restore database name, restore dataset name)
+- Pass/fail for each verification step
+- Issues encountered
+- Follow-up actions
 
 ## Disaster Recovery: Practical Recovery Steps
 

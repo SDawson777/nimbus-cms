@@ -29,6 +29,12 @@ export async function seedDemoDatabase() {
   const demoTenantSlug = pickEnv("DEMO_TENANT_SLUG") || "demo-operator";
   const demoSanityDataset = pickEnv("DEMO_SANITY_DATASET", "SANITY_DATASET_DEFAULT") || "nimbus_demo";
 
+  // Secondary tenant used for validating tenant isolation behavior.
+  // Note: the Admin UI demo workspace selector uses "tenant-b".
+  const tenantBSlug = pickEnv("DEMO_TENANT_B_SLUG") || "tenant-b";
+  const tenantBSanityDataset =
+    pickEnv("DEMO_TENANT_B_SANITY_DATASET") || "nimbus_tenant_b";
+
   const adminEmail = pickEnv("DEMO_ADMIN_EMAIL") || "demo.admin@nimbus.local";
   const customerEmail = pickEnv("DEMO_CUSTOMER_EMAIL") || "demo.customer@nimbus.local";
 
@@ -69,6 +75,25 @@ export async function seedDemoDatabase() {
       sanityDataset: demoSanityDataset,
       primaryDomain: pickEnv("DEMO_PRIMARY_DOMAIN") || "demo.nimbus.app",
       region: pickEnv("DEMO_REGION") || "US-MI",
+    },
+  });
+
+  const tenantB = await prisma.tenant.upsert({
+    where: { slug: tenantBSlug },
+    update: {
+      name: "Tenant B Operator",
+      status: "active",
+      sanityDataset: tenantBSanityDataset,
+      primaryDomain: pickEnv("DEMO_TENANT_B_PRIMARY_DOMAIN") || "tenant-b.nimbus.app",
+      region: pickEnv("DEMO_TENANT_B_REGION") || "US-IL",
+    },
+    create: {
+      slug: tenantBSlug,
+      name: "Tenant B Operator",
+      status: "active",
+      sanityDataset: tenantBSanityDataset,
+      primaryDomain: pickEnv("DEMO_TENANT_B_PRIMARY_DOMAIN") || "tenant-b.nimbus.app",
+      region: pickEnv("DEMO_TENANT_B_REGION") || "US-IL",
     },
   });
 
@@ -132,6 +157,36 @@ export async function seedDemoDatabase() {
     },
   });
 
+  const tenantBStore = await prisma.store.upsert({
+    where: { tenantId_slug: { tenantId: tenantB.id, slug: "chicago-loop" } },
+    update: {
+      name: "Chicago Loop",
+      address1: "900 W Demo St",
+      city: "Chicago",
+      state: "IL",
+      postalCode: "60601",
+      country: "US",
+      phone: "+1-555-0200",
+      timezone: "America/Chicago",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+    create: {
+      tenantId: tenantB.id,
+      slug: "chicago-loop",
+      name: "Chicago Loop",
+      address1: "900 W Demo St",
+      city: "Chicago",
+      state: "IL",
+      postalCode: "60601",
+      country: "US",
+      phone: "+1-555-0200",
+      timezone: "America/Chicago",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+  });
+
   // Default tenant theme
   const existingDefaultTheme = await prisma.theme.findFirst({
     where: { tenantId: tenant.id, isDefault: true },
@@ -169,6 +224,43 @@ export async function seedDemoDatabase() {
     });
   }
 
+  // Tenant B default theme
+  const existingTenantBTheme = await prisma.theme.findFirst({
+    where: { tenantId: tenantB.id, isDefault: true },
+  });
+  if (existingTenantBTheme) {
+    await prisma.theme.update({
+      where: { id: existingTenantBTheme.id },
+      data: {
+        name: "Tenant B – Aurora",
+        configJson: {
+          palette: {
+            primary: "#7C3AED",
+            secondary: "#06B6D4",
+            background: "#0B1020",
+            accent: "#F97316",
+          },
+        },
+      },
+    });
+  } else {
+    await prisma.theme.create({
+      data: {
+        tenantId: tenantB.id,
+        name: "Tenant B – Aurora",
+        isDefault: true,
+        configJson: {
+          palette: {
+            primary: "#7C3AED",
+            secondary: "#06B6D4",
+            background: "#0B1020",
+            accent: "#F97316",
+          },
+        },
+      },
+    });
+  }
+
   // Admin user (Admin SPA)
   await prisma.adminUser.upsert({
     where: { email: adminEmail },
@@ -199,6 +291,27 @@ export async function seedDemoDatabase() {
       storeId: store1.id,
       email: customerEmail,
       name: "Demo Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+  });
+
+  const tenantBCustomer = await prisma.user.upsert({
+    where: { email: "tenantb.customer@nimbus.local" },
+    update: {
+      tenantId: tenantB.id,
+      storeId: tenantBStore.id,
+      name: "Tenant B Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+    create: {
+      tenantId: tenantB.id,
+      storeId: tenantBStore.id,
+      email: "tenantb.customer@nimbus.local",
+      name: "Tenant B Customer",
       role: UserRole.CUSTOMER,
       passwordHash: await bcrypt.hash(customerPassword, 10),
       isActive: true,
@@ -276,6 +389,43 @@ export async function seedDemoDatabase() {
     },
   ];
 
+  const tenantBProducts = [
+    {
+      slug: "aurora-ice-pop",
+      name: "Aurora Ice Pop",
+      type: ProductType.FLOWER,
+      category: "Flower",
+      brand: "Aurora",
+      price: 42,
+      variants: [
+        { sku: "CL-AURORAICE-1G", name: "1g", price: 14, stock: 140 },
+        { sku: "CL-AURORAICE-3_5G", name: "3.5g", price: 42, stock: 90 },
+      ],
+    },
+    {
+      slug: "aurora-citrus-seltzer",
+      name: "Aurora Citrus Seltzer (5mg)",
+      type: ProductType.EDIBLE,
+      category: "Edibles",
+      brand: "Aurora",
+      price: 9,
+      variants: [
+        { sku: "CL-AURORA-SEL-4PK", name: "4 pack", price: 9, stock: 120 },
+      ],
+    },
+    {
+      slug: "aurora-diamonds",
+      name: "Aurora Diamonds",
+      type: ProductType.CONCENTRATE,
+      category: "Concentrates",
+      brand: "Aurora",
+      price: 60,
+      variants: [
+        { sku: "CL-AURORA-DIA-1G", name: "1g", price: 60, stock: 35 },
+      ],
+    },
+  ];
+
   for (const p of demoProducts) {
     const product = await prisma.product.upsert({
       where: { slug: `${store1.slug}-${p.slug}` },
@@ -302,6 +452,54 @@ export async function seedDemoDatabase() {
         price: p.price,
         description:
           "Seeded demo product for Nimbus canonical demo environment.",
+        isActive: true,
+      },
+    });
+
+    for (const v of p.variants) {
+      await prisma.productVariant.upsert({
+        where: { sku: v.sku },
+        update: {
+          productId: product.id,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+        create: {
+          productId: product.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+      });
+    }
+  }
+
+  for (const p of tenantBProducts) {
+    const product = await prisma.product.upsert({
+      where: { slug: `${tenantBStore.slug}-${p.slug}` },
+      update: {
+        storeId: tenantBStore.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description: "Seeded demo product for Tenant B isolation validation.",
+        isActive: true,
+      },
+      create: {
+        storeId: tenantBStore.id,
+        slug: `${tenantBStore.slug}-${p.slug}`,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description: "Seeded demo product for Tenant B isolation validation.",
         isActive: true,
       },
     });
@@ -366,6 +564,120 @@ export async function seedDemoDatabase() {
     });
   }
 
+  // Tenant B: one sample order
+  const tenantBFirstProduct = await prisma.product.findFirst({
+    where: { storeId: tenantBStore.id },
+    orderBy: { createdAt: "asc" },
+  });
+  if (tenantBFirstProduct) {
+    const variant = await prisma.productVariant.findFirst({
+      where: { productId: tenantBFirstProduct.id },
+      orderBy: { createdAt: "asc" },
+    });
+    const orderId = "order-tenantb-0001";
+    await prisma.order.upsert({
+      where: { id: orderId },
+      update: {
+        userId: tenantBCustomer.id,
+        storeId: tenantBStore.id,
+        status: "PAID",
+        total: tenantBFirstProduct.price,
+      },
+      create: {
+        id: orderId,
+        userId: tenantBCustomer.id,
+        storeId: tenantBStore.id,
+        status: "PAID",
+        total: tenantBFirstProduct.price,
+        items: {
+          create: [
+            {
+              productId: tenantBFirstProduct.id,
+              variantId: variant?.id,
+              quantity: 1,
+              price: tenantBFirstProduct.price,
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  // Content pages (used here as simple “legal docs” placeholders).
+  // NOTE: ContentPage has a global uniqueness constraint on (type, locale, slug),
+  // so we intentionally keep slugs tenant-prefixed.
+  const legalPages = [
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenant.slug}-terms`,
+      title: "Demo Operator – Terms",
+      body: "# Terms (Demo Operator)\n\nDemo legal content for evaluating tenant scoping.",
+    },
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenant.slug}-privacy`,
+      title: "Demo Operator – Privacy",
+      body: "# Privacy (Demo Operator)\n\nDemo privacy content for evaluating tenant scoping.",
+    },
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenant.slug}-accessibility`,
+      title: "Demo Operator – Accessibility",
+      body: "# Accessibility (Demo Operator)\n\nDemo accessibility content for evaluating tenant scoping.",
+    },
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenantB.slug}-terms`,
+      title: "Tenant B – Terms",
+      body: "# Terms (Tenant B)\n\nTenant B legal content for verifying isolation.",
+    },
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenantB.slug}-privacy`,
+      title: "Tenant B – Privacy",
+      body: "# Privacy (Tenant B)\n\nTenant B privacy content for verifying isolation.",
+    },
+    {
+      type: "legal",
+      locale: "en",
+      slug: `${tenantB.slug}-accessibility`,
+      title: "Tenant B – Accessibility",
+      body: "# Accessibility (Tenant B)\n\nTenant B accessibility content for verifying isolation.",
+    },
+  ];
+
+  for (const page of legalPages) {
+    await prisma.contentPage.upsert({
+      where: {
+        type_locale_slug: {
+          type: page.type,
+          locale: page.locale,
+          slug: page.slug,
+        },
+      },
+      update: {
+        tenantId: page.slug.startsWith(`${tenantB.slug}-`) ? tenantB.id : tenant.id,
+        title: page.title,
+        body: page.body,
+        isPublished: true,
+      },
+      create: {
+        tenantId: page.slug.startsWith(`${tenantB.slug}-`) ? tenantB.id : tenant.id,
+        type: page.type,
+        locale: page.locale,
+        slug: page.slug,
+        title: page.title,
+        body: page.body,
+        isPublished: true,
+      },
+    });
+  }
+
   // Loyalty
   await prisma.loyaltyStatus.upsert({
     where: { userId: customer.id },
@@ -394,6 +706,9 @@ export async function seedDemoDatabase() {
     tenant: tenant.slug,
     sanityDataset: demoSanityDataset,
     stores: [store1.slug, store2.slug],
+    tenantB: tenantB.slug,
+    tenantBSanityDataset,
+    tenantBStores: [tenantBStore.slug],
     adminEmail,
     customerEmail,
   });
@@ -408,255 +723,6 @@ main()
     // eslint-disable-next-line no-console
     console.error(e);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
-    inventoryCombos.map((combo) =>
-      prisma.storeProduct.upsert({
-        where: { id: `${combo.store.id}-${combo.productId}` },
-        update: { inventory: combo.inventory, price: combo.price },
-        create: {
-          id: `${combo.store.id}-${combo.productId}`,
-          storeId: combo.store.id,
-          productId: combo.productId,
-          inventory: combo.inventory,
-          price: combo.price,
-        },
-      }),
-    ),
-  );
-
-  // ---------- USERS ----------
-  const demoUser = await prisma.user.upsert({
-    where: { email: "demo.user@nimbus.app" },
-    update: {},
-    create: {
-      tenantId: demoTenant.id,
-      email: "demo.user@nimbus.app",
-      name: "Demo User",
-    },
-  });
-
-  const powerUser = await prisma.user.upsert({
-    where: { email: "power.user@nimbus.app" },
-    update: {},
-    create: {
-      tenantId: demoTenant.id,
-      email: "power.user@nimbus.app",
-      name: "Power Shopper",
-    },
-  });
-
-  // ---------- USER PREFERENCES ----------
-  await prisma.userPreference.upsert({
-    where: { userId: demoUser.id },
-    update: {},
-    create: {
-      userId: demoUser.id,
-      theme: "dark",
-      notifications: {
-        smsDeals: true,
-        emailDeals: true,
-        lowInventoryAlerts: true,
-      },
-      favorites: {
-        strains: ["Nimbus OG (1/8 oz)", "Midnight Mints 5mg"],
-        effects: ["relaxed", "sleep"],
-      },
-    },
-  });
-
-  await prisma.userPreference.upsert({
-    where: { userId: powerUser.id },
-    update: {},
-    create: {
-      userId: powerUser.id,
-      theme: "system",
-      notifications: {
-        smsDeals: true,
-        emailDeals: false,
-        highValueDealsOnly: true,
-      },
-      favorites: {
-        strains: ["Limonene Live Resin Cart", "Sunrise Sativa (1g preroll)"],
-        effects: ["creative", "euphoric"],
-      },
-    },
-  });
-
-  // ---------- ORDERS ----------
-  async function createOrder(
-    userId: string,
-    tenantId: string,
-    items: { productId: string; qty: number }[],
-  ) {
-    const products = await prisma.product.findMany({
-      where: { id: { in: items.map((i) => i.productId) } },
-    });
-    let total = 0;
-    for (const item of items) {
-      const p = products.find((pp) => pp.id === item.productId);
-      if (!p) continue;
-      total += p.price * item.qty;
-    }
-
-    return prisma.order.create({
-      data: {
-        userId,
-        tenantId,
-        total,
-        status: "completed",
-        items: {
-          create: items.map((item) => ({
-            productId: item.productId,
-            quantity: item.qty,
-            price: products.find((p) => p.id === item.productId)?.price ?? 0,
-          })),
-        },
-      },
-    });
-  }
-
-  await createOrder(demoUser.id, demoTenant.id, [
-    { productId: "prod-nimbus-og-35", qty: 2 },
-    { productId: "prod-midnight-mints", qty: 1 },
-  ]);
-
-  await createOrder(powerUser.id, demoTenant.id, [
-    { productId: "prod-limonene-live-resin", qty: 1 },
-    { productId: "prod-glass-510-battery", qty: 1 },
-    { productId: "prod-cold-brew-10mg", qty: 2 },
-  ]);
-
-  // ---------- LEGAL DOCS ----------
-  await prisma.legalDocument.upsert({
-    where: { id: "demo-terms-v1" },
-    update: {},
-    create: {
-      id: "demo-terms-v1",
-      tenantId: demoTenant.id,
-      type: "terms",
-      version: "1.0",
-      body: "# Terms of Service (Demo)\n\nThis is demo legal content for Nimbus Cannabis Suite. In production, your legal counsel will provide jurisdiction-specific terms.",
-    },
-  });
-
-  await prisma.legalDocument.upsert({
-    where: { id: "demo-privacy-v1" },
-    update: {},
-    create: {
-      id: "demo-privacy-v1",
-      tenantId: demoTenant.id,
-      type: "privacy",
-      version: "1.0",
-      body: "# Privacy Policy (Demo)\n\nThis demo describes how Nimbus handles customer data for the purposes of evaluation. In production, this will match your live policy.",
-    },
-  });
-
-  await prisma.legalDocument.upsert({
-    where: { id: "demo-accessibility-v1" },
-    update: {},
-    create: {
-      id: "demo-accessibility-v1",
-      tenantId: demoTenant.id,
-      type: "accessibility",
-      version: "1.0",
-      body: "# Accessibility Statement (Demo)\n\nNimbus is committed to accessibility and inclusive design. This demo statement shows the structure buyers expect.",
-    },
-  });
-
-  // ---------- AWARDS ----------
-  await prisma.award.upsert({
-    where: { id: "award-bronze" },
-    update: {},
-    create: {
-      id: "award-bronze",
-      tenantId: demoTenant.id,
-      title: "Bronze Tier",
-      points: 500,
-      media: { icon: "🥉", description: "Entry-level loyalty tier." },
-    },
-  });
-
-  await prisma.award.upsert({
-    where: { id: "award-silver" },
-    update: {},
-    create: {
-      id: "award-silver",
-      tenantId: demoTenant.id,
-      title: "Silver Tier",
-      points: 1500,
-      media: { icon: "🥈", description: "Mid-tier with stronger discounts." },
-    },
-  });
-
-  await prisma.award.upsert({
-    where: { id: "award-gold" },
-    update: {},
-    create: {
-      id: "award-gold",
-      tenantId: demoTenant.id,
-      title: "Gold Tier",
-      points: 3500,
-      media: { icon: "🥇", description: "High-value VIP tier for whales." },
-    },
-  });
-
-  // ---------- JOURNAL + EVENTS (for AI / analytics demo) ----------
-  await prisma.journalEntry.createMany({
-    data: [
-      {
-        userId: demoUser.id,
-        mood: "relaxed",
-        notes:
-          "Nimbus OG helped me wind down after work without being couch-locked.",
-      },
-      {
-        userId: demoUser.id,
-        mood: "sleepy",
-        notes: "Midnight Mints kicked in after ~45 minutes. Great for sleep.",
-      },
-      {
-        userId: powerUser.id,
-        mood: "creative",
-        notes: "Sunrise Sativa is perfect for morning deep work.",
-      },
-    ],
-  });
-
-  await prisma.userEvent.createMany({
-    data: [
-      {
-        userId: demoUser.id,
-        type: "VIEW_PRODUCT",
-        meta: { productId: "prod-nimbus-og-35" },
-      },
-      {
-        userId: demoUser.id,
-        type: "ADD_TO_CART",
-        meta: { productId: "prod-nimbus-og-35" },
-      },
-      {
-        userId: powerUser.id,
-        type: "VIEW_PRODUCT",
-        meta: { productId: "prod-limonene-live-resin" },
-      },
-      {
-        userId: powerUser.id,
-        type: "COMPLETE_ORDER",
-        meta: { orderValue: 130 },
-      },
-    ],
-  });
-
-  console.log("✔ Nimbus demo seed completed.");
-}
-
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();

@@ -8,6 +8,188 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin",
+			"type": "shell",
+			"command": "(lsof -ti tcp:8080 | xargs -r kill -9) || true; PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & for i in {1..80}; do if curl -fsS http://localhost:8080/status >/dev/null; then echo 'server ready'; break; fi; sleep 0.25; done; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test; EXIT_CODE=$?; (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: show e2e server log",
+			"type": "shell",
+			"command": "tail -n 200 /tmp/nimbus-server-e2e.log || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin (localhost:8080)",
+			"type": "shell",
+			"command": "(lsof -ti tcp:8080 | xargs -r kill -9) || true; rm -f /tmp/nimbus-server-e2e.log; PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & for i in {1..120}; do if curl -sS http://localhost:8080/login >/dev/null 2>&1; then echo 'server ready'; break; fi; sleep 0.25; done; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test; EXIT_CODE=$?; echo \"playwright exit=$EXIT_CODE\"; if [ $EXIT_CODE -ne 0 ]; then echo '--- server log tail ---'; tail -n 120 /tmp/nimbus-server-e2e.log || true; fi; (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin (capture exit)",
+			"type": "shell",
+			"command": "rm -f /tmp/playwright-exit /tmp/nimbus-server-e2e.log; (lsof -ti tcp:8080 | xargs -r kill -9) || true; PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & sleep 2; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test; EXIT_CODE=$?; echo $EXIT_CODE > /tmp/playwright-exit; echo \"playwright exit=$EXIT_CODE\"; if [ $EXIT_CODE -ne 0 ]; then echo '--- server log tail ---'; tail -n 80 /tmp/nimbus-server-e2e.log || true; fi; (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "check: playwright exit code file",
+			"type": "shell",
+			"command": "if [ -f /tmp/playwright-exit ]; then echo -n 'exit='; cat /tmp/playwright-exit; else echo 'no /tmp/playwright-exit file'; fi",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup: kill server 8080",
+			"type": "shell",
+			"command": "(lsof -ti tcp:8080 | xargs -r kill -9) || true; echo 'killed 8080 listeners (if any)'",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin (logged)",
+			"type": "shell",
+			"command": "rm -f /tmp/playwright-exit /tmp/playwright-out.log /tmp/nimbus-server-e2e.log; (lsof -ti tcp:8080 | xargs -r kill -9) || true; PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & SERVER_PID=$!; echo \"server pid=$SERVER_PID\"; for i in {1..160}; do if curl -sS http://localhost:8080/login >/dev/null 2>&1; then echo 'server ready'; break; fi; sleep 0.25; done; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test >/tmp/playwright-out.log 2>&1; EXIT_CODE=$?; echo $EXIT_CODE > /tmp/playwright-exit; echo \"playwright exit=$EXIT_CODE\"; tail -n 30 /tmp/playwright-out.log || true; (kill -9 $SERVER_PID 2>/dev/null || true); (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "check: e2e exit + tail",
+			"type": "shell",
+			"command": "if [ -f /tmp/playwright-exit ]; then echo -n 'exit='; cat /tmp/playwright-exit; else echo 'missing /tmp/playwright-exit'; fi; echo '--- tail playwright-out ---'; tail -n 25 /tmp/playwright-out.log || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: failing e2e details",
+			"type": "shell",
+			"command": "echo 'exit='$(cat /tmp/playwright-exit 2>/dev/null || echo '?'); echo '--- last 120 lines ---'; tail -n 120 /tmp/playwright-out.log || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: grep playwright errors",
+			"type": "shell",
+			"command": "echo '--- errors (first 80 matches) ---'; grep -n \"Error:|expect\\(\" -n /tmp/playwright-out.log | head -n 80 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: grep playwright errors (fixed)",
+			"type": "shell",
+			"command": "echo '--- errors (first 120 matches) ---'; grep -nE \"Error:|expect\\\\(\" /tmp/playwright-out.log | head -n 120 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: server log errors",
+			"type": "shell",
+			"command": "echo '--- server log error scan (last 200 lines) ---'; tail -n 200 /tmp/nimbus-server-e2e.log | egrep -i \"error|prisma|connect|ECONN|DATABASE_URL|failed\" || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: server 4xx/5xx in log",
+			"type": "shell",
+			"command": "echo '--- recent non-2xx responses ---'; tail -n 500 /tmp/nimbus-server-e2e.log | egrep 'statusCode\":(4|5)[0-9][0-9]' | tail -n 80 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: server log for admin users/orders",
+			"type": "shell",
+			"command": "echo '--- admin users requests ---'; grep -n \"\\\"path\\\":\\\"/api/admin/users\\\"\" /tmp/nimbus-server-e2e.log | tail -n 40 || true; echo '--- orders requests ---'; grep -n \"\\\"path\\\":\\\"/api/admin/orders\" /tmp/nimbus-server-e2e.log | tail -n 40 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: search admin users hits",
+			"type": "shell",
+			"command": "grep -n \"\\\"path\\\":\\\"/api/admin/users\\\"\" /tmp/nimbus-server-e2e.log | head -n 50 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: show failing section (admin users)",
+			"type": "shell",
+			"command": "nl -ba /tmp/playwright-out.log | sed -n '120,210p'",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: excerpt around first failure",
+			"type": "shell",
+			"command": "sed -n '130,175p' /tmp/playwright-out.log | cat",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: extract admin-users-load failure block",
+			"type": "shell",
+			"command": "LINE=$(grep -n \"admins: user list loads\" /tmp/playwright-out.log | head -n 1 | cut -d: -f1); if [ -z \"$LINE\" ]; then echo 'not found'; exit 0; fi; START=$((LINE)); END=$((LINE+120)); echo \"showing lines $START-$END\"; sed -n \"${START},${END}p\" /tmp/playwright-out.log | cat",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin (logged, cookies lax)",
+			"type": "shell",
+			"command": "rm -f /tmp/playwright-exit /tmp/playwright-out.log /tmp/nimbus-server-e2e.log; (lsof -ti tcp:8080 | xargs -r kill -9) || true; COOKIE_SAMESITE=lax PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & SERVER_PID=$!; echo \"server pid=$SERVER_PID\"; for i in {1..160}; do if curl -sS http://localhost:8080/login >/dev/null 2>&1; then echo 'server ready'; break; fi; sleep 0.25; done; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test >/tmp/playwright-out.log 2>&1; EXIT_CODE=$?; echo $EXIT_CODE > /tmp/playwright-exit; echo \"playwright exit=$EXIT_CODE\"; tail -n 25 /tmp/playwright-out.log || true; (kill -9 $SERVER_PID 2>/dev/null || true); (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "check: e2e exit (cookies lax run)",
+			"type": "shell",
+			"command": "if [ -f /tmp/playwright-exit ]; then echo -n 'exit='; cat /tmp/playwright-exit; else echo 'missing /tmp/playwright-exit'; fi; echo '--- last 40 playwright lines ---'; tail -n 40 /tmp/playwright-out.log || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: check running processes",
+			"type": "shell",
+			"command": "pgrep -fl \"playwright|node.*playwright\" || true; pgrep -fl \"ts-node-dev\" || true; lsof -ti tcp:8080 || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: inspect login cookies",
+			"type": "shell",
+			"command": "curl -sS -i -X POST http://localhost:8080/admin/login -H 'content-type: application/json' --data '{\"email\":\"e2e-admin@example.com\",\"password\":\"e2e-password\"}' | sed -n '1,40p'",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup: stop any dev server",
+			"type": "shell",
+			"command": "(lsof -ti tcp:8080 | xargs -r kill -9) || true; pkill -f ts-node-dev || true; echo 'stopped servers'",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "verify: e2e admin (logged after cookie fix)",
+			"type": "shell",
+			"command": "rm -f /tmp/playwright-exit /tmp/playwright-out.log /tmp/nimbus-server-e2e.log; (lsof -ti tcp:8080 | xargs -r kill -9) || true; PORT=8080 npx -y pnpm -C server dev >/tmp/nimbus-server-e2e.log 2>&1 & SERVER_PID=$!; echo \"server pid=$SERVER_PID\"; for i in {1..160}; do if curl -sS http://localhost:8080/login >/dev/null 2>&1; then echo 'server ready'; break; fi; sleep 0.25; done; E2E_BASE_URL=http://localhost:8080 E2E_ADMIN_EMAIL=e2e-admin@example.com E2E_ADMIN_PASSWORD=e2e-password E2E_ADMIN_SECONDARY_EMAIL=e2e-editor@example.com E2E_ADMIN_SECONDARY_PASSWORD=e2e-editor-pass npx -y pnpm -C apps/admin exec playwright test >/tmp/playwright-out.log 2>&1; EXIT_CODE=$?; echo $EXIT_CODE > /tmp/playwright-exit; echo \"playwright exit=$EXIT_CODE\"; tail -n 30 /tmp/playwright-out.log || true; (kill -9 $SERVER_PID 2>/dev/null || true); (lsof -ti tcp:8080 | xargs -r kill -9) || true; exit $EXIT_CODE",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "check: e2e exit after cookie fix",
+			"type": "shell",
+			"command": "if [ -f /tmp/playwright-exit ]; then echo -n 'exit='; cat /tmp/playwright-exit; else echo 'missing /tmp/playwright-exit'; fi; echo '--- last 60 lines ---'; tail -n 60 /tmp/playwright-out.log || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "debug: status of e2e run",
+			"type": "shell",
+			"command": "echo 'exitfile:'; ls -lah /tmp/playwright-exit 2>/dev/null || echo 'none'; echo '8080:'; lsof -ti tcp:8080 || true; echo 'ts-node-dev pids:'; pgrep -fl ts-node-dev || true; echo 'playwright pids:'; pgrep -fl playwright || true",
+			"isBackground": false,
+			"group": "test"
 		}
 	]
 }

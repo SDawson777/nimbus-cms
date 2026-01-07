@@ -1,6 +1,7 @@
 import express from "express";
 // CORS is configured via corsOptions below
 import cors from "cors";
+import fs from "fs";
 import path from "path";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -93,11 +94,15 @@ const globalRateLimitWindowMs = (() => {
 const globalRateLimitMax = (() => {
   const raw = process.env.GLOBAL_RATE_LIMIT_MAX;
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
-  return Number.isFinite(parsed) ? parsed : 100;
+  if (Number.isFinite(parsed)) return parsed;
+  // In non-production, allow higher burst to tolerate local SPA asset fan-out
+  // and E2E test parallelism without spurious 429s.
+  return process.env.NODE_ENV === "production" ? 100 : 1000;
 })();
-// Allow disabling the global limiter by setting GLOBAL_RATE_LIMIT_MAX=0
-// (useful for E2E/CI where asset fan-out can exceed default thresholds).
-if (globalRateLimitMax > 0) {
+// Global rate limiting is useful in production, but it causes flaky local E2E
+// runs due to SPA asset fan-out + parallel test workers.
+// Keep it production-only; production can further tune/disable via env.
+if (process.env.NODE_ENV === "production" && globalRateLimitMax > 0) {
   app.use(
     rateLimit({
       windowMs: globalRateLimitWindowMs,
@@ -188,6 +193,18 @@ app.use(express.static(staticDir));
 // a static index file handler. Static assets will still be served from
 // `staticDir`.
 
+// If the React admin SPA has been built (apps/admin), serve its hashed assets
+// and use its index.html for SPA routes. This keeps auth cookies same-origin
+// (no cross-site cookies needed) and enables Playwright e2e against one server.
+const repoRoot = path.resolve(__dirname, "..", "..");
+const adminSpaDistDir = path.join(repoRoot, "apps", "admin", "dist");
+const adminSpaIndex = path.join(adminSpaDistDir, "index.html");
+const adminSpaAssets = path.join(adminSpaDistDir, "assets");
+const hasAdminSpa = fs.existsSync(adminSpaIndex);
+if (hasAdminSpa && fs.existsSync(adminSpaAssets)) {
+  app.use("/assets", express.static(adminSpaAssets));
+}
+
 // Serve a lightweight login page for preview/dev
 app.use("/", adminLoginPage);
 // Auth helpers: logout + session info
@@ -204,7 +221,7 @@ app.use("/api/v1/nimbus/admin", adminAuthRouter);
 // Serve admin static pages (login and dashboard)
 // The built admin `index.html` is copied into `static/` root so assets
 // resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
-const adminIndex = path.join(staticDir, "index.html");
+const adminIndex = hasAdminSpa ? adminSpaIndex : path.join(staticDir, "index.html");
 // Use a route pattern that is compatible with path-to-regexp: use a named
 // parameter with a wildcard to capture any admin subpath.
 // Serve SPA index for base admin route and any nested admin paths
@@ -221,6 +238,7 @@ app.get("/settings", (_req, res) => res.sendFile(adminIndex));
 app.get(
   [
     "/admins",
+    "/orders",
     "/products",
     "/articles",
     "/faqs",

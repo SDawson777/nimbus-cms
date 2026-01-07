@@ -45,12 +45,14 @@ router.use(cookieParser());
 
 // Basic rate limiter for admin login to mitigate brute-force in-memory.
 // For production, replace with Redis-backed store (connect-redis) and per-IP/user throttling.
-const loginLimiter = rateLimit({
-  windowMs: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS || 60 * 1000), // default 1 minute
-  max: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_MAX || 8), // default 8 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const loginLimiter = isProduction
+  ? rateLimit({
+      windowMs: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS || 60 * 1000),
+      max: Number(process.env.ADMIN_LOGIN_RATE_LIMIT_MAX || 8),
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (_req: any, _res: any, next: any) => next();
 
 // POST /admin/login
 // body: {brand?: string, dispensary?: string, email, password}

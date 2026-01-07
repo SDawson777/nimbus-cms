@@ -11,6 +11,8 @@ import {
 import { portableTextToHtml } from "../lib/portableText";
 import { logger } from "../lib/logger";
 import bannerRouter from "./admin/banner";
+import getPrisma from "../lib/prisma";
+import { OrderStatus } from "@prisma/client";
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -197,6 +199,16 @@ function resolveNumber(values: Array<any>, fallback: number): number {
     if (typeof num === "number") return num;
   }
   return fallback;
+}
+
+function parseIsoDateOnly(value: any): Date | null {
+  if (value === undefined || value === null || value === "") return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  // Accept YYYY-MM-DD; treat as local midnight.
+  const d = new Date(str);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
 }
 
 function buildAnalyticsCacheKey(admin: any, query: any) {
@@ -1410,6 +1422,156 @@ adminRouter.get("/stores", requireRole("VIEWER"), async (req, res) => {
     res.json(items || []);
   } catch (err) {
     req.log.error("admin.stores.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// --- Orders (DB-backed, read-only) ---
+// GET /api/admin/orders/stores
+// Returns DB stores for order filtering.
+adminRouter.get("/orders/stores", requireRole("VIEWER"), async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const tenant = String((req.query as any).tenant || "").trim();
+    const stores = await prisma.store.findMany({
+      where: tenant ? { tenant: { slug: tenant } } : undefined,
+      select: { id: true, name: true, slug: true },
+      orderBy: { name: "asc" },
+    });
+    res.json({
+      stores,
+      sourceOfTruth: "Nimbus database",
+      canUpdateStatus: false,
+    });
+  } catch (err) {
+    req.log.error("admin.orders.stores_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/orders
+// Query params:
+// - status: OrderStatus (or comma-separated list)
+// - storeId: UUID
+// - from: YYYY-MM-DD (inclusive)
+// - to: YYYY-MM-DD (inclusive)
+adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
+  try {
+    const prisma = getPrisma();
+
+    const tenant = String((req.query as any).tenant || "").trim();
+
+    const statusRaw = String((req.query as any).status || "").trim();
+    const storeId = String((req.query as any).storeId || "").trim();
+    const from = parseIsoDateOnly((req.query as any).from);
+    const to = parseIsoDateOnly((req.query as any).to);
+
+    const take = Math.min(
+      Math.max(resolveNumber([(req.query as any).limit], 100), 1),
+      500,
+    );
+
+    const where: any = {};
+    if (storeId) where.storeId = storeId;
+    if (tenant) where.store = { tenant: { slug: tenant } };
+
+    if (statusRaw) {
+      const parts = statusRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowed = new Set(Object.values(OrderStatus));
+      const statuses = parts.filter((s) => allowed.has(s as any)) as any[];
+      if (statuses.length === 1) where.status = statuses[0];
+      else if (statuses.length > 1) where.status = { in: statuses };
+    }
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = from;
+      if (to) {
+        // inclusive end-of-day
+        const end = new Date(to);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take,
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+        store: { select: { id: true, name: true, slug: true } },
+        _count: { select: { items: true } },
+      },
+    });
+
+    res.json({
+      orders: orders.map((o) => ({
+        id: o.id,
+        status: o.status,
+        total: o.total,
+        createdAt: o.createdAt,
+        updatedAt: o.updatedAt,
+        userId: o.userId,
+        storeId: o.storeId,
+        user: o.user,
+        store: o.store,
+        itemCount: (o as any)._count?.items ?? 0,
+      })),
+      canUpdateStatus: false,
+      sourceOfTruth: "Nimbus database",
+    });
+  } catch (err) {
+    req.log.error("admin.orders.list_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/orders/:id
+adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const id = String(req.params.id || "").trim();
+    if (!id) return res.status(400).json({ error: "MISSING_ID" });
+
+    const tenant = String((req.query as any).tenant || "").trim();
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+        store: { select: { id: true, name: true, slug: true } },
+        items: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            product: { select: { id: true, name: true, slug: true } },
+            variant: { select: { id: true, name: true, sku: true } },
+          },
+        },
+      },
+    });
+
+    if (!order) return res.status(404).json({ error: "NOT_FOUND" });
+
+    if (tenant && (order as any)?.store?.slug) {
+      const scopedStore = await prisma.store.findFirst({
+        where: { id: (order as any).storeId, tenant: { slug: tenant } },
+        select: { id: true },
+      });
+      if (!scopedStore) return res.status(404).json({ error: "NOT_FOUND" });
+    }
+
+    res.json({
+      order,
+      canUpdateStatus: false,
+      sourceOfTruth:
+        "Read-only in Admin. Status is the system-of-record value from Nimbus order ingestion (and/or POS integration when enabled).",
+    });
+  } catch (err) {
+    req.log.error("admin.orders.detail_failed", err);
     res.status(500).json({ error: "FAILED" });
   }
 });

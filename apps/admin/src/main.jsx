@@ -20,6 +20,7 @@ import AnalyticsSettings from "./pages/AnalyticsSettings";
 import Settings from "./pages/Settings";
 import ThemePage from "./pages/Theme";
 import Personalization from "./pages/Personalization";
+import Orders from "./pages/Orders";
 import { AdminProvider, useAdmin } from "./lib/adminContext";
 import { TenantProvider, WorkspaceSelector } from "./lib/tenantContext";
 import { DatasetProvider, DatasetSelector } from "./lib/datasetContext";
@@ -50,6 +51,7 @@ function AppShell() {
       { path: "/analytics", label: "Analytics" },
       { path: "/settings", label: "Settings" },
       { path: "/compliance", label: "Compliance" },
+      { path: "/orders", label: "Orders" },
       { path: "/products", label: "Products" },
       { path: "/articles", label: "Articles" },
       { path: "/faqs", label: "FAQs" },
@@ -203,6 +205,16 @@ function AppShell() {
                 path="/admins"
                 element={
                   <ProtectedRoute admin={admin} loading={loading} element={<Admins />} />
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute
+                    admin={admin}
+                    loading={loading}
+                    element={<Orders />}
+                  />
                 }
               />
               <Route
