@@ -70,11 +70,12 @@ async function main() {
       create: {
         id: `${t.slug}-${storesData[i].slug}`,
         tenantId: t.id,
+        slug: storesData[i].slug,
         name: storesData[i].name,
-        address: "",
+        address1: "",
         city: "",
         state: "",
-        zip: "",
+        postalCode: "",
       },
     });
     stores.push(s);

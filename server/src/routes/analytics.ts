@@ -9,6 +9,9 @@ import getPrisma from '../lib/prisma';
 const router = express.Router();
 const prisma = getPrisma();
 
+type OrdersByDayRow = { date: string | Date; count: number };
+type RevenueByDayRow = { date: string | Date; revenue: number | null };
+
 /**
  * GET /api/v1/nimbus/analytics/:workspace/overview
  * Dashboard overview metrics
@@ -18,7 +21,7 @@ router.get('/:workspace/overview', async (req, res) => {
     const { workspace } = req.params;
     const { period = '30' } = req.query; // days
 
-    const daysAgo = parseInt(period);
+    const daysAgo = Number.parseInt(String(period), 10);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
 
@@ -116,7 +119,7 @@ router.get('/:workspace/overview', async (req, res) => {
       }),
       
       // Orders by day
-      prisma.$queryRaw`
+      prisma.$queryRaw<OrdersByDayRow[]>`
         SELECT 
           DATE("createdAt") as date,
           COUNT(*)::int as count
@@ -138,7 +141,7 @@ router.get('/:workspace/overview', async (req, res) => {
       }),
       
       // Revenue by day
-      prisma.$queryRaw`
+      prisma.$queryRaw<RevenueByDayRow[]>`
         SELECT 
           DATE("createdAt") as date,
           SUM(total)::float as revenue
@@ -182,16 +185,16 @@ router.get('/:workspace/overview', async (req, res) => {
     // Calculate trends
     const revenueCurrent = totalRevenue._sum.total || 0;
     const revenuePrev = prevRevenue._sum.total || 0;
-    const revenueTrend = revenuePrev > 0 
-      ? ((revenueCurrent - revenuePrev) / revenuePrev * 100).toFixed(1)
+    const revenueTrend = revenuePrev > 0
+      ? ((revenueCurrent - revenuePrev) / revenuePrev * 100)
       : 0;
 
     const ordersTrend = prevOrders > 0
-      ? ((totalOrders - prevOrders) / prevOrders * 100).toFixed(1)
+      ? ((totalOrders - prevOrders) / prevOrders * 100)
       : 0;
 
     const customersTrend = prevCustomers > 0
-      ? ((totalCustomers - prevCustomers) / prevCustomers * 100).toFixed(1)
+      ? ((totalCustomers - prevCustomers) / prevCustomers * 100)
       : 0;
 
     // Format response
@@ -205,18 +208,18 @@ router.get('/:workspace/overview', async (req, res) => {
         revenue: {
           current: revenueCurrent,
           previous: revenuePrev,
-          trend: parseFloat(revenueTrend),
+          trend: Number(revenueTrend.toFixed(1)),
           formatted: `$${revenueCurrent.toFixed(2)}`
         },
         orders: {
           current: totalOrders,
           previous: prevOrders,
-          trend: parseFloat(ordersTrend)
+          trend: Number(ordersTrend.toFixed(1))
         },
         customers: {
           current: totalCustomers,
           previous: prevCustomers,
-          trend: parseFloat(customersTrend)
+          trend: Number(customersTrend.toFixed(1))
         },
         products: {
           current: totalProducts
@@ -232,7 +235,7 @@ router.get('/:workspace/overview', async (req, res) => {
         })),
         revenueByDay: revenueByDay.map(row => ({
           date: row.date,
-          revenue: parseFloat(row.revenue || 0)
+          revenue: Number(row.revenue ?? 0)
         })),
         ordersByStatus: ordersByStatus.map(group => ({
           status: group.status,
@@ -261,10 +264,11 @@ router.get('/:workspace/overview', async (req, res) => {
 
     res.json({ success: true, data: analytics });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Analytics overview error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch analytics', 
-      details: error.message 
+      details: message 
     });
   }
 });
@@ -303,12 +307,12 @@ router.get('/:workspace/products', async (req, res) => {
         }
       },
       orderBy: { purchasesLast30d: 'desc' },
-      take: parseInt(limit)
+      take: Number.parseInt(String(limit), 10)
     });
 
     const formatted = products.map(p => {
       const avgRating = p.reviews.length > 0
-        ? (p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length).toFixed(1)
+        ? (p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length)
         : 0;
 
       return {
@@ -322,7 +326,7 @@ router.get('/:workspace/products', async (req, res) => {
         sales: p.purchasesLast30d || 0,
         revenue: ((p.purchasesLast30d || 0) * p.price).toFixed(2),
         reviews: p._count.reviews,
-        avgRating: parseFloat(avgRating),
+        avgRating: Number(avgRating.toFixed(1)),
         imageUrl: p.imageUrl
       };
     });
@@ -343,7 +347,7 @@ router.get('/:workspace/stores', async (req, res) => {
     const { workspace } = req.params;
     const { period = '30' } = req.query;
 
-    const daysAgo = parseInt(period as string);
+    const daysAgo = Number.parseInt(String(period), 10);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
 
