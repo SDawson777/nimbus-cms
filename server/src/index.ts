@@ -31,6 +31,7 @@ import adminLoginPage from "./routes/adminLoginPage";
 import adminLogoutRouter from "./routes/adminLogout";
 import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
+import analyticsDataRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
@@ -291,8 +292,11 @@ app.use(
 // Prometheus metrics endpoint
 app.get("/metrics", metricsHandler());
 
-// Analytics endpoint (collect events)
+// Analytics event collection endpoint (existing)
 app.use("/analytics", analyticsRouter);
+
+// Analytics data endpoints (new - requires admin)
+app.use("/api/v1/nimbus/analytics", requireAdmin, analyticsDataRouter);
 
 // AI chat endpoint (protected by RBAC)
 app.use("/api/v1/nimbus/ai", aiRouter);

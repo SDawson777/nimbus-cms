@@ -1,165 +1,447 @@
-import { Router } from "express";
-import rateLimit from "express-rate-limit";
-import { logger } from "../lib/logger";
-import { z } from "zod";
-import { createClient } from "@sanity/client";
-import crypto from "crypto";
+/**
+ * Analytics API Routes
+ * Enterprise-grade analytics data endpoints
+ */
 
-export const analyticsRouter = Router();
+import express, { Request, Response } from 'express';
+import getPrisma from '../lib/prisma';
 
-const ingestKeys = (process.env.ANALYTICS_INGEST_KEY || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-const ingestKeySet = new Set(ingestKeys);
+const router = express.Router();
+const prisma = getPrisma();
 
-const fallbackWindowMs = Number(
-  process.env.ANALYTICS_FALLBACK_RATE_WINDOW_MS || 60 * 1000,
-);
-const fallbackMax = Number(process.env.ANALYTICS_FALLBACK_RATE_MAX || 120);
-const fallbackBuckets: Map<string, { count: number; reset: number }> =
-  new Map();
-
-function allowAnalyticsRequest(key: string, req: any) {
-  const ip =
-    req.ip ||
-    req.headers["x-forwarded-for"] ||
-    req.connection?.remoteAddress ||
-    "unknown";
-  const bucketKey = `${key}:${ip}`;
-  const now = Date.now();
-  const bucket = fallbackBuckets.get(bucketKey);
-  if (!bucket || now > bucket.reset) {
-    fallbackBuckets.set(bucketKey, { count: 1, reset: now + fallbackWindowMs });
-    return true;
-  }
-  if (bucket.count >= fallbackMax) return false;
-  bucket.count += 1;
-  return true;
-}
-
-analyticsRouter.use((req, res, next) => {
-  if (!ingestKeySet.size) {
-    logger.error("ANALYTICS_INGEST_KEY not configured");
-    return res
-      .status(503)
-      .json({ error: "ANALYTICS_INGEST_KEY_NOT_CONFIGURED" });
-  }
-  const providedKey = String(req.header("X-Analytics-Key") || "");
-  if (!providedKey || !ingestKeySet.has(providedKey)) {
-    return res.status(401).json({ error: "INVALID_ANALYTICS_KEY" });
-  }
-  const signature = String(req.header("X-Analytics-Signature") || "");
-  const rawBody: Buffer =
-    (req as any).rawBody || Buffer.from(JSON.stringify(req.body || {}));
-  const expectedSignature = crypto
-    .createHmac("sha256", providedKey)
-    .update(rawBody)
-    .digest("hex");
-  if (signature !== expectedSignature) {
-    return res.status(401).json({ error: "INVALID_ANALYTICS_SIGNATURE" });
-  }
-  if (!allowAnalyticsRequest(providedKey, req)) {
-    return res.status(429).json({ error: "RATE_LIMITED" });
-  }
-  return next();
-});
-
-// Configurable rate limiter for analytics events (protects the Sanity write endpoint)
-const analyticsLimiter = rateLimit({
-  windowMs: Number(process.env.ANALYTICS_RATE_LIMIT_WINDOW_MS || 60 * 1000),
-  max: Number(process.env.ANALYTICS_RATE_LIMIT_MAX || 60),
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// POST /analytics/event
-// Body: { type: 'view'|'click', contentType: 'article'|'faq'|'legal'|'product', contentSlug: string }
-analyticsRouter.post("/event", analyticsLimiter, async (req, res) => {
+/**
+ * GET /api/v1/nimbus/analytics/:workspace/overview
+ * Dashboard overview metrics
+ */
+router.get('/:workspace/overview', async (req, res) => {
   try {
-    const body = z
-      .object({
-        type: z.enum(["view", "click"]),
-        contentType: z.enum(["article", "faq", "legal", "product"]),
-        contentSlug: z.string(),
-        contentId: z.string().optional(),
-        brandSlug: z.string().optional(),
-        storeSlug: z.string().optional(),
-      })
-      .parse(req.body);
+    const { workspace } = req.params;
+    const { period = '30' } = req.query; // days
 
-    const client = createClient({
-      projectId:
-        process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
-      dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
-      apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
-      token:
-        process.env.SANITY_API_TOKEN ||
-        process.env.SANITY_AUTH_TOKEN ||
-        process.env.SANITY_TOKEN,
-      useCdn: false,
+    const daysAgo = parseInt(period);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysAgo);
+
+    // Get tenant
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: workspace },
+      include: { stores: true }
     });
 
-    // Use a deterministic _id so repeated events for the same content map to the same metric doc.
-    // sanitize slug by replacing / with - for safety
-    const safeSlug = String(body.contentSlug).replace(/[^a-zA-Z0-9-_.]/g, "-");
-    // Use a deterministic id that includes optional brand/store so metrics are scoped safely
-    const brandPart = body.brandSlug ? `-brand-${String(body.brandSlug)}` : "";
-    const storePart = body.storeSlug ? `-store-${String(body.storeSlug)}` : "";
-    const id = `contentMetric-${body.contentType}${brandPart}${storePart}-${safeSlug}`;
-
-    const now = new Date().toISOString();
-
-    // Ensure aggregate metric exists and increment
-    await client.createIfNotExists({
-      _id: id,
-      _type: "contentMetric",
-      contentType: body.contentType,
-      contentSlug: body.contentSlug,
-      contentId: body.contentId || undefined,
-      brandSlug: body.brandSlug || undefined,
-      storeSlug: body.storeSlug || undefined,
-      views: 0,
-      clickThroughs: 0,
-      lastUpdated: now,
-    });
-
-    // Patch and increment the aggregate counter
-    const patch = client.patch(id).set({ lastUpdated: now });
-    if (body.type === "view") patch.inc({ views: 1 });
-    else patch.inc({ clickThroughs: 1 });
-    const updated = await patch.commit({ autoGenerateArrayKeys: true });
-
-    // Also write a daily bucket metric (one doc per day) so we can compute recent trends
-    const day = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const dailyId = `contentMetricDaily-${body.contentType}${brandPart}${storePart}-${day}-${safeSlug}`;
-    const dayDoc = {
-      _id: dailyId,
-      _type: "contentMetricDaily",
-      date: `${day}T00:00:00Z`,
-      contentType: body.contentType,
-      contentSlug: body.contentSlug,
-      brandSlug: body.brandSlug || undefined,
-      storeSlug: body.storeSlug || undefined,
-      views: 0,
-      clickThroughs: 0,
-    };
-    await client.createIfNotExists(dayDoc);
-    const dayPatch = client.patch(dailyId).set({ date: dayDoc.date });
-    if (body.type === "view") dayPatch.inc({ views: 1 });
-    else dayPatch.inc({ clickThroughs: 1 });
-    await dayPatch.commit({ autoGenerateArrayKeys: true });
-
-    res.status(200).json({ ok: true, metric: updated });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ error: "INVALID_ANALYTICS_EVENT", details: err.issues });
+    if (!tenant) {
+      return res.status(404).json({ error: 'Workspace not found' });
     }
-    logger.error("analytics event failed", err);
-    res.status(500).json({ error: "FAILED" });
+
+    const storeIds = tenant.stores.map(s => s.id);
+
+    // Parallel queries for performance
+    const [
+      totalRevenue,
+      totalOrders,
+      totalCustomers,
+      totalProducts,
+      recentOrders,
+      topProducts,
+      ordersByDay,
+      ordersByStatus,
+      revenueByDay
+    ] = await Promise.all([
+      // Total revenue in period
+      prisma.order.aggregate({
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: startDate },
+          status: { in: ['PAID', 'FULFILLED'] }
+        },
+        _sum: { total: true }
+      }),
+      
+      // Total orders
+      prisma.order.count({
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: startDate }
+        }
+      }),
+      
+      // Total customers
+      prisma.user.count({
+        where: {
+          tenantId: tenant.id,
+          role: 'CUSTOMER',
+          createdAt: { gte: startDate }
+        }
+      }),
+      
+      // Active products
+      prisma.product.count({
+        where: {
+          storeId: { in: storeIds },
+          isActive: true,
+          status: 'ACTIVE'
+        }
+      }),
+      
+      // Recent orders
+      prisma.order.findMany({
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: startDate }
+        },
+        include: {
+          user: { select: { name: true, email: true } },
+          store: { select: { name: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      }),
+      
+      // Top products by purchases
+      prisma.product.findMany({
+        where: {
+          storeId: { in: storeIds },
+          isActive: true
+        },
+        orderBy: { purchasesLast30d: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          brand: true,
+          type: true,
+          price: true,
+          purchasesLast30d: true,
+          imageUrl: true
+        }
+      }),
+      
+      // Orders by day
+      prisma.$queryRaw`
+        SELECT 
+          DATE("createdAt") as date,
+          COUNT(*)::int as count
+        FROM "Order"
+        WHERE "storeId" = ANY(${storeIds}::text[])
+          AND "createdAt" >= ${startDate}
+        GROUP BY DATE("createdAt")
+        ORDER BY date ASC
+      `,
+      
+      // Orders by status
+      prisma.order.groupBy({
+        by: ['status'],
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: startDate }
+        },
+        _count: { id: true }
+      }),
+      
+      // Revenue by day
+      prisma.$queryRaw`
+        SELECT 
+          DATE("createdAt") as date,
+          SUM(total)::float as revenue
+        FROM "Order"
+        WHERE "storeId" = ANY(${storeIds}::text[])
+          AND "createdAt" >= ${startDate}
+          AND status IN ('PAID', 'FULFILLED')
+        GROUP BY DATE("createdAt")
+        ORDER BY date ASC
+      `
+    ]);
+
+    // Calculate previous period for comparison
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - daysAgo);
+    
+    const [prevRevenue, prevOrders, prevCustomers] = await Promise.all([
+      prisma.order.aggregate({
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: prevStartDate, lt: startDate },
+          status: { in: ['PAID', 'FULFILLED'] }
+        },
+        _sum: { total: true }
+      }),
+      prisma.order.count({
+        where: {
+          storeId: { in: storeIds },
+          createdAt: { gte: prevStartDate, lt: startDate }
+        }
+      }),
+      prisma.user.count({
+        where: {
+          tenantId: tenant.id,
+          role: 'CUSTOMER',
+          createdAt: { gte: prevStartDate, lt: startDate }
+        }
+      })
+    ]);
+
+    // Calculate trends
+    const revenueCurrent = totalRevenue._sum.total || 0;
+    const revenuePrev = prevRevenue._sum.total || 0;
+    const revenueTrend = revenuePrev > 0 
+      ? ((revenueCurrent - revenuePrev) / revenuePrev * 100).toFixed(1)
+      : 0;
+
+    const ordersTrend = prevOrders > 0
+      ? ((totalOrders - prevOrders) / prevOrders * 100).toFixed(1)
+      : 0;
+
+    const customersTrend = prevCustomers > 0
+      ? ((totalCustomers - prevCustomers) / prevCustomers * 100).toFixed(1)
+      : 0;
+
+    // Format response
+    const analytics = {
+      period: {
+        days: daysAgo,
+        start: startDate.toISOString(),
+        end: new Date().toISOString()
+      },
+      metrics: {
+        revenue: {
+          current: revenueCurrent,
+          previous: revenuePrev,
+          trend: parseFloat(revenueTrend),
+          formatted: `$${revenueCurrent.toFixed(2)}`
+        },
+        orders: {
+          current: totalOrders,
+          previous: prevOrders,
+          trend: parseFloat(ordersTrend)
+        },
+        customers: {
+          current: totalCustomers,
+          previous: prevCustomers,
+          trend: parseFloat(customersTrend)
+        },
+        products: {
+          current: totalProducts
+        },
+        avgOrderValue: {
+          current: totalOrders > 0 ? (revenueCurrent / totalOrders).toFixed(2) : 0
+        }
+      },
+      charts: {
+        ordersByDay: ordersByDay.map(row => ({
+          date: row.date,
+          count: row.count
+        })),
+        revenueByDay: revenueByDay.map(row => ({
+          date: row.date,
+          revenue: parseFloat(row.revenue || 0)
+        })),
+        ordersByStatus: ordersByStatus.map(group => ({
+          status: group.status,
+          count: group._count.id
+        }))
+      },
+      topProducts: topProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        type: p.type,
+        price: p.price,
+        sales: p.purchasesLast30d || 0,
+        revenue: ((p.purchasesLast30d || 0) * p.price).toFixed(2),
+        imageUrl: p.imageUrl
+      })),
+      recentOrders: recentOrders.map(o => ({
+        id: o.id,
+        total: o.total,
+        status: o.status,
+        customer: o.user?.name || o.user?.email || 'Guest',
+        store: o.store.name,
+        createdAt: o.createdAt
+      }))
+    };
+
+    res.json({ success: true, data: analytics });
+  } catch (error) {
+    console.error('Analytics overview error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch analytics', 
+      details: error.message 
+    });
   }
 });
 
-export default analyticsRouter;
+/**
+ * GET /api/v1/nimbus/analytics/:workspace/products
+ * Product performance metrics
+ */
+router.get('/:workspace/products', async (req, res) => {
+  try {
+    const { workspace } = req.params;
+    const { limit = 20 } = req.query;
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: workspace },
+      include: { stores: true }
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    const storeIds = tenant.stores.map(s => s.id);
+
+    const products = await prisma.product.findMany({
+      where: {
+        storeId: { in: storeIds },
+        isActive: true
+      },
+      include: {
+        _count: {
+          select: { reviews: true, orderItems: true }
+        },
+        reviews: {
+          select: { rating: true }
+        }
+      },
+      orderBy: { purchasesLast30d: 'desc' },
+      take: parseInt(limit)
+    });
+
+    const formatted = products.map(p => {
+      const avgRating = p.reviews.length > 0
+        ? (p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length).toFixed(1)
+        : 0;
+
+      return {
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        type: p.type,
+        category: p.category,
+        price: p.price,
+        status: p.status,
+        sales: p.purchasesLast30d || 0,
+        revenue: ((p.purchasesLast30d || 0) * p.price).toFixed(2),
+        reviews: p._count.reviews,
+        avgRating: parseFloat(avgRating),
+        imageUrl: p.imageUrl
+      };
+    });
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    console.error('Product analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch product analytics' });
+  }
+});
+
+/**
+ * GET /api/v1/nimbus/analytics/:workspace/stores
+ * Store-level analytics with engagement metrics for heatmap integration
+ */
+router.get('/:workspace/stores', async (req, res) => {
+  try {
+    const { workspace } = req.params;
+    const { period = '30' } = req.query;
+
+    const daysAgo = parseInt(period as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysAgo);
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: workspace },
+      include: { stores: true }
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Get analytics for each store
+    const storeAnalytics = await Promise.all(
+      tenant.stores.map(async (store) => {
+        const [orderCount, revenue, customerCount] = await Promise.all([
+          prisma.order.count({
+            where: {
+              storeId: store.id,
+              createdAt: { gte: startDate },
+              status: { in: ['PAID', 'FULFILLED'] }
+            }
+          }),
+          prisma.order.aggregate({
+            where: {
+              storeId: store.id,
+              createdAt: { gte: startDate },
+              status: { in: ['PAID', 'FULFILLED'] }
+            },
+            _sum: { total: true }
+          }),
+          prisma.order.groupBy({
+            by: ['userId'],
+            where: {
+              storeId: store.id,
+              createdAt: { gte: startDate }
+            }
+          })
+        ]);
+
+        const totalRevenue = revenue._sum.total || 0;
+        const uniqueCustomers = customerCount.length;
+
+        // Calculate engagement score (0-1000 scale for heatmap)
+        // Weighted: 40% revenue, 40% orders, 20% customers
+        const revenueScore = Math.min(1000, totalRevenue / 100);
+        const orderScore = Math.min(1000, orderCount * 10);
+        const customerScore = Math.min(1000, uniqueCustomers * 20);
+        const engagement = Math.round(
+          (revenueScore * 0.4) + (orderScore * 0.4) + (customerScore * 0.2)
+        );
+
+        return {
+          id: store.id,
+          slug: store.slug,
+          name: store.name,
+          latitude: store.latitude,
+          longitude: store.longitude,
+          address: {
+            address1: store.address1,
+            city: store.city,
+            state: store.state,
+            postalCode: store.postalCode,
+            country: store.country
+          },
+          metrics: {
+            orders: orderCount,
+            revenue: totalRevenue,
+            customers: uniqueCustomers,
+            avgOrderValue: orderCount > 0 ? (totalRevenue / orderCount).toFixed(2) : 0
+          },
+          engagement, // For heatmap visualization
+          status: store.status
+        };
+      })
+    );
+
+    // Sort by engagement
+    const sorted = storeAnalytics.sort((a, b) => b.engagement - a.engagement);
+
+    res.json({
+      success: true,
+      data: {
+        stores: sorted,
+        summary: {
+          totalStores: sorted.length,
+          activeStores: sorted.filter(s => s.status === 'active').length,
+          totalOrders: sorted.reduce((sum, s) => sum + s.metrics.orders, 0),
+          totalRevenue: sorted.reduce((sum, s) => sum + s.metrics.revenue, 0),
+          topPerformer: sorted[0]?.name || null
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Store analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch store analytics' });
+  }
+});
+
+export { router as analyticsDataRouter };
+export default router;

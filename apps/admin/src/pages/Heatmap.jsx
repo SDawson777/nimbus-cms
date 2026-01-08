@@ -1,53 +1,30 @@
-import React, { useEffect, useState } from "react";
-import { t } from '../lib/i18n';
-import Card from "../design-system/Card";
-import Heatmap from "../components/Heatmap";
-import { apiJson, apiBaseUrl } from "../lib/api";
-
-const SAMPLE_STORES = [
-  {
-    storeSlug: "detroit-hq",
-    longitude: -83.0458,
-    latitude: 42.3314,
-    engagement: 42,
-    views: 980,
-    clickThroughs: 240,
-  },
-  {
-    storeSlug: "chicago-loop",
-    longitude: -87.6298,
-    latitude: 41.8781,
-    engagement: 37,
-    views: 860,
-    clickThroughs: 210,
-  },
-  {
-    storeSlug: "nyc-soho",
-    longitude: -74.006,
-    latitude: 40.7128,
-    engagement: 55,
-    views: 1120,
-    clickThroughs: 310,
-  },
-];
+import React, { useState } from 'react';
+import StoreHeatmap from '../components/StoreHeatmap';
+import StoreAnalyticsModal from '../components/StoreAnalyticsModal';
 
 export default function HeatmapPage() {
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [svgUrl, setSvgUrl] = useState(null);
+  const [selectedStore, setSelectedStore] = useState(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      try {
-        if (apiBaseUrl()) {
-          const { ok, data, aborted } = await apiJson(
-            "/api/admin/analytics/overview",
-            { signal: controller.signal },
-          );
-          if (
-            !aborted &&
-            !controller.signal.aborted &&
+  const handleStoreClick = (store) => {
+    setSelectedStore(store);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedStore(null);
+  };
+
+  return (
+    <div className="heatmap-page">
+      <StoreHeatmap onStoreClick={handleStoreClick} />
+      {selectedStore && (
+        <StoreAnalyticsModal 
+          store={selectedStore} 
+          onClose={handleCloseModal}
+        />
+      )}
+    </div>
+  );
+}
             ok &&
             data?.storeEngagement
           ) {
