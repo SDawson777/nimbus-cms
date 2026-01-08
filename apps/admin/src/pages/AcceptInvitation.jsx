@@ -67,80 +67,70 @@ export default function AcceptInvitation() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 480, margin: '4rem auto', padding: '2rem' }}>
-      <h2 style={{ marginTop: 0, textAlign: 'center' }}>Accept Admin Invitation</h2>
-      
-      {message && (
-        <div 
-          style={{ 
-            marginBottom: 16, 
-            padding: 12, 
-            borderRadius: 4,
-            backgroundColor: message.type === 'error' ? '#fee2e2' : '#d1fae5',
-            color: message.type === 'error' ? '#b91c1c' : '#065f46',
-            border: `1px solid ${message.type === 'error' ? '#fca5a5' : '#6ee7b7'}`,
-          }}
-        >
-          {message.text}
+    <div className="auth-shell">
+      <div className="auth-card card">
+        <div className="auth-header">
+          <p className="eyebrow">Nimbus Admin</p>
+          <h2 className="auth-title" style={{ textAlign: 'center' }}>
+            Accept Admin Invitation
+          </h2>
+          <p className="subdued" style={{ textAlign: 'center' }}>
+            Set a password to activate your admin account.
+          </p>
         </div>
-      )}
 
-      {!token ? (
-        <p style={{ textAlign: 'center', color: '#666' }}>
-          Invalid invitation link. Please contact your administrator.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <p style={{ color: '#666', fontSize: 14, textAlign: 'center' }}>
-            Set a password to activate your admin account
-          </p>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
-              style={{ width: '100%', padding: 8 }}
-              disabled={loading}
-            />
+        {message && (
+          <div className={message.type === 'error' ? 'auth-error' : 'pill'} style={{ whiteSpace: 'pre-wrap' }}>
+            {message.text}
           </div>
+        )}
 
-          <div>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter password"
-              style={{ width: '100%', padding: 8 }}
-              disabled={loading}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="primary" 
-            disabled={loading}
-            style={{ width: '100%', padding: 12 }}
-          >
-            {loading ? 'Creating Account...' : 'Activate Account'}
-          </button>
-
-          <p style={{ textAlign: 'center', fontSize: 12, color: '#666', marginTop: 8 }}>
-            Already have an account? <a href="/login">Sign in</a>
+        {!token ? (
+          <p className="subdued" style={{ textAlign: 'center' }}>
+            Invalid invitation link. Please contact your administrator.
           </p>
-        </form>
-      )}
+        ) : (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-field">
+              <span className="auth-label">Password</span>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </label>
+
+            <label className="auth-field">
+              <span className="auth-label">Confirm Password</span>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter password"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </label>
+
+            <div className="auth-actions" style={{ justifyContent: 'center' }}>
+              <button type="submit" className="btn" disabled={loading}>
+                {loading ? 'Creating Account...' : 'Activate Account'}
+              </button>
+            </div>
+
+            <div className="auth-links">
+              Already have an account? <a href="/login">Sign in</a>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
