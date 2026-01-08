@@ -1,6 +1,33 @@
 {
-  "installCommand": "pnpm install --frozen-lockfile",
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile --prefer-offline",
   "buildCommand": "cd apps/admin && pnpm run build",
   "outputDirectory": "apps/admin/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "framework": null,
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 }

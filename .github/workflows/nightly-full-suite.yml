@@ -1,0 +1,174 @@
+name: Nightly Full E2E Suite
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  full-e2e-suite:
+    name: Complete E2E Validation (All 36 Flows)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nimbus_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure pnpm on PATH
+        run: |
+          npm install -g pnpm@9
+          pnpm --version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers (all)
+        run: pnpm -w dlx playwright install chromium firefox webkit --with-deps
+
+      - name: Build server and admin
+        run: |
+          pnpm -C server build
+          VITE_NIMBUS_API_URL="http://localhost:8080" pnpm -C apps/admin build
+
+      - name: Setup test environment and start server
+        run: |
+          export SERVER_JWT_SECRET="test-jwt-secret-xxxxxxxxxxxxxxxxxxxxxxxx"
+          export JWT_SECRET="$SERVER_JWT_SECRET"
+          export E2E_ADMIN_EMAIL="e2e-admin@example.com"
+          export E2E_ADMIN_PASSWORD="e2e-password"
+          export E2E_ADMIN_SECONDARY_EMAIL="e2e-editor@example.com"
+          export E2E_ADMIN_SECONDARY_PASSWORD="e2e-editor-pass"
+          export E2E_ADMIN_SECONDARY_ROLE="EDITOR"
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nimbus_test"
+          export ADMIN_STORE="file"
+          export CORS_ORIGIN_ADMIN="http://localhost:8080"
+          export GLOBAL_RATE_LIMIT_MAX=10000
+          export GLOBAL_RATE_LIMIT_WINDOW_MS=600000
+          export ADMIN_GLOBAL_RATE_LIMIT_MAX=1000
+          export ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS=600000
+          export ADMIN_LOGIN_RATE_LIMIT_MAX=1000
+          export ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS=600000
+          export NODE_ENV=development
+
+          pnpm -C server run seed:e2e
+          pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
+          export ALLOW_INSECURE_DEMO_PASSWORDS=true
+          pnpm run seed
+
+          mkdir -p server/dist/config
+          cp -a server/config/admins.json server/dist/config/admins.json || true
+
+          nohup node server/dist/index.js > server.log 2>&1 &
+          echo $! > server.pid
+
+          mkdir -p server/static
+          cp -a apps/admin/dist/. server/static/
+
+          echo "E2E_BASE_URL=http://localhost:8080" >> $GITHUB_ENV
+          echo "SERVER_JWT_SECRET=${SERVER_JWT_SECRET}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_EMAIL=${E2E_ADMIN_EMAIL}" >> $GITHUB_ENV
+          echo "E2E_ADMIN_PASSWORD=${E2E_ADMIN_PASSWORD}" >> $GITHUB_ENV
+
+      - name: Wait for services
+        run: |
+          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
+            echo "Services failed to start. Dumping logs...";
+            tail -n 200 server.log || true;
+            exit 1
+          )
+
+      - name: Run all 36 E2E flows (3 workers, cross-browser)
+        working-directory: apps/admin
+        run: |
+          pnpm run test:e2e:all
+        timeout-minutes: 60
+
+      - name: Generate HTML report
+        if: always()
+        working-directory: apps/admin
+        run: npx playwright show-report --host 0.0.0.0 || true
+
+      - name: Upload complete evidence package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-evidence-package-${{ github.run_number }}
+          path: |
+            apps/admin/test-results/
+            apps/admin/playwright-report/
+            server.log
+          retention-days: 90
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-failure-screenshots
+          path: /tmp/flow*.png
+          retention-days: 14
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Nightly E2E Suite Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `## Nightly E2E Test Suite Failed
+            
+            **Run:** [#${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            **Date:** ${new Date().toISOString()}
+            **Branch:** ${context.ref}
+            **Commit:** ${context.sha}
+            
+            ### Action Required
+            1. Review the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            2. Download the evidence package artifact
+            3. Check failure screenshots
+            4. Review server logs
+            5. Fix failing tests and close this issue
+            
+            ### Evidence
+            - Complete test results available in artifacts
+            - Screenshots saved for failed tests
+            - Server logs attached
+            
+            **Auto-generated by nightly E2E workflow**`;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['bug', 'e2e-failure', 'nightly']
+            });
