@@ -32,7 +32,7 @@ const router = express.Router();
 // Simple weather proxy: forwards requests to configured weather API using server-side key
 router.get("/weather", async (req, res) => {
   try {
-    const { lat, lon, city } = req.query as Record<string, string>;
+    const { lat, lon, city, units } = req.query as Record<string, string>;
     const apiKey = process.env.OPENWEATHER_API_KEY || process.env.WEATHER_API_KEY;
     const baseUrl = process.env.OPENWEATHER_API_URL || process.env.WEATHER_API_URL || "https://api.openweathermap.org/data/2.5/weather";
 
@@ -50,6 +50,11 @@ router.get("/weather", async (req, res) => {
       return res.status(400).json({ error: "Provide either lat&lon or city query parameters" });
     }
     params.set("appid", apiKey);
+    
+    // Forward units parameter (imperial, metric, or standard/kelvin)
+    if (units) {
+      params.set("units", units);
+    }
 
     const url = `${baseUrl}?${params.toString()}`;
     const r = await fetch(url);
