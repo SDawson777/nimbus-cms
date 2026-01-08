@@ -104,7 +104,7 @@ h3 {
 .suite-title {
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 1.1rem;
 }
 .brand-meta {
@@ -113,15 +113,91 @@ h3 {
 }
 .brand-kicker {
   margin: 0;
-  color: #a5b4fc;
+  color: var(--text-secondary);
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.08em;
 }
 .brand-sub {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   font-weight: 600;
+}
+
+/* Auth pages (login/reset/invitation)
+   Keep styles token-based so they match the global theme. */
+.auth-shell {
+  min-height: calc(100vh - 120px);
+  display: grid;
+  place-items: center;
+  padding: 28px 16px 48px;
+}
+.auth-card {
+  width: min(560px, 100%);
+}
+.auth-header {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.auth-title {
+  margin: 0;
+}
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+.auth-field {
+  display: grid;
+  gap: 8px;
+}
+.auth-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.auth-password-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.auth-password-row input[type="password"],
+.auth-password-row input[type="text"] {
+  flex: 1;
+}
+.auth-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.auth-demo {
+  font-size: 12px;
+}
+.auth-error {
+  color: var(--error);
+  font-size: 13px;
+  font-weight: 600;
+}
+.auth-links {
+  text-align: center;
+  margin-top: 10px;
+}
+.auth-links a {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.auth-links a:hover {
+  color: var(--text-primary);
 }
 .header-actions {
   display: flex;

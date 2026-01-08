@@ -76,61 +76,67 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="card"
-      style={{ maxWidth: 520, margin: "5rem auto", padding: "28px" }}
-    >
-      <h2 style={{ marginBottom: 8 }}>Admin Login</h2>
-      <p style={{ marginTop: 0, color: "#9ca3af" }}>
-        Secure your workspace. Use the provided test credentials for buyer demos
-        or connect your SSO-backed admin endpoint.
-      </p>
-      <form onSubmit={submit} style={{ display: "grid", gap: "14px" }}>
-        <label style={{ display: "grid", gap: "6px" }}>
-          <span>{t('label_email')}</span>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={TEST_USER.email}
-            autoComplete="username"
-          />
-        </label>
-        <label style={{ display: "grid", gap: "6px" }}>
-          <span>{t('label_password')}</span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+    <div className="auth-shell">
+      <div className="auth-card card">
+        <div className="auth-header">
+          <p className="eyebrow">Nimbus Admin</p>
+          <h2 className="auth-title">Admin Login</h2>
+          <p className="subdued">
+            Secure your workspace. Use the provided demo credentials for buyer
+            testing or connect your SSO-backed admin endpoint.
+          </p>
+        </div>
+
+        <form onSubmit={submit} className="auth-form">
+          <label className="auth-field">
+            <span className="auth-label">{t("label_email")}</span>
             <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={TEST_USER.password}
-              autoComplete="current-password"
-              style={{ flex: 1 }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={TEST_USER.email}
+              autoComplete="username"
+              inputMode="email"
             />
-            <label style={{ fontSize: 12, color: "#6b7280", display: "flex", alignItems: "center", gap: 6 }}>
+          </label>
+
+          <label className="auth-field">
+            <span className="auth-label">{t("label_password")}</span>
+            <div className="auth-password-row">
               <input
-                type="checkbox"
-                checked={showPassword}
-                onChange={(e) => setShowPassword(e.target.checked)}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={TEST_USER.password}
+                autoComplete="current-password"
               />
-              <span>Show</span>
-            </label>
+              <label className="auth-show">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                />
+                <span>Show</span>
+              </label>
+            </div>
+          </label>
+
+          <div className="auth-actions">
+            <button type="submit" className="btn">
+              {t("sign_in")}
+            </button>
+            <div className="auth-demo pill">
+              {t("demo_user")}: <strong>{TEST_USER.email}</strong> /{" "}
+              <strong>{TEST_USER.password}</strong>
+            </div>
           </div>
-        </label>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button type="submit" className="primary">
-            {t('sign_in')}
-          </button>
-          <div style={{ fontSize: "12px", color: "#9ca3af" }}>
-            {t('demo_user')}: <strong>{TEST_USER.email}</strong> / <strong>{TEST_USER.password}</strong>
+
+          {error && <div className="auth-error">{error}</div>}
+
+          <div className="auth-links">
+            <Link to="/reset-password">Forgot password?</Link>
           </div>
-        </div>
-        {error && <div style={{ color: "#f87171" }}>{error}</div>}
-        <div style={{ textAlign: "center", marginTop: 12 }}>
-          <Link to="/reset-password" style={{ fontSize: 12, color: "#6b7280" }}>
-            Forgot password?
-          </Link>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
