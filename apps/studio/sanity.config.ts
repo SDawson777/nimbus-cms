@@ -13,34 +13,49 @@ const projectId =
   process.env.SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   "ygbu28p2";
-const dataset =
-  process.env.SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  "production";
 
 // For Sanity-hosted Studios (e.g. *.sanity.studio) the Studio is typically
 // served at the domain root. Allow overriding via env for reverse-proxied
 // deployments (e.g. hosting under /studio on an API domain).
 const basePath = process.env.SANITY_STUDIO_BASE_PATH || "/";
 
-export default defineConfig({
-  name: "nimbus-studio",
-  title: "Nimbus Cannabis OS CMS",
-  projectId,
-  dataset,
-  basePath,
-  plugins: [
-    deskTool(),
-    visionTool(),
-    // Enable the Studio dashboard and mount our custom widgets
-    dashboardTool({ widgets: dashboardConfig.widgets }),
-  ],
-  schema: {
-    // Single source of truth for content model
-    types: schemaTypes,
+// Define shared plugins for all workspaces
+const sharedPlugins = [
+  deskTool(),
+  visionTool(),
+  dashboardTool({ widgets: dashboardConfig.widgets }),
+];
+
+// Define shared schema for all workspaces
+const sharedSchema = {
+  types: schemaTypes,
+};
+
+// Define experimental actions based on preview token
+const experimentalActions = process.env[PREVIEW_TOKEN_ENV]
+  ? ["create", "update", "publish"]
+  : ["create", "update"];
+
+// Multi-workspace configuration for dataset switching
+export default defineConfig([
+  {
+    name: "demo",
+    title: "Demo (nimbus_demo)",
+    projectId,
+    dataset: "nimbus_demo",
+    basePath,
+    plugins: sharedPlugins,
+    schema: sharedSchema,
+    __experimental_actions: experimentalActions,
   },
-  // surface preview token to local dev if set
-  __experimental_actions: process.env[PREVIEW_TOKEN_ENV]
-    ? ["create", "update", "publish"]
-    : ["create", "update"],
-});
+  {
+    name: "preview",
+    title: "Preview (nimbus_preview)",
+    projectId,
+    dataset: "nimbus_preview",
+    basePath,
+    plugins: sharedPlugins,
+    schema: sharedSchema,
+    __experimental_actions: experimentalActions,
+  },
+]);

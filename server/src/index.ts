@@ -12,6 +12,7 @@ import swaggerUi from "swagger-ui-express";
 import { logger } from "./lib/logger";
 import adminAuthRouter from "./routes/adminAuth";
 import adminUsersRouter from "./routes/adminUsers";
+import datasetsRouter from "./routes/datasets";
 import { requireAdmin } from "./middleware/adminAuth";
 import {
   requireCsrfToken,
@@ -218,6 +219,8 @@ app.use("/admin", adminAuthRouter);
 // continue to work when they call `/api/v1/nimbus/admin/login` or
 // `/api/v1/nimbus/admin/me`.
 app.use("/api/v1/nimbus/admin", adminAuthRouter);
+// Datasets API - provides list of available Sanity datasets
+app.use("/api/datasets", datasetsRouter);
 // Serve admin static pages (login and dashboard)
 // The built admin `index.html` is copied into `static/` root so assets
 // resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
