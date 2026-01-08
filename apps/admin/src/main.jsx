@@ -10,6 +10,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 import Login from "./pages/Login";
+import AcceptInvitation from "./pages/AcceptInvitation";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Articles from "./pages/Articles";
@@ -181,6 +183,8 @@ function AppShell() {
           >
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/accept-invitation" element={<AcceptInvitation />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/dashboard"
                 element={

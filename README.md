@@ -91,11 +91,13 @@ curl -sS -b /tmp/nimbus-admin.cookies \
 ## Key features
 
 - Secure admin login with CSRF-protected API calls
+- Admin user management with email invitations and password reset
 - Multi-tenant workspace + dataset selectors
 - 2D analytics with motion-enhanced cards and charts (production default)
 - AI concierge (preview-safe messaging, API-backed responses when configured)
 - Legal + Data/AI usage panels for buyer transparency
 - Centralized API client, CSRF handling, and global error boundary in Admin
+- Email notifications via SendGrid integration
 
 ## Buyer Quickstart
 

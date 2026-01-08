@@ -161,6 +161,36 @@ model AdminUser {
   meta             Json?
 }
 
+model AdminInvitation {
+  id               String    @id @default(uuid())
+  email            String
+  token            String    @unique
+  role             AdminRole @default(EDITOR)
+  organizationSlug String?
+  brandSlug        String?
+  storeSlug        String?
+  invitedBy        String?
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  meta             Json?
+
+  @@index([email])
+  @@index([token])
+}
+
+model AdminPasswordReset {
+  id        String    @id @default(uuid())
+  adminId   String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([token])
+}
+
 model Product {
   id           String        @id @default(uuid())
   storeId      String

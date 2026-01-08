@@ -1,57 +1,228 @@
 import { Router, Request, Response } from "express";
-import { getAdminStore } from "../services/adminStore";
+import crypto from "crypto";
+import getPrisma from "../lib/prisma";
 import { requireRole } from "../middleware/requireRole";
+import { sendInvitationEmail } from "../lib/email";
 
 const router = Router();
 
 // Require elevated role for all admin-user operations
 router.use(requireRole("ORG_ADMIN"));
 
-// List admins (returns safe view)
-router.get("/", async (_req: Request, res: Response) => {
-  const store = getAdminStore();
-  const admins = await store.list();
-  res.json({ admins });
-});
-
-// Invite/create admin (simple: append to file)
-router.post("/invite", expressJsonHandler, async (req: Request, res: Response) => {
-  const { email, role = "EDITOR", organizationSlug, brandSlug, storeSlug } = req.body || {};
-  if (!email) return res.status(400).json({ error: "MISSING_EMAIL" });
+// List admins (returns safe view from database)
+router.get("/", async (req: any, res: Response) => {
   try {
-    const store = getAdminStore();
-    const admin = await store.invite({ email, role, organizationSlug, brandSlug, storeSlug } as any);
-    return res.status(201).json({ admin });
-  } catch (e: any) {
-    if (e?.code === 'ALREADY_EXISTS') return res.status(409).json({ error: 'ALREADY_EXISTS' });
-    return res.status(500).json({ error: 'STORE_FAILED' });
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+
+    const where: any = { deletedAt: null };
+    
+    // ORG_ADMIN can only see admins in their org
+    if (currentAdmin.role === "ORG_ADMIN" && currentAdmin.organizationSlug) {
+      where.organizationSlug = currentAdmin.organizationSlug;
+    }
+
+    const admins = await prisma.adminUser.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        organizationSlug: true,
+        brandSlug: true,
+        storeSlug: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: true,
+      },
+    });
+
+    res.json({ admins });
+  } catch (err) {
+    req.log?.error?.("admin.admin-users.list_failed", err);
+    res.status(500).json({ error: "FAILED" });
   }
 });
 
-// Update admin
-router.put("/:id", expressJsonHandler, async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updates = req.body || {};
+// Invite/create admin (database-backed with invitation tokens)
+router.post("/invite", expressJsonHandler, async (req: any, res: Response) => {
   try {
-    const store = getAdminStore();
-    const updated = await store.update(id, updates);
-    return res.json({ admin: updated });
-  } catch (e: any) {
-    if (e?.code === 'NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.status(500).json({ error: 'STORE_FAILED' });
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+
+    const { email, role, organizationSlug, brandSlug, storeSlug } = req.body;
+
+    if (!email || !role) {
+      return res.status(400).json({ error: "MISSING_FIELDS" });
+    }
+
+    // ORG_ADMIN can only invite to their own org
+    const targetOrg = currentAdmin.role === "OWNER" 
+      ? organizationSlug 
+      : currentAdmin.organizationSlug;
+
+    // Check if admin already exists
+    const existing = await prisma.adminUser.findUnique({
+      where: { email },
+    });
+
+    if (existing && !existing.deletedAt) {
+      return res.status(409).json({ error: "ADMIN_EXISTS" });
+    }
+
+    // Generate secure invitation token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    const invitation = await prisma.adminInvitation.create({
+      data: {
+        email,
+        token,
+        role,
+        organizationSlug: targetOrg,
+        brandSlug,
+        storeSlug,
+        invitedBy: currentAdmin.email,
+        expiresAt,
+      },
+    });
+
+    // Send invitation email
+    try {
+      await sendInvitationEmail(email, token, currentAdmin.email);
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Continue anyway - invitation is created, email can be resent
+    }
+
+    req.log?.info?.("admin.admin-users.invited", {
+      invitedEmail: email,
+      invitedBy: currentAdmin.email,
+      role,
+    });
+
+    const response: any = {
+      success: true,
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+      },
+    };
+
+    // Include URL in dev/demo for testing
+    if (process.env.NODE_ENV !== 'production' || process.env.APP_ENV === 'demo') {
+      response.invitationUrl = `${process.env.ADMIN_URL || "http://localhost:5173"}/accept-invitation?token=${token}`;
+    }
+
+    res.status(201).json(response);
+  } catch (err) {
+    req.log?.error?.("admin.admin-users.invite_failed", err);
+    res.status(500).json({ error: "FAILED" });
   }
 });
 
-// Delete admin
-router.delete("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
+// Update admin (database-backed)
+router.put("/:id", expressJsonHandler, async (req: any, res: Response) => {
   try {
-    const store = getAdminStore();
-    await store.remove(id);
-    return res.json({ ok: true });
-  } catch (e: any) {
-    if (e?.code === 'NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND' });
-    return res.status(500).json({ error: 'STORE_FAILED' });
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+    const { id } = req.params;
+    const { role, organizationSlug, brandSlug, storeSlug } = req.body || {};
+
+    if (!id) {
+      return res.status(400).json({ error: "MISSING_ID" });
+    }
+
+    // Prevent self-modification
+    if (id === currentAdmin.id) {
+      return res.status(403).json({ error: "CANNOT_MODIFY_SELF" });
+    }
+
+    // Only OWNER can update roles
+    if (role && currentAdmin.role !== "OWNER") {
+      return res.status(403).json({ error: "INSUFFICIENT_PERMISSIONS" });
+    }
+
+    const admin = await prisma.adminUser.update({
+      where: { id },
+      data: {
+        role,
+        organizationSlug,
+        brandSlug,
+        storeSlug,
+        updatedBy: currentAdmin.email,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        organizationSlug: true,
+        brandSlug: true,
+        storeSlug: true,
+        updatedAt: true,
+      },
+    });
+
+    req.log?.info?.("admin.admin-users.updated", {
+      adminId: id,
+      updatedBy: currentAdmin.email,
+      newRole: role,
+    });
+
+    res.json({ admin });
+  } catch (err: any) {
+    req.log?.error?.("admin.admin-users.update_failed", err);
+    if (err?.code === 'P2025') {
+      return res.status(404).json({ error: "NOT_FOUND" });
+    }
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// Delete admin (soft delete)
+router.delete("/:id", async (req: any, res: Response) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "MISSING_ID" });
+    }
+
+    // Prevent self-deletion
+    if (id === currentAdmin.id) {
+      return res.status(403).json({ error: "CANNOT_DELETE_SELF" });
+    }
+
+    // Only OWNER can delete
+    if (currentAdmin.role !== "OWNER") {
+      return res.status(403).json({ error: "INSUFFICIENT_PERMISSIONS" });
+    }
+
+    await prisma.adminUser.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: currentAdmin.email,
+      },
+    });
+
+    req.log?.info?.("admin.admin-users.revoked", {
+      adminId: id,
+      revokedBy: currentAdmin.email,
+    });
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    req.log?.error?.("admin.admin-users.revoke_failed", err);
+    if (err?.code === 'P2025') {
+      return res.status(404).json({ error: "NOT_FOUND" });
+    }
+    res.status(500).json({ error: "FAILED" });
   }
 });
 

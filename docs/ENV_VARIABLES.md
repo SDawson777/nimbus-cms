@@ -74,6 +74,13 @@ AI (optional):
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 
+Email (SendGrid):
+
+- `SENDGRID_API_KEY` – SendGrid API key for sending emails (invitations, password resets).
+- `SENDGRID_FROM_EMAIL` – Verified sender email (default: `admin@nimbus.app`).
+- `SENDGRID_FROM_NAME` – Sender name displayed in emails (default: `Nimbus Admin`).
+- `ADMIN_URL` – Base URL for admin app, used in email links (example: `https://admin.nimbus.app`).
+
 Observability (optional):
 
 - `SENTRY_DSN`

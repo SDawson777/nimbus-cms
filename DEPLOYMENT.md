@@ -23,14 +23,22 @@
 - **Install**: `pnpm install --frozen-lockfile`
 - **Build**: `pnpm run build`
 - **Start**: `node dist/index.js`
-- **Env**: `JWT_SECRET`, `CORS_ORIGINS`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `ANALYTICS_INGEST_KEY`, optional `OPENAI_API_KEY`, `WEATHER_API_URL`, `WEATHER_API_KEY`.
+- **Env**: 
+  - **Required**: `JWT_SECRET`, `CORS_ORIGINS`, `DATABASE_URL`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `ANALYTICS_INGEST_KEY`
+  - **Email (Admin Management)**: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`, `ADMIN_URL`
+  - **Optional**: `OPENAI_API_KEY`, `WEATHER_API_URL`, `WEATHER_API_KEY`
 - **Container**: `server/Dockerfile` available; expose `PORT` (defaults to 3000). Health routes `/healthz` and `/status`.
+- **Database**: Run `pnpm prisma:migrate` to apply migrations before starting
 
 ## External services
 
 - **Sanity**: project/dataset values above; content and analytics metrics stored there.
-- **Postgres/Redis**: not required by default; add `DATABASE_URL` or `REDIS_URL` if extending persistence or rate limiting.
+- **Postgres**: Required for admin user management, orders, and other persistent data. Configure with `DATABASE_URL`.
+- **SendGrid**: Required for admin invitation and password reset emails. Configure with `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and `SENDGRID_FROM_NAME`.
+- **Redis**: Optional; add `REDIS_URL` if extending rate limiting or caching.
 - **Mapbox**: `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN` enables the 2D static heatmap overlay in Admin.
+
+See [docs/SENDGRID_SETUP.md](docs/SENDGRID_SETUP.md) for email configuration details and [docs/ADMIN_USER_MANAGEMENT.md](docs/ADMIN_USER_MANAGEMENT.md) for admin management features.
 
 ## CI
 

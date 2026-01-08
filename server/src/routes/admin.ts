@@ -20,6 +20,12 @@ import {
   saveNotificationPreferences,
   getDefaults,
 } from "../lib/preferencesStore";
+import {
+  sendInvitationEmail,
+  sendPasswordResetEmail,
+  sendPasswordChangedConfirmation,
+  sendAccountActivatedEmail,
+} from "../lib/email";
 
 // helper to build tenant filters based on admin scope
 function buildScopeFilter(admin: any) {
@@ -2563,4 +2569,501 @@ adminRouter.post("/preferences/notifications", (req: any, res) => {
   res.json({ ok: true, preferences: parsed.data });
 });
 
+// ============================================================================
+// ADMIN USER MANAGEMENT
+// ============================================================================
+
+// GET /api/admin/admin-users - List all admin users (OWNER/ORG_ADMIN only)
+adminRouter.get("/admin-users", requireRole("ORG_ADMIN"), async (req: any, res) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+
+    const where: any = { deletedAt: null };
+    
+    // ORG_ADMIN can only see admins in their org
+    if (currentAdmin.role === "ORG_ADMIN" && currentAdmin.organizationSlug) {
+      where.organizationSlug = currentAdmin.organizationSlug;
+    }
+
+    const admins = await prisma.adminUser.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        organizationSlug: true,
+        brandSlug: true,
+        storeSlug: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: true,
+      },
+    });
+
+    res.json({ admins });
+  } catch (err) {
+    req.log.error("admin.admin-users.list_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// POST /api/admin/admin-users/invite - Invite new admin (OWNER/ORG_ADMIN only)
+adminRouter.post("/admin-users/invite", requireRole("ORG_ADMIN"), async (req: any, res) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+
+    const { email, role, organizationSlug, brandSlug, storeSlug } = req.body;
+
+    if (!email || !role) {
+      return res.status(400).json({ error: "MISSING_FIELDS" });
+    }
+
+    // ORG_ADMIN can only invite to their own org
+    const targetOrg = currentAdmin.role === "OWNER" 
+      ? organizationSlug 
+      : currentAdmin.organizationSlug;
+
+    // Check if admin already exists
+    const existing = await prisma.adminUser.findUnique({
+      where: { email },
+    });
+
+    if (existing && !existing.deletedAt) {
+      return res.status(409).json({ error: "ADMIN_EXISTS" });
+    }
+
+    // Generate secure invitation token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    const invitation = await prisma.adminInvitation.create({
+      data: {
+        email,
+        token,
+        role,
+        organizationSlug: targetOrg,
+        brandSlug,
+        storeSlug,
+        invitedBy: currentAdmin.email,
+        expiresAt,
+      },
+    });
+
+    // Send invitation email
+    try {
+      await sendInvitationEmail(email, token, currentAdmin.email);
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Continue anyway - invitation is created, email can be resent
+    }
+
+    req.log.info("admin.admin-users.invited", {
+      invitedEmail: email,
+      invitedBy: currentAdmin.email,
+      role,
+    });
+
+    const response: any = {
+      success: true,
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+      },
+    };
+
+    // Include URL in dev/demo for testing
+    if (process.env.NODE_ENV !== 'production' || process.env.APP_ENV === 'demo') {
+      response.invitationUrl = `${process.env.ADMIN_URL || "http://localhost:5173"}/accept-invitation?token=${token}`;
+    }
+
+    res.json(response);
+  } catch (err) {
+    req.log.error("admin.admin-users.invite_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// POST /api/admin/admin-users/accept-invitation - Accept invitation and set password
+adminRouter.post("/admin-users/accept-invitation", async (req, res: any) => {
+  try {
+    const prisma = getPrisma();
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: "MISSING_FIELDS" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "PASSWORD_TOO_SHORT" });
+    }
+
+    const invitation = await prisma.adminInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: "INVITATION_NOT_FOUND" });
+    }
+
+    if (invitation.acceptedAt) {
+      return res.status(409).json({ error: "INVITATION_ALREADY_USED" });
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      return res.status(410).json({ error: "INVITATION_EXPIRED" });
+    }
+
+    const bcrypt = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create or update admin user
+    const admin = await prisma.adminUser.upsert({
+      where: { email: invitation.email },
+      update: {
+        passwordHash,
+        role: invitation.role,
+        organizationSlug: invitation.organizationSlug,
+        brandSlug: invitation.brandSlug,
+        storeSlug: invitation.storeSlug,
+        deletedAt: null,
+        updatedBy: invitation.email,
+      },
+      create: {
+        email: invitation.email,
+        passwordHash,
+        role: invitation.role,
+        organizationSlug: invitation.organizationSlug,
+        brandSlug: invitation.brandSlug,
+        storeSlug: invitation.storeSlug,
+        createdBy: invitation.invitedBy || invitation.email,
+      },
+    });
+
+    // Mark invitation as accepted
+    await prisma.adminInvitation.update({
+      where: { id: invitation.id },
+      data: { acceptedAt: new Date() },
+    });
+
+    // Send account activation confirmation
+    try {
+      await sendAccountActivatedEmail(admin.email, admin.role);
+    } catch (emailError) {
+      console.error('Failed to send activation email:', emailError);
+      // Continue anyway - account is activated
+    }
+
+    res.log.info("admin.admin-users.invitation_accepted", {
+      email: admin.email,
+      role: admin.role,
+    });
+
+    res.json({ success: true, email: admin.email });
+  } catch (err) {
+    res.log.error("admin.admin-users.accept_invitation_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// PATCH /api/admin/admin-users/:id - Update admin role/scope (OWNER only)
+adminRouter.patch("/admin-users/:id", requireRole("OWNER"), async (req: any, res) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+    const { id } = req.params;
+    const { role, organizationSlug, brandSlug, storeSlug } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "MISSING_ID" });
+    }
+
+    // Prevent self-demotion
+    if (id === currentAdmin.id) {
+      return res.status(403).json({ error: "CANNOT_MODIFY_SELF" });
+    }
+
+    const admin = await prisma.adminUser.update({
+      where: { id },
+      data: {
+        role,
+        organizationSlug,
+        brandSlug,
+        storeSlug,
+        updatedBy: currentAdmin.email,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        organizationSlug: true,
+        brandSlug: true,
+        storeSlug: true,
+        updatedAt: true,
+      },
+    });
+
+    req.log.info("admin.admin-users.updated", {
+      adminId: id,
+      updatedBy: currentAdmin.email,
+      newRole: role,
+    });
+
+    res.json({ admin });
+  } catch (err) {
+    req.log.error("admin.admin-users.update_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// DELETE /api/admin/admin-users/:id - Revoke admin access (OWNER only)
+adminRouter.delete("/admin-users/:id", requireRole("OWNER"), async (req: any, res) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "MISSING_ID" });
+    }
+
+    // Prevent self-deletion
+    if (id === currentAdmin.id) {
+      return res.status(403).json({ error: "CANNOT_DELETE_SELF" });
+    }
+
+    await prisma.adminUser.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        updatedBy: currentAdmin.email,
+      },
+    });
+
+    req.log.info("admin.admin-users.revoked", {
+      adminId: id,
+      revokedBy: currentAdmin.email,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error("admin.admin-users.revoke_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// POST /api/admin/admin-users/:id/resend-invitation - Resend invitation (OWNER/ORG_ADMIN)
+adminRouter.post("/admin-users/:id/resend-invitation", requireRole("ORG_ADMIN"), async (req: any, res) => {
+  try {
+    const prisma = getPrisma();
+    const currentAdmin = req.admin;
+    const { id } = req.params;
+
+    const admin = await prisma.adminUser.findUnique({
+      where: { id },
+      select: { email: true, role: true, organizationSlug: true, brandSlug: true, storeSlug: true },
+    });
+
+    if (!admin) {
+      return res.status(404).json({ error: "ADMIN_NOT_FOUND" });
+    }
+
+    // Check if there's a pending invitation
+    const existingInvitation = await prisma.adminInvitation.findFirst({
+      where: {
+        email: admin.email,
+        acceptedAt: null,
+        expiresAt: { gte: new Date() },
+      },
+    });
+
+    if (existingInvitation) {
+      // Resend existing invitation email
+      try {
+        await sendInvitationEmail(admin.email, existingInvitation.token, currentAdmin.email);
+      } catch (emailError) {
+        console.error('Failed to resend invitation email:', emailError);
+      }
+
+      const response: any = {
+        success: true,
+        message: "Existing invitation resent",
+      };
+
+      if (process.env.NODE_ENV !== 'production' || process.env.APP_ENV === 'demo') {
+        response.invitationUrl = `${process.env.ADMIN_URL || "http://localhost:5173"}/accept-invitation?token=${existingInvitation.token}`;
+      }
+
+      return res.json(response);
+    }
+
+    // Create new invitation
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const invitation = await prisma.adminInvitation.create({
+      data: {
+        email: admin.email,
+        token,
+        role: admin.role,
+        organizationSlug: admin.organizationSlug,
+        brandSlug: admin.brandSlug,
+        storeSlug: admin.storeSlug,
+        invitedBy: currentAdmin.email,
+        expiresAt,
+      },
+    });
+
+    // Send new invitation email
+    try {
+      await sendInvitationEmail(admin.email, token, currentAdmin.email);
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+    }
+
+    const response: any = {
+      success: true,
+    };
+
+    if (process.env.NODE_ENV !== 'production' || process.env.APP_ENV === 'demo') {
+      response.invitationUrl = `${process.env.ADMIN_URL || "http://localhost:5173"}/accept-invitation?token=${token}`;
+    }
+
+    res.json(response);
+  } catch (err) {
+    req.log.error("admin.admin-users.resend_invitation_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// POST /api/admin/admin-users/request-password-reset - Request password reset
+adminRouter.post("/admin-users/request-password-reset", async (req, res: any) => {
+  try {
+    const prisma = getPrisma();
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "MISSING_EMAIL" });
+    }
+
+    const admin = await prisma.adminUser.findUnique({
+      where: { email },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!admin || admin.deletedAt) {
+      return res.json({ success: true, message: "If the email exists, a reset link has been sent" });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+
+    await prisma.adminPasswordReset.create({
+      data: {
+        adminId: admin.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(email, token);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Continue anyway - return generic success message
+    }
+
+    res.log.info("admin.admin-users.password_reset_requested", { email });
+
+    res.json({
+      success: true,
+      message: "If the email exists, a reset link has been sent",
+      // For demo/dev: include token in response
+      resetUrl: `${process.env.ADMIN_URL || "http://localhost:5173"}/reset-password?token=${token}`,
+    });
+  } catch (err) {
+    res.log.error("admin.admin-users.request_password_reset_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// POST /api/admin/admin-users/reset-password - Reset password with token
+adminRouter.post("/admin-users/reset-password", async (req, res: any) => {
+  try {
+    const prisma = getPrisma();
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: "MISSING_FIELDS" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "PASSWORD_TOO_SHORT" });
+    }
+
+    const resetRequest = await prisma.adminPasswordReset.findUnique({
+      where: { token },
+    });
+
+    if (!resetRequest) {
+      return res.status(404).json({ error: "INVALID_TOKEN" });
+    }
+
+    if (resetRequest.usedAt) {
+      return res.status(409).json({ error: "TOKEN_ALREADY_USED" });
+    }
+
+    if (new Date() > resetRequest.expiresAt) {
+      return res.status(410).json({ error: "TOKEN_EXPIRED" });
+    }
+
+    const bcrypt = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await prisma.adminUser.update({
+      where: { id: resetRequest.adminId },
+      data: {
+        passwordHash,
+        updatedBy: "password-reset",
+      },
+    });
+
+    await prisma.adminPasswordReset.update({
+      where: { id: resetRequest.id },
+      data: { usedAt: new Date() },
+    });
+
+    // Get admin email for confirmation
+    const admin = await prisma.adminUser.findUnique({
+      where: { id: resetRequest.adminId },
+      select: { email: true },
+    });
+
+    // Send confirmation email
+    if (admin) {
+      try {
+        await sendPasswordChangedConfirmation(admin.email);
+      } catch (emailError) {
+        console.error('Failed to send password changed email:', emailError);
+        // Continue anyway - password is changed
+      }
+    }
+
+    res.log.info("admin.admin-users.password_reset_completed", {
+      adminId: resetRequest.adminId,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.log.error("admin.admin-users.reset_password_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
 export default adminRouter;
+

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { t } from "../lib/i18n";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAdmin } from "../lib/adminContext";
 import { apiFetch } from "../lib/api";
 import { safeJson } from "../lib/safeJson";
@@ -125,6 +125,11 @@ export default function Login() {
           </div>
         </div>
         {error && <div style={{ color: "#f87171" }}>{error}</div>}
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+          <Link to="/reset-password" style={{ fontSize: 12, color: "#6b7280" }}>
+            Forgot password?
+          </Link>
+        </div>
       </form>
     </div>
   );
