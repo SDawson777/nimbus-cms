@@ -57,6 +57,7 @@ server/static/admin/styles.css
 apps/admin/playwright-report/
 apps/admin/test-results/
 apps/admin/test-ci-output/
+apps/admin/demo-artifacts/
 
 # Local server/runtime artifacts
 *.pid

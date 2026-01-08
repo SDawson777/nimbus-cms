@@ -6,13 +6,13 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "seed": "ts-node-dev --respawn --transpile-only prisma/seed.ts",
-    "seed:admin": "ts-node --transpile-only prisma/seedAdmin.ts",
+    "start": "NODE_OPTIONS='--max-old-space-size=4096' node dist/index.js",
+    "dev": "NODE_OPTIONS='--max-old-space-size=4096' npx -y tsx@^4.19.2 watch src/index.ts",
+    "seed": "npx -y tsx@^4.19.2 prisma/seed.ts",
+    "seed:admin": "npx -y tsx@^4.19.2 prisma/seedAdmin.ts",
     "lint": "cd .. && eslint \"server/src/**/*.{ts,tsx}\"",
     "test": "vitest run",
-    "seed:e2e": "ts-node --transpile-only src/seedTestAdmin.ts",
+    "seed:e2e": "npx -y tsx@^4.19.2 src/seedTestAdmin.ts",
     "postinstall": "PRISMA_GENERATE_SKIP_AUTOINSTALL=1 prisma generate || echo 'prisma generate skipped'",
     "prisma:generate": "PRISMA_GENERATE_SKIP_AUTOINSTALL=1 prisma generate",
     "lint:types": "tsc -b --pretty false"
@@ -54,7 +54,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^5.20.0",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   },
   "jest": {

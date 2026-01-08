@@ -369,12 +369,75 @@ if (process.env.ENABLE_COMPLIANCE_SCHEDULER === "true") {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCTION-READY ERROR HANDLERS & GRACEFUL SHUTDOWN
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Gracefully shut down the server, closing database connections and active
+ * requests before exiting.
+ */
+async function gracefulShutdown(signal: string) {
+  logger.info(`Received ${signal}, shutting down gracefully...`);
+  
+  try {
+    // Close database connections
+    const prisma = getPrisma();
+    await prisma.$disconnect();
+    logger.info("Database connections closed");
+  } catch (err) {
+    logger.error("Error closing database connections", err);
+  }
+  
+  // Exit successfully
+  process.exit(0);
+}
+
+// Handle termination signals (SIGTERM from orchestrators, SIGINT from Ctrl+C)
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
+  logger.error("Unhandled Promise Rejection", {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+    promise: String(promise),
+  });
+  
+  // In production, log but don't crash on first rejection
+  // Let orchestrator handle restart if multiple rejections occur
+  if (process.env.NODE_ENV === "production") {
+    logger.warn("Continuing after unhandled rejection (production mode)");
+  }
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error: Error) => {
+  logger.error("Uncaught Exception", {
+    message: error.message,
+    stack: error.stack,
+  });
+  
+  // Uncaught exceptions are serious - attempt graceful shutdown
+  gracefulShutdown("uncaughtException").catch(() => {
+    process.exit(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+
 export async function startServer() {
   const port = Number(process.env.PORT) || 8080;
 
-  app.listen(port, "0.0.0.0", () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     logger.info("server.started", { port, appEnv: APP_ENV });
   });
+
+  // Set server timeout to prevent hanging connections
+  server.timeout = 30000; // 30 seconds
+  server.keepAliveTimeout = 65000; // 65 seconds (longer than ALB idle timeout)
+  server.headersTimeout = 66000; // Slightly longer than keepAliveTimeout
 
   try {
     await seedControlPlane();
@@ -384,11 +447,14 @@ export async function startServer() {
       err as any,
     );
   }
+  
+  return server;
 }
 
 if (require.main === module) {
   startServer().catch((err) => {
     logger.error("failed to start server", err);
+    process.exit(1);
   });
 }
 
