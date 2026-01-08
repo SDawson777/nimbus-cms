@@ -17,8 +17,8 @@ This guide is written for a technical due-diligence team to run Nimbus CMS in un
 ## Setup (under 1 hour)
 
 1. **Install**: `pnpm install` (Node 20+).
-2. **API env**: set `JWT_SECRET`, `CORS_ORIGINS`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `ANALYTICS_INGEST_KEY`.
-3. **Admin env**: set `VITE_NIMBUS_API_URL` to the API base; optional `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN`, `VITE_WEATHER_API_URL`, `VITE_WEATHER_API_KEY` for banner/heatmap polish.
+2. **API env**: set `JWT_SECRET`, `CORS_ORIGINS`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `ANALYTICS_INGEST_KEY`, `OPENWEATHER_API_KEY` (for weather widget).
+3. **Admin env**: set `VITE_NIMBUS_API_URL` to the API base; optional `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN` for heatmap polish.
 4. **Studio env**: set `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET`.
 5. **Run locally**:
    - `pnpm server:dev`

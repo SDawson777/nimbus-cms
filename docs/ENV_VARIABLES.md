@@ -92,9 +92,8 @@ Observability (optional):
 Maps/weather proxying (optional):
 
 - `MAPBOX_TOKEN` – Server-side Mapbox token (keep secret).
-- `WEATHER_API_URL`
-- `WEATHER_API_KEY`
-- `OPENWEATHER_API_KEY` – Some deployments use this alias.
+- `OPENWEATHER_API_KEY` – OpenWeatherMap API key for live weather data.
+- `OPENWEATHER_API_URL` – Optional, defaults to OpenWeatherMap API endpoint.
 
 Preview mode (optional):
 

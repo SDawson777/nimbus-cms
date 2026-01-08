@@ -5,7 +5,7 @@ const workspaceRoot = path.join(__dirname, '..');
 const appsDir = path.join(workspaceRoot, 'apps');
 const sensitiveKeywords = ['KEY', 'SECRET', 'TOKEN', 'MAPBOX', 'WEATHER', 'API_KEY', 'PRIVATE'];
 // Also detect explicit server-only envs that should not appear in client .env files
-const forbiddenServerOnly = ['PREVIEW_SECRET', 'SANITY_API_TOKEN', 'MAPBOX_TOKEN', 'WEATHER_API_KEY', 'OPENWEATHER_API_KEY'];
+const forbiddenServerOnly = ['PREVIEW_SECRET', 'SANITY_API_TOKEN', 'MAPBOX_TOKEN', 'OPENWEATHER_API_KEY'];
 function scanFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split(/\r?\n/);

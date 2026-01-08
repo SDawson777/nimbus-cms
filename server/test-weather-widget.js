@@ -44,7 +44,7 @@ console.log('\n2️⃣ Checking weather API configuration...');
 const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const weatherApiKey = process.env.OPENWEATHER_API_KEY || process.env.WEATHER_API_KEY;
+const weatherApiKey = process.env.OPENWEATHER_API_KEY;
 if (weatherApiKey) {
   console.log('   ✅ Weather API key: Configured');
   console.log('   ℹ️  Live weather data available');

@@ -33,8 +33,8 @@ const router = express.Router();
 router.get("/weather", async (req, res) => {
   try {
     const { lat, lon, city, units } = req.query as Record<string, string>;
-    const apiKey = process.env.OPENWEATHER_API_KEY || process.env.WEATHER_API_KEY;
-    const baseUrl = process.env.OPENWEATHER_API_URL || process.env.WEATHER_API_URL || "https://api.openweathermap.org/data/2.5/weather";
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    const baseUrl = process.env.OPENWEATHER_API_URL || "https://api.openweathermap.org/data/2.5/weather";
 
     if (!apiKey) {
       return res.status(500).json({ error: "OpenWeather API key not configured on server" });

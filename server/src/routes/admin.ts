@@ -2414,12 +2414,10 @@ adminRouter.post(
 adminRouter.get("/banner", async (req: any, res) => {
   const admin = req.admin || {};
   const fetchFn: any = (globalThis as any).fetch;
-  const weatherApiKey =
-    process.env.WEATHER_API_KEY || process.env.OPENWEATHER_API_KEY;
+  const weatherApiKey = process.env.OPENWEATHER_API_KEY;
   const weatherCity = process.env.OPENWEATHER_CITY || "Detroit,US";
   const weatherUnits = process.env.OPENWEATHER_UNITS || "imperial";
   const weatherApiUrl =
-    process.env.WEATHER_API_URL ||
     process.env.OPENWEATHER_API_URL ||
     `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(weatherCity)}&units=${encodeURIComponent(weatherUnits)}`;
   const fallbackWeather = {

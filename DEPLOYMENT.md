@@ -6,7 +6,7 @@
 - **Install**: `pnpm install --frozen-lockfile`
 - **Build**: `pnpm run build`
 - **Output**: `apps/admin/dist`
-- **Env**: `VITE_NIMBUS_API_URL`, `VITE_APP_ENV`, optional `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN`, `VITE_WEATHER_API_URL`, `VITE_WEATHER_API_KEY`.
+- **Env**: `VITE_NIMBUS_API_URL`, `VITE_APP_ENV`, optional `VITE_NIMBUS_HEATMAP_MAPBOX_TOKEN`.
 - **Notes**: SPA routing relies on Vercel rewrites (configured in `vercel.json`). Analytics are 2D-only with micro-motion.
 
 ## Sanity Studio (Vercel)
@@ -26,7 +26,7 @@
 - **Env**: 
   - **Required**: `JWT_SECRET`, `CORS_ORIGINS`, `DATABASE_URL`, `SANITY_PROJECT_ID`, `SANITY_DATASET`, `SANITY_API_TOKEN`, `ANALYTICS_INGEST_KEY`
   - **Email (Admin Management)**: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`, `ADMIN_URL`
-  - **Optional**: `OPENAI_API_KEY`, `WEATHER_API_URL`, `WEATHER_API_KEY`
+  - **Optional**: `OPENAI_API_KEY`, `OPENWEATHER_API_KEY`
 - **Container**: `server/Dockerfile` available; expose `PORT` (defaults to 3000). Health routes `/healthz` and `/status`.
 - **Database**: Run `pnpm prisma:migrate` to apply migrations before starting
 

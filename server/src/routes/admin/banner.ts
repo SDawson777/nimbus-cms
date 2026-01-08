@@ -20,13 +20,17 @@ router.get("/", async (req, res) => {
     // Weather
     let weather = null;
     try {
-      const w = await axios.get(
-        `${process.env.WEATHER_API_URL}?q=${city}&appid=${process.env.WEATHER_API_KEY}&units=imperial`,
-      );
-      weather = {
-        temp: w.data.main.temp,
-        desc: w.data.weather[0].description,
-      };
+      const apiUrl = process.env.OPENWEATHER_API_URL || "https://api.openweathermap.org/data/2.5/weather";
+      const apiKey = process.env.OPENWEATHER_API_KEY;
+      if (apiKey) {
+        const w = await axios.get(
+          `${apiUrl}?q=${city}&appid=${apiKey}&units=imperial`,
+        );
+        weather = {
+          temp: w.data.main.temp,
+          desc: w.data.weather[0].description,
+        };
+      }
     } catch (_) {}
 
     // Example analytics snapshot (placeholder)
