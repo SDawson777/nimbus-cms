@@ -342,7 +342,7 @@ function AppShell() {
                   />
                 }
               />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/analytics" replace />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
