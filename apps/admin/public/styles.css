@@ -82,9 +82,6 @@ h3 {
   position: relative;
   isolation: isolate;
 }
-.container:24px 32px 48px;
-  position: relative;
-}
 .site-top {
   position: sticky;
   top: 0;
@@ -98,8 +95,7 @@ h3 {
   border-bottom: var(--border);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(var(--chrome-blur)) saturate(180%);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04
-  gap: 12px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 .suite-title {
   font-weight: 700;
