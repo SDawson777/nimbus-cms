@@ -35,6 +35,11 @@ export async function seedDemoDatabase() {
   const tenantBSanityDataset =
     pickEnv("DEMO_TENANT_B_SANITY_DATASET") || "nimbus_tenant_b";
 
+  // Preview tenant for staging/preview environment
+  const previewTenantSlug = pickEnv("PREVIEW_TENANT_SLUG") || "preview-operator";
+  const previewSanityDataset =
+    pickEnv("PREVIEW_SANITY_DATASET") || "nimbus_preview";
+
   const adminEmail = pickEnv("DEMO_ADMIN_EMAIL") || "demo.admin@nimbus.local";
   const customerEmail = pickEnv("DEMO_CUSTOMER_EMAIL") || "demo.customer@nimbus.local";
 
@@ -187,6 +192,86 @@ export async function seedDemoDatabase() {
     },
   });
 
+  // Preview tenant (for staging/preview environment)
+  const previewTenant = await prisma.tenant.upsert({
+    where: { slug: previewTenantSlug },
+    update: {
+      name: "Preview Operator",
+      status: "active",
+      sanityDataset: previewSanityDataset,
+      primaryDomain: pickEnv("PREVIEW_PRIMARY_DOMAIN") || "preview.nimbus.app",
+      region: pickEnv("PREVIEW_REGION") || "US-CA",
+    },
+    create: {
+      slug: previewTenantSlug,
+      name: "Preview Operator",
+      status: "active",
+      sanityDataset: previewSanityDataset,
+      primaryDomain: pickEnv("PREVIEW_PRIMARY_DOMAIN") || "preview.nimbus.app",
+      region: pickEnv("PREVIEW_REGION") || "US-CA",
+    },
+  });
+
+  const previewStore1 = await prisma.store.upsert({
+    where: { tenantId_slug: { tenantId: previewTenant.id, slug: "san-francisco" } },
+    update: {
+      name: "San Francisco",
+      address1: "100 Preview St",
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94102",
+      country: "US",
+      phone: "+1-555-0300",
+      timezone: "America/Los_Angeles",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+    create: {
+      tenantId: previewTenant.id,
+      slug: "san-francisco",
+      name: "San Francisco",
+      address1: "100 Preview St",
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94102",
+      country: "US",
+      phone: "+1-555-0300",
+      timezone: "America/Los_Angeles",
+      isPickupEnabled: true,
+      isDeliveryEnabled: true,
+    },
+  });
+
+  const previewStore2 = await prisma.store.upsert({
+    where: { tenantId_slug: { tenantId: previewTenant.id, slug: "oakland" } },
+    update: {
+      name: "Oakland",
+      address1: "200 Preview Ave",
+      city: "Oakland",
+      state: "CA",
+      postalCode: "94601",
+      country: "US",
+      phone: "+1-555-0301",
+      timezone: "America/Los_Angeles",
+      isPickupEnabled: true,
+      isDeliveryEnabled: false,
+    },
+    create: {
+      tenantId: previewTenant.id,
+      slug: "oakland",
+      name: "Oakland",
+      address1: "200 Preview Ave",
+      city: "Oakland",
+      state: "CA",
+      postalCode: "94601",
+      country: "US",
+      phone: "+1-555-0301",
+      timezone: "America/Los_Angeles",
+      isPickupEnabled: true,
+      isDeliveryEnabled: false,
+    },
+  });
+
   // Default tenant theme
   const existingDefaultTheme = await prisma.theme.findFirst({
     where: { tenantId: tenant.id, isDefault: true },
@@ -318,6 +403,27 @@ export async function seedDemoDatabase() {
     },
   });
 
+  const previewCustomer = await prisma.user.upsert({
+    where: { email: "preview.customer@nimbus.local" },
+    update: {
+      tenantId: previewTenant.id,
+      storeId: previewStore1.id,
+      name: "Preview Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+    create: {
+      tenantId: previewTenant.id,
+      storeId: previewStore1.id,
+      email: "preview.customer@nimbus.local",
+      name: "Preview Customer",
+      role: UserRole.CUSTOMER,
+      passwordHash: await bcrypt.hash(customerPassword, 10),
+      isActive: true,
+    },
+  });
+
   await prisma.user.upsert({
     where: { email: "demo.staff@nimbus.local" },
     update: {
@@ -426,6 +532,56 @@ export async function seedDemoDatabase() {
     },
   ];
 
+  const previewProducts = [
+    {
+      slug: "coastal-haze",
+      name: "Coastal Haze",
+      type: ProductType.FLOWER,
+      category: "Flower",
+      brand: "Coastal",
+      price: 40,
+      variants: [
+        { sku: "SF-COASTALHAZE-1G", name: "1g", price: 13, stock: 160 },
+        { sku: "SF-COASTALHAZE-3_5G", name: "3.5g", price: 40, stock: 100 },
+        { sku: "SF-COASTALHAZE-7G", name: "7g", price: 75, stock: 50 },
+      ],
+    },
+    {
+      slug: "golden-gate-gummies",
+      name: "Golden Gate Gummies",
+      type: ProductType.EDIBLE,
+      category: "Edibles",
+      brand: "Coastal",
+      price: 22,
+      variants: [
+        { sku: "SF-GGGATE-12PK", name: "12 pack", price: 22, stock: 90 },
+      ],
+    },
+    {
+      slug: "bay-breeze-vape",
+      name: "Bay Breeze Vape Cart",
+      type: ProductType.VAPE,
+      category: "Vaporizers",
+      brand: "Coastal",
+      price: 48,
+      variants: [
+        { sku: "SF-BAYBREEZE-0_5G", name: "0.5g", price: 48, stock: 70 },
+        { sku: "SF-BAYBREEZE-1G", name: "1g", price: 85, stock: 40 },
+      ],
+    },
+    {
+      slug: "pacific-relief-balm",
+      name: "Pacific Relief CBD Balm",
+      type: ProductType.TOPICAL,
+      category: "Wellness",
+      brand: "Coastal",
+      price: 38,
+      variants: [
+        { sku: "SF-PACRELIEF-2OZ", name: "2oz", price: 38, stock: 55 },
+      ],
+    },
+  ];
+
   for (const p of demoProducts) {
     const product = await prisma.product.upsert({
       where: { slug: `${store1.slug}-${p.slug}` },
@@ -500,6 +656,54 @@ export async function seedDemoDatabase() {
         status: ProductStatus.ACTIVE,
         price: p.price,
         description: "Seeded demo product for Tenant B isolation validation.",
+        isActive: true,
+      },
+    });
+
+    for (const v of p.variants) {
+      await prisma.productVariant.upsert({
+        where: { sku: v.sku },
+        update: {
+          productId: product.id,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+        create: {
+          productId: product.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          stock: v.stock,
+        },
+      });
+    }
+  }
+
+  for (const p of previewProducts) {
+    const product = await prisma.product.upsert({
+      where: { slug: `${previewStore1.slug}-${p.slug}` },
+      update: {
+        storeId: previewStore1.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description: "Seeded preview product for staging environment.",
+        isActive: true,
+      },
+      create: {
+        storeId: previewStore1.id,
+        slug: `${previewStore1.slug}-${p.slug}`,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        type: p.type,
+        status: ProductStatus.ACTIVE,
+        price: p.price,
+        description: "Seeded preview product for staging environment.",
         isActive: true,
       },
     });
@@ -602,7 +806,85 @@ export async function seedDemoDatabase() {
       },
     });
   }
+  // Preview tenant: sample orders
+  const previewFirstProduct = await prisma.product.findFirst({
+    where: { storeId: previewStore1.id },
+    orderBy: { createdAt: "asc" },
+  });
+  if (previewFirstProduct) {
+    const variant = await prisma.productVariant.findFirst({
+      where: { productId: previewFirstProduct.id },
+      orderBy: { createdAt: "asc" },
+    });
+    const orderId = "order-preview-0001";
+    await prisma.order.upsert({
+      where: { id: orderId },
+      update: {
+        userId: previewCustomer.id,
+        storeId: previewStore1.id,
+        status: "PENDING",
+        total: previewFirstProduct.price,
+      },
+      create: {
+        id: orderId,
+        userId: previewCustomer.id,
+        storeId: previewStore1.id,
+        status: "PENDING",
+        total: previewFirstProduct.price,
+        items: {
+          create: [
+            {
+              productId: previewFirstProduct.id,
+              variantId: variant?.id,
+              quantity: 2,
+              price: previewFirstProduct.price,
+            },
+          ],
+        },
+      },
+    });
 
+    // Add a second order for preview
+    const secondProduct = await prisma.product.findFirst({
+      where: { 
+        storeId: previewStore1.id,
+        id: { not: previewFirstProduct.id }
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    if (secondProduct) {
+      const variant2 = await prisma.productVariant.findFirst({
+        where: { productId: secondProduct.id },
+        orderBy: { createdAt: "asc" },
+      });
+      await prisma.order.upsert({
+        where: { id: "order-preview-0002" },
+        update: {
+          userId: previewCustomer.id,
+          storeId: previewStore1.id,
+          status: "FULFILLED",
+          total: secondProduct.price * 1.5,
+        },
+        create: {
+          id: "order-preview-0002",
+          userId: previewCustomer.id,
+          storeId: previewStore1.id,
+          status: "FULFILLED",
+          total: secondProduct.price * 1.5,
+          items: {
+            create: [
+              {
+                productId: secondProduct.id,
+                variantId: variant2?.id,
+                quantity: 1,
+                price: secondProduct.price,
+              },
+            ],
+          },
+        },
+      });
+    }
+  }
   // Content pages (used here as simple “legal docs” placeholders).
   // NOTE: ContentPage has a global uniqueness constraint on (type, locale, slug),
   // so we intentionally keep slugs tenant-prefixed.
@@ -709,6 +991,9 @@ export async function seedDemoDatabase() {
     tenantB: tenantB.slug,
     tenantBSanityDataset,
     tenantBStores: [tenantBStore.slug],
+    previewTenant: previewTenant.slug,
+    previewSanityDataset,
+    previewStores: [previewStore1.slug, previewStore2.slug],
     adminEmail,
     customerEmail,
   });
