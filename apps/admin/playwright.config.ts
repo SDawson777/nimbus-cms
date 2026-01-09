@@ -46,10 +46,11 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5174',
     headless: process.env.E2E_HEADED !== 'true',
     viewport: { width: 1280, height: 800 },
-    // RECORD EVERYTHING: Video, trace, and screenshots for ALL tests
-    trace: 'on',
-    screenshot: 'on',
-    video: 'on',
+    // In CI: Disable recordings to prevent artifact bloat and log truncation
+    // Locally: Record everything for buyer evidence package
+    trace: isCI ? 'off' : 'on',
+    screenshot: isCI ? 'only-on-failure' : 'on',
+    video: isCI ? 'off' : 'on',
     // Store artifacts in timestamped folder
     outputDir: artifactsDir,
   },

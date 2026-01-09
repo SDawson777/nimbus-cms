@@ -195,9 +195,15 @@ jobs:
             server.log
             admin.log
 
-      - name: Run admin e2e tests (blocking)
+      - name: Run admin e2e tests (smoke tests only - NO recordings)
         working-directory: apps/admin
-        run: pnpm test:e2e
+        run: |
+          # Run only flows 1-5 (critical smoke tests)
+          # CI=true disables video/trace recording in playwright.config.ts
+          CI=true pnpm test:e2e
+        env:
+          CI: true
+        timeout-minutes: 20
 
       - name: Run server unit tests
         working-directory: server
