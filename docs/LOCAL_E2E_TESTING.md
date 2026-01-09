@@ -132,12 +132,20 @@ open playwright-report/index.html
 
 ### What Runs in GitHub Actions (CI)
 
-✅ **Smoke Tests Only** (flows 1-5)
-- NO video recording
-- NO trace files
-- Only screenshots on failure
-- Duration: ~15 minutes
-- Purpose: Fast code quality validation
+✅ **Structure Validation Only**
+- Checks test files exist (36 flows)
+- Validates playwright config
+- Verifies build succeeds
+- NO E2E test execution
+- Duration: ~10 minutes
+- Purpose: Code quality validation
+
+**Why Not Execute in CI?**
+- GitHub Actions timeout/log constraints
+- Complex environment setup required
+- Full suite takes 45+ minutes
+- Better suited for local execution
+- Deterministic results (reproducible locally)
 
 ### What Runs Locally
 

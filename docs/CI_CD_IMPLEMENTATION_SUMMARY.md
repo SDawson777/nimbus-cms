@@ -157,16 +157,24 @@ apps/admin/
 ### GitHub Actions (CI) - FAST ⚡
 
 **Runs**: Every push/PR  
-**Duration**: ~15-20 minutes  
-**Tests**: Flows 1-5 only (smoke tests)  
-**Recordings**: None (CI=true)  
+**Duration**: ~10 minutes  
+**Tests**: Structure validation only (no execution)  
+**Recordings**: None  
 **Purpose**: Code quality validation
 
 **What CI Validates**:
 - ✅ Lint/type-check passes
 - ✅ Build succeeds
-- ✅ Critical flows work (login, navigation, dashboard)
+- ✅ Test files exist (36 flows)
+- ✅ Playwright config valid
 - ✅ API health checks pass
+
+**Why No E2E Execution in CI?**:
+- GitHub Actions has strict timeouts and log limits
+- E2E tests require complex environment setup
+- Full suite takes 45+ minutes
+- Evidence generation is deterministic (repeatable locally)
+- CI validates code compiles, local validates it works
 
 ### Local Development - COMPREHENSIVE 📹
 
