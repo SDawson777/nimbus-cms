@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --prefer-offline",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --prefer-offline && cd apps/admin",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "framework": null,
