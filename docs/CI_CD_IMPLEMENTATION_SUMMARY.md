@@ -165,16 +165,17 @@ apps/admin/
 **What CI Validates**:
 - ✅ Lint/type-check passes
 - ✅ Build succeeds
-- ✅ Test files exist (36 flows)
+- ✅ E2E test files exist (36 flows)
+- ✅ Server test files exist (3+ files)
 - ✅ Playwright config valid
 - ✅ API health checks pass
 
-**Why No E2E Execution in CI?**:
+**Why No Test Execution in CI?**:
 - GitHub Actions has strict timeouts and log limits
-- E2E tests require complex environment setup
-- Full suite takes 45+ minutes
+- E2E tests require browser automation (45+ minutes)
+- Server tests require PostgreSQL database connection
 - Evidence generation is deterministic (repeatable locally)
-- CI validates code compiles, local validates it works
+- CI validates code compiles and structure, local validates it works
 
 ### Local Development - COMPREHENSIVE 📹
 

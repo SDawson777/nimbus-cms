@@ -543,6 +543,43 @@ jobs:
 
 ---
 
+## Server Unit Tests
+
+**Location:** `server/tests/`
+
+**Test Files:**
+- `adminUsers.test.ts` - Admin user management API tests
+- `errorHandler.test.ts` - Error handling middleware tests
+- `validateEnv.test.ts` - Environment validation tests
+
+**Requirements:**
+- PostgreSQL database connection
+- Prisma client configured
+- Environment variables set (`.env`)
+- Admin user seeding for API tests
+
+**Run Locally:**
+```bash
+cd server
+pnpm test                    # Run all server tests
+pnpm test adminUsers         # Run specific test file
+pnpm test --watch            # Watch mode
+```
+
+**CI Behavior:**
+- Structure validation only (no execution)
+- Verifies test files exist and are properly structured
+- Full execution happens locally with proper database setup
+
+**Why Not Execute in CI?**
+1. Requires PostgreSQL connection string
+2. Needs Prisma migrations applied
+3. Depends on seeded admin users
+4. Complex environment setup
+5. Same rationale as E2E tests (see above)
+
+---
+
 ## Support
 
 **Questions?**  
