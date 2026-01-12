@@ -57,11 +57,11 @@ test('UX Flow 7: Analytics Dashboard Deep Dive', async ({ page }) => {
   }
   
   // Check for top products section
-  const topProducts = await page.locator('text=/top.*product/i, [class*="product"]').count();
+  const topProducts = await page.locator('text=/top.*product/i').or(page.locator('[class*="product"]')).count();
   console.log('Top products section:', topProducts);
   
   // Check for trend indicators
-  const trends = await page.locator('text=/↑|↓|%/, [class*="trend"]').count();
+  const trends = await page.locator('text=/↑|↓|%/').or(page.locator('[class*="trend"]')).count();
   console.log('Trend indicators:', trends);
   
   await page.screenshot({ path: '/tmp/flow7-analytics-final.png', fullPage: true });

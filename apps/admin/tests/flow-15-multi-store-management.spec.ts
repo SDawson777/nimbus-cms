@@ -67,7 +67,7 @@ test('UX Flow 15: Multi-Store Management', async ({ page }) => {
   }
   
   // Check for store status indicators
-  const statusBadges = await page.locator('text=/active|inactive|open|closed/i, [class*="status"]').count();
+  const statusBadges = await page.locator('text=/active|inactive|open|closed/i').or(page.locator('[class*="status"]')).count();
   console.log('Status badges:', statusBadges);
   
   // Try clicking first store

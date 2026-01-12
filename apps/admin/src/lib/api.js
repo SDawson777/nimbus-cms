@@ -36,6 +36,8 @@ function emitApiError(detail) {
 
 function redirectToLogin() {
   if (typeof window === "undefined") return;
+  // Don't redirect if already on login page (prevents infinite reload)
+  if (window.location.pathname === "/login") return;
   window.location.replace("/login");
 }
 
@@ -79,7 +81,8 @@ export async function apiFetch(path, options = {}) {
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
   try {
-    const response = await fetch(buildUrl(path), {
+    const url = buildUrl(path);
+    const response = await fetch(url, {
       ...options,
       method,
       headers,
@@ -88,15 +91,18 @@ export async function apiFetch(path, options = {}) {
     });
 
     if (response.status === 401) {
-      emitApiError({ type: "unauthorized", status: 401, path: buildUrl(path) });
-      redirectToLogin();
+      emitApiError({ type: "unauthorized", status: 401, path: url });
+      // Never redirect during a login attempt; the caller needs the response.
+      if (!url.includes("/admin/login")) {
+        redirectToLogin();
+      }
     } else if (response.status === 403) {
-      emitApiError({ type: "forbidden", status: 403, path: buildUrl(path) });
+      emitApiError({ type: "forbidden", status: 403, path: url });
     } else if (response.status >= 500) {
       emitApiError({
         type: "server-error",
         status: response.status,
-        path: buildUrl(path),
+        path: url,
       });
     }
 

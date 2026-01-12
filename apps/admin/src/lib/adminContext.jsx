@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { apiJson } from "./api";
 import { safeJson } from "./safeJson";
@@ -63,6 +64,7 @@ export function AdminProvider({ children }) {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const loadedRef = useRef(false); // Prevent double-load in React StrictMode
 
   const loadLocalAdmin = useCallback(() => {
     try {
@@ -116,6 +118,9 @@ export function AdminProvider({ children }) {
   }, [loadLocalAdmin]);
 
   useEffect(() => {
+    // Prevent double-loading in React StrictMode (development mode)
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     loadAdmin();
   }, [loadAdmin]);
 

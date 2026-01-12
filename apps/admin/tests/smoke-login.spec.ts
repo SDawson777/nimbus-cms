@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test('smoke test: login and reach dashboard', async ({ page }) => {
   const email = process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com';
-  const password = process.env.E2E_ADMIN_PASSWORD || 'TestPass123!';
+  const password = process.env.E2E_ADMIN_PASSWORD || 'e2e-password';
   
   console.log('Navigating to login page...');
-  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   
   console.log('Waiting for login form...');
   const emailSelector = 'input[autocomplete="username"], input[type="email"]';
@@ -24,7 +24,13 @@ test('smoke test: login and reach dashboard', async ({ page }) => {
   await page.locator('button[type="submit"]').first().click();
   
   console.log('Waiting for navigation...');
-  await page.waitForLoadState('networkidle', { timeout: 30000 });
+  // Wait for either dashboard URL or dashboard content
+  await Promise.race([
+    page.waitForURL(/\/(dashboard|admin)/, { timeout: 15000 }),
+    page.waitForSelector('text=/dashboard|analytics|welcome/i', { timeout: 15000 })
+  ]).catch(() => {});
+  
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
   
   const url = page.url();
   console.log('Current URL after login:', url);

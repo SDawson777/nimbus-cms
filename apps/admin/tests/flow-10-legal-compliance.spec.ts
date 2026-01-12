@@ -49,7 +49,7 @@ test('UX Flow 10: Legal & Compliance Documents', async ({ page }) => {
   console.log('Legal document references:', legalDocs);
   
   // Check for version history
-  const versionElements = await page.locator('text=/version|v\\d+/i, [class*="version"]').count();
+  const versionElements = await page.locator('text=/version|v\\d+/i').or(page.locator('[class*="version"]')).count();
   console.log('Version elements:', versionElements);
   
   // Check for "Create Version" or "Add" button
@@ -70,6 +70,12 @@ test('UX Flow 10: Legal & Compliance Documents', async ({ page }) => {
   console.log('Compliance action buttons:', complianceButton);
   
   await page.screenshot({ path: '/tmp/flow10-legal-final.png', fullPage: true });
+  
+  // Verify at least some content loaded
+  const hasAnyContent = legalDocs > 0 || versionElements > 0 || createButton > 0 || complianceButton > 0;
+  if (!hasAnyContent) {
+    throw new Error('Legal/Compliance features not found - need to build UI components');
+  }
   
   console.log('✅ Legal & Compliance Flow Complete');
   

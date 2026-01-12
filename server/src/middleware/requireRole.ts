@@ -31,7 +31,22 @@ export function requireRole(minRole: AdminRole) {
     const admin = (req as any).admin;
     if (!admin) return res.status(401).json({ error: "UNAUTHORIZED" });
     const userRole = admin.role as AdminRole;
+    
+    // Log RBAC check for debugging
+    logger.debug("RBAC check", {
+      userRole,
+      minRole,
+      userLevel: ROLE_ORDER[userRole],
+      minLevel: ROLE_ORDER[minRole],
+      email: admin.email,
+    });
+    
     if (!userRole || ROLE_ORDER[userRole] < ROLE_ORDER[minRole]) {
+      logger.warn("RBAC: Access denied", {
+        userRole,
+        minRole,
+        email: admin.email,
+      });
       return res.status(403).json({ error: "FORBIDDEN" });
     }
     return next();

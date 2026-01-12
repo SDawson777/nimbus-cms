@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { loadAdmins, findAdmin, getEnvAdmin, AdminUser } from "../lib/admins";
 import { requireAdmin } from "../middleware/adminAuth";
 import { z } from "zod";
+import getPrisma from "../lib/prisma";
 
 const router = Router();
 const COOKIE_NAME = "admin_token";
@@ -77,34 +78,67 @@ router.post("/login", loginLimiter, async (req: any, res) => {
   // prefer file-backed config
   if (cfg) {
     const found = findAdmin(brand, dispensary, email);
-    if (!found || !found.admin)
-      return res.status(401).json({ error: "INVALID_CREDENTIALS" });
-    const admin = found.admin as AdminUser;
-    let valid = false;
-    if (admin.passwordHash) {
-      valid = await bcrypt.compare(password, admin.passwordHash);
-    } else {
-      valid = false;
+    if (found?.admin) {
+      const admin = found.admin as AdminUser;
+      if (admin.passwordHash) {
+        const valid = await bcrypt.compare(password, admin.passwordHash);
+        if (valid) {
+          const safePayload = {
+            id: admin.id,
+            email: admin.email,
+            role: admin.role,
+            organizationSlug: admin.organizationSlug,
+            brandSlug: admin.brandSlug,
+            storeSlug: admin.storeSlug,
+          };
+          const token = jwt.sign(safePayload, jwtSecret, { expiresIn: "4h" });
+          res.cookie(COOKIE_NAME, token, {
+            ...sessionCookieOptions,
+            maxAge: SESSION_MAX_AGE_MS,
+          });
+          res.cookie(CSRF_COOKIE, csrfToken, {
+            ...csrfCookieOptions,
+            maxAge: SESSION_MAX_AGE_MS,
+          });
+          return res.json({ ok: true, csrfToken });
+        }
+      }
     }
-    if (!valid) return res.status(401).json({ error: "INVALID_CREDENTIALS" });
-    const safePayload = {
-      id: admin.id,
-      email: admin.email,
-      role: admin.role,
-      organizationSlug: admin.organizationSlug,
-      brandSlug: admin.brandSlug,
-      storeSlug: admin.storeSlug,
-    };
-    const token = jwt.sign(safePayload, jwtSecret, { expiresIn: "4h" });
-    res.cookie(COOKIE_NAME, token, {
-      ...sessionCookieOptions,
-      maxAge: SESSION_MAX_AGE_MS,
-    });
-    res.cookie(CSRF_COOKIE, csrfToken, {
-      ...csrfCookieOptions,
-      maxAge: SESSION_MAX_AGE_MS,
-    });
-    return res.json({ ok: true, csrfToken });
+    // If file-backed config exists but does not authenticate this user,
+    // fall through to DB-backed auth (useful for E2E + real deployments).
+  }
+
+  // Database-backed mode (preferred for Nimbus deployments + E2E).
+  // This allows seeded admin users (prisma.adminUser) to authenticate without
+  // maintaining a separate file-backed config.
+  try {
+    const prisma = getPrisma();
+    const dbAdmin = await prisma.adminUser.findUnique({ where: { email } });
+    if (dbAdmin && !dbAdmin.deletedAt && dbAdmin.passwordHash) {
+      const valid = await bcrypt.compare(password, dbAdmin.passwordHash);
+      if (valid) {
+        const safePayload = {
+          id: dbAdmin.id,
+          email: dbAdmin.email,
+          role: dbAdmin.role as any,
+          organizationSlug: dbAdmin.organizationSlug || undefined,
+          brandSlug: dbAdmin.brandSlug || undefined,
+          storeSlug: dbAdmin.storeSlug || undefined,
+        };
+        const token = jwt.sign(safePayload, jwtSecret, { expiresIn: "4h" });
+        res.cookie(COOKIE_NAME, token, {
+          ...sessionCookieOptions,
+          maxAge: SESSION_MAX_AGE_MS,
+        });
+        res.cookie(CSRF_COOKIE, csrfToken, {
+          ...csrfCookieOptions,
+          maxAge: SESSION_MAX_AGE_MS,
+        });
+        return res.json({ ok: true, csrfToken });
+      }
+    }
+  } catch (_err) {
+    // If DB is unavailable, fall through to env-backed mode.
   }
 
   // fallback to env-based single-admin mode

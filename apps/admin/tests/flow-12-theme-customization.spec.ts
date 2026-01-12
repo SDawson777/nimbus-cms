@@ -31,7 +31,7 @@ test('UX Flow 12: Theme Customization Deep Dive', async ({ page }) => {
   console.log('Color pickers found:', colorPickers);
   
   // Check for theme tokens/variables
-  const themeTokens = await page.locator('text=/primary|secondary|accent|background/i, [class*="token"]').count();
+  const themeTokens = await page.locator('text=/primary|secondary|accent|background/i').or(page.locator('[class*="token"]')).count();
   console.log('Theme tokens found:', themeTokens);
   
   // Check for preview section

@@ -65,7 +65,7 @@ test('UX Flow 19: Reports & Data Exports', async ({ page }) => {
   await page.screenshot({ path: '/tmp/flow19-reports-page.png', fullPage: true });
   
   // Check for report types
-  const reportTypes = await page.locator('text=/sales|revenue|customer|inventory/i, .report-card').count();
+  const reportTypes = await page.locator('text=/sales|revenue|customer|inventory/i').or(page.locator('.report-card')).count();
   console.log('Report types found:', reportTypes);
   
   // Check for date range selector

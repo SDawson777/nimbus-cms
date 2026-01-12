@@ -49,6 +49,7 @@ test('CSRF protection and AI draft (content) create smoke', async ({ page }) => 
     return { status: res.status, body };
   }, { email: uniqueEmail });
 
+  // Missing x-csrf-token should return 403
   expect(inviteNoHeader.status).toBe(403);
   expect(inviteNoHeader.body && inviteNoHeader.body.error).toBe('CSRF_MISMATCH');
 

@@ -69,13 +69,11 @@ test.describe('Theme/Branding Flows', () => {
     await test.step('Modify a theme value', async () => {
       // Try to find and modify a color input
       const colorInput = page.locator('input[type="color"]').first();
-      const hasColorInput = await colorInput.isVisible({ timeout: 2_000 }).catch(() => false);
+      await expect(colorInput).toBeVisible({ timeout: 5_000 });
 
-      if (hasColorInput) {
-        await colorInput.fill('#FF0000'); // Red
-        await page.waitForTimeout(500);
-        await captureScreenshot(page, 'theme-color-modified', testInfo);
-      }
+      await colorInput.fill('#FF0000'); // Red
+      await page.waitForTimeout(500);
+      await captureScreenshot(page, 'theme-color-modified', testInfo);
 
       // Try text input for hex colors
       const hexInputs = page.locator('input[placeholder*="#"], input[value^="#"]');

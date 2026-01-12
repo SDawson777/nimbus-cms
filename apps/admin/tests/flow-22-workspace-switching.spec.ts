@@ -31,7 +31,7 @@ test('UX Flow 22: Workspace/Tenant Switching', async ({ page }) => {
   console.log('Workspace switchers found:', switcher);
   
   // Look for current workspace name
-  const workspaceName = await page.locator('text=/workspace|tenant|organization/i, [class*="org"]').count();
+  const workspaceName = await page.locator('text=/workspace|tenant|organization/i').or(page.locator('[class*="org"]')).count();
   console.log('Workspace name references:', workspaceName);
   
   // Try clicking workspace switcher

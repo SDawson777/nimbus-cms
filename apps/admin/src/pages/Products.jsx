@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
+import { t } from '../lib/i18n';
 import { useTenant } from "../lib/tenantContext";
 
 export default function Products() {

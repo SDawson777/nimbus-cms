@@ -49,15 +49,15 @@ test('UX Flow 20: Audit & Security Logs', async ({ page }) => {
   console.log('Audit log entries:', logEntries);
   
   // Check for action types
-  const actions = await page.locator('text=/created|updated|deleted|login|logout/i, [class*="action"]').count();
+  const actions = await page.locator('text=/created|updated|deleted|login|logout/i').or(page.locator('[class*="action"]')).count();
   console.log('Action type references:', actions);
   
   // Check for user/actor column
-  const users = await page.locator('text=/@|email/i, [class*="user"], [class*="actor"]').count();
+  const users = await page.locator('text=/@|email/i').or(page.locator('[class*="user"]')).or(page.locator('[class*="actor"]')).count();
   console.log('User/actor references:', users);
   
   // Check for timestamp column
-  const timestamps = await page.locator('text=/ago|today|yesterday/i, time, [class*="time"]').count();
+  const timestamps = await page.locator('text=/ago|today|yesterday/i').or(page.locator('time')).or(page.locator('[class*="time"]')).count();
   console.log('Timestamp references:', timestamps);
   
   // Check for filter controls

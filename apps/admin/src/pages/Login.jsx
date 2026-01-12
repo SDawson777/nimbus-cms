@@ -66,17 +66,14 @@ export default function Login() {
 
       setError(apiError);
     } catch (err) {
-      console.log('[Login] Caught network error:', err.message);
       // Network error fallback
       if (email === TEST_USER.email && password === TEST_USER.password) {
-        console.log('[Login] Using demo fallback - network error');
         setLocalAdmin({
           email: TEST_USER.email,
           name: TEST_USER.profile.name,
           role: TEST_USER.profile.role,
           organizationSlug: TEST_USER.profile.organizationSlug,
         });
-        console.log('[Login] localStorage admin set, navigating to dashboard');
         // Small delay to ensure admin context updates before navigation
         await new Promise((r) => setTimeout(r, 100));
         nav(location.state?.from || "/dashboard");

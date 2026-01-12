@@ -12,6 +12,8 @@ generator client {
 enum AdminRole {
   OWNER
   ORG_ADMIN
+  BRAND_ADMIN
+  STORE_MANAGER
   EDITOR
   VIEWER
 }

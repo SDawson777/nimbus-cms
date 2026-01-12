@@ -70,7 +70,7 @@ test('UX Flow 13: Personalization Rules Engine', async ({ page }) => {
   console.log('Enable/disable toggles:', toggles);
   
   // Check for analytics/metrics
-  const metrics = await page.locator('text=/impression|conversion|click/i, [class*="metric"]').count();
+  const metrics = await page.locator('text=/impression|conversion|click/i').or(page.locator('[class*="metric"]')).count();
   console.log('Rule metrics:', metrics);
   
   await page.screenshot({ path: '/tmp/flow13-personalization-final.png', fullPage: true });

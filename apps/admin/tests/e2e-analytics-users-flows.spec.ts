@@ -39,7 +39,7 @@ test.describe('Analytics, Users, and Critical Features', () => {
       const metricCards = page.locator('.metric-card, .stat-card, .card, [class*="metric"]');
       const count = await metricCards.count();
       
-      // Should have at least some content
+      // Should have at least some metric widgets
       expect(count).toBeGreaterThan(0);
       await captureScreenshot(page, 'analytics-metrics', testInfo);
     });
