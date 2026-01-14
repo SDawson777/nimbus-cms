@@ -153,23 +153,35 @@ export function metricsMiddleware() {
       httpActiveConnections.dec();
       const duration = Number(process.hrtime.bigint() - start) / 1e9;
       
-      // Normalize route to avoid high cardinality
-      const route = normalizeRoute(req.route?.path || req.path);
+      // Normalize route to avoid high cardinality. `req.route.path` can be a RegExp
+      // when using regex-based routes (e.g., /^\/admin\/.*$/). Guard against
+      // non-string values and fall back to `req.path`.
+      const rawPath: any = req.route?.path;
+      const safePath: string = typeof rawPath === "string" ? rawPath : (req.path || req.originalUrl || "/unknown");
+      const route = normalizeRoute(safePath);
       const labels = {
         method: req.method,
         route,
         status_code: String(res.statusCode),
       };
 
-      httpRequestDuration.observe(labels, duration);
-      httpRequestsTotal.inc(labels);
+      try {
+        httpRequestDuration.observe(labels, duration);
+        httpRequestsTotal.inc(labels);
+      } catch (_err) {
+        // Swallow metric observation errors to avoid impacting request lifecycle
+      }
 
       // Track errors
       if (res.statusCode >= 400) {
         const errorType = res.statusCode >= 500 ? "server" : 
                           res.statusCode === 401 || res.statusCode === 403 ? "auth" :
                           res.statusCode === 400 ? "validation" : "client";
-        errorRate.inc({ type: errorType, code: String(res.statusCode) });
+        try {
+          errorRate.inc({ type: errorType, code: String(res.statusCode) });
+        } catch (_err) {
+          // Ignore metric errors
+        }
       }
     });
 
@@ -179,7 +191,8 @@ export function metricsMiddleware() {
 
 // Normalize routes to prevent metric cardinality explosion
 function normalizeRoute(path: string): string {
-  return path
+  const p = typeof path === "string" ? path : String(path || "/unknown");
+  return p
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "/:uuid")
     .replace(/\/\d+/g, "/:id")
     .replace(/\/[a-z0-9]{24,}/gi, "/:objectId");
