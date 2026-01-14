@@ -142,13 +142,18 @@ jobs:
 
       - name: Wait for services
         run: |
-          # Wait up to 2 minutes for both services to become available. If they
-          # don't respond in time, dump the server and admin logs to help
-          # diagnose the failure and fail the job.
-          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
-            echo "\nERROR: Services did not become ready within timeout. Dumping logs...\n";
+          # Wait up to 4 minutes for both services to become available. If they
+          # don't respond in time, dump diagnostics to help troubleshoot.
+          pnpm -w dlx wait-on --timeout 240000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
+            echo "\nERROR: Services did not become ready within timeout. Dumping diagnostics...\n";
             echo "---- server.log (last 200 lines) ----";
             if [ -f server.log ]; then tail -n 200 server.log; else echo "(no server.log)"; fi;
+            echo "---- server pid ----";
+            if [ -f server.pid ]; then cat server.pid; else echo "(no server.pid)"; fi;
+            echo "---- listening on 8080 (lsof) ----";
+            (command -v lsof >/dev/null 2>&1 && lsof -ti tcp:8080) || echo "(lsof unavailable or no listener)";
+            echo "---- processes (node) ----";
+            ps aux | grep -i "server/dist/index.js" | grep -v grep || echo "(no server process found)";
             echo "---- admin dist index.html (head) ----";
             if [ -f apps/admin/dist/index.html ]; then sed -n '1,200p' apps/admin/dist/index.html; else echo "(no apps/admin/dist/index.html)"; fi;
             exit 1
@@ -157,19 +162,24 @@ jobs:
       - name: Preflight admin login readiness
         run: |
           echo "Preflight: waiting for /admin/login to return 200 and index markup"
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/admin/login || true)
+            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthz || true)
             HTML=$(curl -s http://localhost:8080/admin/login || true)
             if [ "$STATUS" = "200" ] && (echo "$HTML" | grep -q '<div id="root">' || echo "$HTML" | grep -qi '<html'); then
               echo "Login route is served (status $STATUS) and index markup detected. Proceeding to tests.";
               exit 0
             fi
-            echo "Waiting for login route: status=$STATUS, attempt ($i/30)";
+            echo "Waiting for login route: status=$STATUS (healthz=$HEALTH), attempt ($i/60)";
             sleep 2
           done
           echo "Preflight failed: /admin/login did not return index markup or status 200 within timeout.";
-          # Show what we saved earlier if present
-          if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; fi
+          echo "---- server.log (tail) ----";
+          tail -n 200 server.log || true
+          echo "---- listener check (lsof tcp:8080) ----";
+          (command -v lsof >/dev/null 2>&1 && lsof -ti tcp:8080) || echo "(lsof unavailable or no listener)";
+          echo "---- admin login (head) ----";
+          if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; else echo "(no saved ci-login.html)"; fi
           exit 1
 
       - name: Dump admin preview and server logs (debug)
