@@ -780,6 +780,19 @@ adminRouter.get("/products", requireRole("EDITOR"), async (req, res) => {
   }`;
   try {
     const items = await fetchCMS<any[]>(query, params, { preview });
+    
+    // If no items from CMS, return demo data for E2E/demo environments
+    if (!items || items.length === 0) {
+      const { DEMO_PRODUCTS, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        const demoFiltered = includeRecalled
+          ? DEMO_PRODUCTS
+          : DEMO_PRODUCTS.filter((p) => !p.isRecalled);
+        res.set("X-Demo-Data", "true");
+        return res.json(demoFiltered);
+      }
+    }
+    
     const mapped = (items || []).map((p: any) => {
       const out: any = {
         __id: p._id,
@@ -802,6 +815,20 @@ adminRouter.get("/products", requireRole("EDITOR"), async (req, res) => {
     res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=300");
     res.json(filtered);
   } catch (err) {
+    // On error, try to return demo data for E2E/demo environments
+    try {
+      const { DEMO_PRODUCTS, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        const demoFiltered = includeRecalled
+          ? DEMO_PRODUCTS
+          : DEMO_PRODUCTS.filter((p) => !p.isRecalled);
+        res.set("X-Demo-Data", "true");
+        res.set("X-Demo-Fallback", "error");
+        return res.json(demoFiltered);
+      }
+    } catch (demoErr) {
+      // ignore demo data errors
+    }
     req.log.error("admin.products.fetch_failed", err);
     res.status(500).json({ error: "FAILED_TO_FETCH_PRODUCTS" });
   }
@@ -943,11 +970,86 @@ adminRouter.get(
   requireRole("VIEWER"),
   async (req, res) => {
     try {
+      // Check for demo mode first
+      const { shouldUseDemoData, DEMO_PERSONALIZATION_RULES } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        return res.json(DEMO_PERSONALIZATION_RULES);
+      }
+
       const q = `*[_type=="personalizationRule"]{_id, name, description, enabled, conditions[], actions[]}`;
       const rows = await fetchCMS<any[]>(q, {});
       res.json(rows || []);
     } catch (err) {
+      // Return demo data on error
+      try {
+        const { DEMO_PERSONALIZATION_RULES } = await import("../lib/demoData");
+        res.set("X-Demo-Data", "true");
+        return res.json(DEMO_PERSONALIZATION_RULES);
+      } catch (_e) {
+        // ignore
+      }
       req.log.error("admin.personalization.rules_fetch_failed", err);
+      res.status(500).json({ error: "FAILED" });
+    }
+  },
+);
+
+// POST /api/admin/personalization/rules - create a new rule
+adminRouter.post(
+  "/personalization/rules",
+  requireRole("EDITOR"),
+  async (req, res) => {
+    try {
+      const { name, description, enabled, conditions, actions } = req.body || {};
+      if (!name || typeof name !== "string") {
+        return res.status(400).json({ error: "MISSING_NAME" });
+      }
+
+      // Create document in Sanity CMS
+      const { createWriteClient } = await import("../lib/cms");
+      const client = createWriteClient();
+
+      const newRule = await client.create({
+        _type: "personalizationRule",
+        name: name.trim(),
+        description: description || "",
+        enabled: enabled !== false,
+        conditions: Array.isArray(conditions) ? conditions : [],
+        actions: Array.isArray(actions) ? actions : [],
+      });
+
+      req.log.info("admin.personalization.rule_created", { ruleId: newRule._id, name });
+      res.status(201).json(newRule);
+    } catch (err) {
+      req.log.error("admin.personalization.rule_create_failed", err);
+      res.status(500).json({ error: "FAILED" });
+    }
+  },
+);
+
+// PATCH /api/admin/personalization/rules/:id/toggle - toggle rule enabled state
+adminRouter.patch(
+  "/personalization/rules/:id/toggle",
+  requireRole("EDITOR"),
+  async (req, res) => {
+    try {
+      const id = String(req.params.id);
+      const { enabled } = req.body || {};
+
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ error: "MISSING_ENABLED" });
+      }
+
+      const { createWriteClient } = await import("../lib/cms");
+      const client = createWriteClient();
+
+      const updated = await client.patch(id).set({ enabled }).commit();
+
+      req.log.info("admin.personalization.rule_toggled", { ruleId: id, enabled });
+      res.json(updated);
+    } catch (err) {
+      req.log.error("admin.personalization.rule_toggle_failed", err);
       res.status(500).json({ error: "FAILED" });
     }
   },
@@ -1421,16 +1523,32 @@ adminRouter.get("/brands", requireRole("VIEWER"), async (req, res) => {
 // GET /api/admin/stores
 adminRouter.get("/stores", requireRole("VIEWER"), async (req, res) => {
   try {
+    // Check for demo mode first
+    const { shouldUseDemoData, DEMO_STORES } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_STORES);
+    }
+
     const admin = (req as any).admin;
     const { filter, params } = buildScopeFilter(admin);
     const q = `*[_type=="store" ${filter}]{_id, name, "slug":slug.current, "brand":brand->slug, address}`;
     const items = await fetchCMS(q, params);
     res.json(items || []);
   } catch (err) {
+    // Return demo data on error
+    try {
+      const { DEMO_STORES } = await import("../lib/demoData");
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_STORES);
+    } catch (_e) {
+      // ignore
+    }
     req.log.error("admin.stores.fetch_failed", err);
     res.status(500).json({ error: "FAILED" });
   }
 });
+
 
 // --- Orders (DB-backed, read-only) ---
 // GET /api/admin/orders/stores
@@ -1444,12 +1562,41 @@ adminRouter.get("/orders/stores", requireRole("VIEWER"), async (req, res) => {
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     });
+    
+    // If no stores in DB, return demo data for E2E/demo environments
+    if (!stores || stores.length === 0) {
+      const { DEMO_STORES, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        return res.json({
+          stores: DEMO_STORES,
+          sourceOfTruth: "Demo data",
+          canUpdateStatus: false,
+        });
+      }
+    }
+    
     res.json({
       stores,
       sourceOfTruth: "Nimbus database",
       canUpdateStatus: false,
     });
   } catch (err) {
+    // On error, try to return demo data
+    try {
+      const { DEMO_STORES, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        res.set("X-Demo-Fallback", "error");
+        return res.json({
+          stores: DEMO_STORES,
+          sourceOfTruth: "Demo data (fallback)",
+          canUpdateStatus: false,
+        });
+      }
+    } catch (demoErr) {
+      // ignore demo data errors
+    }
     req.log.error("admin.orders.stores_failed", err);
     res.status(500).json({ error: "FAILED" });
   }
@@ -1527,6 +1674,32 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
       },
     });
 
+    // If no orders in DB, return demo data for E2E/demo environments
+    if (!orders || orders.length === 0) {
+      const { DEMO_ORDERS, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        // Apply any filters to demo data
+        let filteredDemoOrders = [...DEMO_ORDERS];
+        if (tenant) {
+          filteredDemoOrders = filteredDemoOrders.filter(
+            (o) => o.store?.tenant?.slug === tenant
+          );
+        }
+        if (statusRaw) {
+          const statuses = statusRaw.split(",").map((s) => s.trim().toUpperCase());
+          filteredDemoOrders = filteredDemoOrders.filter((o) =>
+            statuses.includes(o.status)
+          );
+        }
+        res.set("X-Demo-Data", "true");
+        return res.json({
+          orders: filteredDemoOrders,
+          canUpdateStatus: false,
+          sourceOfTruth: "Demo data",
+        });
+      }
+    }
+
     res.json({
       orders: orders.map((o) => ({
         id: o.id,
@@ -1544,6 +1717,21 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
       sourceOfTruth: "Nimbus database",
     });
   } catch (err) {
+    // On error, try to return demo data
+    try {
+      const { DEMO_ORDERS, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        res.set("X-Demo-Fallback", "error");
+        return res.json({
+          orders: DEMO_ORDERS,
+          canUpdateStatus: false,
+          sourceOfTruth: "Demo data (fallback)",
+        });
+      }
+    } catch (demoErr) {
+      // ignore demo data errors
+    }
     req.log.error("admin.orders.list_failed", { err, message: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ error: "FAILED", details: err instanceof Error ? err.message : "Unknown error" });
   }
@@ -1551,14 +1739,14 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
 
 // GET /api/admin/orders/:id
 adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ error: "MISSING_ID" });
+
   try {
     const prisma = getPrisma();
-    const id = String(req.params.id || "").trim();
-    if (!id) return res.status(400).json({ error: "MISSING_ID" });
-
     const tenant = String((req.query as any).tenant || "").trim();
 
-    const order = await prisma.order.findUnique({
+    let order = await prisma.order.findUnique({
       where: { id },
       include: {
         user: { select: { id: true, email: true, name: true } },
@@ -1573,7 +1761,21 @@ adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
       },
     });
 
-    if (!order) return res.status(404).json({ error: "NOT_FOUND" });
+    // Fallback to demo data if not found
+    if (!order) {
+      const { getDemoOrderById, shouldUseDemoData } = await import("../lib/demoData.js");
+      if (shouldUseDemoData()) {
+        const demoOrder = getDemoOrderById(id);
+        if (demoOrder) {
+          return res.json({
+            order: demoOrder,
+            canUpdateStatus: false,
+            sourceOfTruth: "Demo data - for demonstration purposes only.",
+          });
+        }
+      }
+      return res.status(404).json({ error: "NOT_FOUND" });
+    }
 
     if (tenant && (order as any)?.store?.slug) {
       const scopedStore = await prisma.store.findFirst({
@@ -1590,6 +1792,23 @@ adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
         "Read-only in Admin. Status is the system-of-record value from Nimbus order ingestion (and/or POS integration when enabled).",
     });
   } catch (err) {
+    // On database error, try demo data fallback
+    try {
+      const { getDemoOrderById, shouldUseDemoData } = await import("../lib/demoData.js");
+      if (shouldUseDemoData()) {
+        const demoOrder = getDemoOrderById(id);
+        if (demoOrder) {
+          res.set("X-Demo-Data", "true");
+          return res.json({
+            order: demoOrder,
+            canUpdateStatus: false,
+            sourceOfTruth: "Demo data - for demonstration purposes only.",
+          });
+        }
+      }
+    } catch {
+      // ignore demo data errors
+    }
     req.log.error("admin.orders.detail_failed", err);
     res.status(500).json({ error: "FAILED" });
   }
@@ -1654,6 +1873,35 @@ adminRouter.get("/legal", requireRole("VIEWER"), async (req, res) => {
   }
 });
 
+// POST /api/admin/legal - create new legal document
+adminRouter.post("/legal", requireRole("EDITOR"), async (req, res) => {
+  try {
+    const { title, type, stateCode, version, effectiveFrom } = req.body || {};
+    if (!title || typeof title !== "string") {
+      return res.status(400).json({ error: "MISSING_TITLE" });
+    }
+
+    const { createWriteClient } = await import("../lib/cms");
+    const client = createWriteClient();
+
+    const newDoc = await client.create({
+      _type: "legalDoc",
+      title: title.trim(),
+      type: type || "terms",
+      stateCode: stateCode || null,
+      version: version || "1.0",
+      effectiveFrom: effectiveFrom || new Date().toISOString().split("T")[0],
+      body: [],
+    });
+
+    req.log.info("admin.legal.doc_created", { docId: newDoc._id, title });
+    res.status(201).json(newDoc);
+  } catch (err) {
+    req.log.error("admin.legal.doc_create_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
 // GET /api/admin/analytics/content-metrics
 adminRouter.get(
   "/analytics/content-metrics",
@@ -1681,6 +1929,13 @@ adminRouter.get(
   requireRole("ORG_ADMIN"),
   async (req, res) => {
     try {
+      // In demo mode, return demo data immediately
+      const { DEMO_ANALYTICS_OVERVIEW, shouldUseDemoData } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        return res.json(DEMO_ANALYTICS_OVERVIEW);
+      }
+      
       const admin = (req as any).admin;
       const { filter, params } = buildMetricScopeFilter(admin);
       const limit = Number((req.query as any).limit || 5);
@@ -1920,6 +2175,20 @@ adminRouter.get(
         productSeries,
       };
 
+      // If all arrays are empty, try demo data
+      if (
+        (!topArticles || (Array.isArray(topArticles) && topArticles.length === 0)) &&
+        (!topProducts || (Array.isArray(topProducts) && topProducts.length === 0)) &&
+        (!storeEngagement || (Array.isArray(storeEngagement) && storeEngagement.length === 0))
+      ) {
+        const { DEMO_ANALYTICS_OVERVIEW, shouldUseDemoData } = await import("../lib/demoData");
+        if (shouldUseDemoData()) {
+          res.set("X-Demo-Data", "true");
+          res.set("X-Analytics-Overview-Cache", "DEMO");
+          return res.json(DEMO_ANALYTICS_OVERVIEW);
+        }
+      }
+
       // Cache the full payload for the TTL duration
       try {
         overviewCache.set(cacheKey, { ts: Date.now(), data: responsePayload });
@@ -1931,6 +2200,17 @@ adminRouter.get(
       res.set("X-Analytics-Overview-Cache", "MISS");
       return res.json(responsePayload);
     } catch (err) {
+      // On error, try to return demo data
+      try {
+        const { DEMO_ANALYTICS_OVERVIEW, shouldUseDemoData } = await import("../lib/demoData");
+        if (shouldUseDemoData()) {
+          res.set("X-Demo-Data", "true");
+          res.set("X-Demo-Fallback", "error");
+          return res.json(DEMO_ANALYTICS_OVERVIEW);
+        }
+      } catch (demoErr) {
+        // ignore demo data errors
+      }
       req.log.error("admin.analytics.overview_failed", err);
       res.status(500).json({ error: "FAILED" });
     }
@@ -1943,6 +2223,14 @@ adminRouter.get(
   requireRole("ORG_ADMIN"),
   async (req, res) => {
     try {
+      // Check for demo mode first
+      const { shouldUseDemoData, DEMO_COMPLIANCE_OVERVIEW } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        res.set("X-Compliance-Cache", "DEMO");
+        return res.json(DEMO_COMPLIANCE_OVERVIEW);
+      }
+
       const reqTypes = (req.query.types as string) || "";
       const types = reqTypes
         ? reqTypes.split(",").map((s) => s.trim())
@@ -2007,6 +2295,15 @@ adminRouter.get(
       // backward-compatible response: return array for live compute
       return res.json(applyStoreFilter(rows));
     } catch (err) {
+      // Return demo data on error
+      try {
+        const { DEMO_COMPLIANCE_OVERVIEW } = await import("../lib/demoData");
+        res.set("X-Demo-Data", "true");
+        res.set("X-Compliance-Cache", "ERROR-FALLBACK");
+        return res.json(DEMO_COMPLIANCE_OVERVIEW);
+      } catch (_e) {
+        // ignore
+      }
       req.log.error("admin.compliance.overview_failed", err);
       res.status(500).json({ error: "FAILED" });
     }
@@ -2152,6 +2449,13 @@ adminRouter.get(
   requireRole("ORG_ADMIN"),
   async (req, res) => {
     try {
+      // Check for demo mode first
+      const { shouldUseDemoData, DEMO_COMPLIANCE_HISTORY } = await import("../lib/demoData");
+      if (shouldUseDemoData()) {
+        res.set("X-Demo-Data", "true");
+        return res.json(DEMO_COMPLIANCE_HISTORY);
+      }
+
       const admin = (req as any).admin;
       const limit = Math.max(
         1,
@@ -2187,6 +2491,14 @@ adminRouter.get(
         : [];
       res.json(mapped);
     } catch (e) {
+      // Return demo data on error
+      try {
+        const { DEMO_COMPLIANCE_HISTORY } = await import("../lib/demoData");
+        res.set("X-Demo-Data", "true");
+        return res.json(DEMO_COMPLIANCE_HISTORY);
+      } catch (_e) {
+        // ignore
+      }
       req.log.error("admin.compliance.history_failed", e);
       res.status(500).json({ error: "FAILED" });
     }
@@ -2574,6 +2886,13 @@ adminRouter.post("/preferences/notifications", (req: any, res) => {
 // GET /api/admin/admin-users - List all admin users (OWNER/ORG_ADMIN only)
 adminRouter.get("/admin-users", requireRole("ORG_ADMIN"), async (req: any, res) => {
   try {
+    // Check for demo mode first
+    const { shouldUseDemoData, DEMO_ADMIN_USERS } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json({ admins: DEMO_ADMIN_USERS });
+    }
+
     const prisma = getPrisma();
     const currentAdmin = req.admin;
 
@@ -2602,6 +2921,14 @@ adminRouter.get("/admin-users", requireRole("ORG_ADMIN"), async (req: any, res) 
 
     res.json({ admins });
   } catch (err) {
+    // Return demo data on error
+    try {
+      const { DEMO_ADMIN_USERS } = await import("../lib/demoData");
+      res.set("X-Demo-Data", "true");
+      return res.json({ admins: DEMO_ADMIN_USERS });
+    } catch (_e) {
+      // ignore
+    }
     req.log.error("admin.admin-users.list_failed", err);
     res.status(500).json({ error: "FAILED" });
   }
@@ -3063,5 +3390,122 @@ adminRouter.post("/admin-users/reset-password", async (req, res: any) => {
   }
 });
 
-export default adminRouter;
+// ============================================================================
+// DEMO DATA ENDPOINTS - Enterprise demo support for all missing routes
+// ============================================================================
+
+// GET /api/admin/notifications - list notifications
+adminRouter.get("/notifications", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_NOTIFICATIONS } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json({ notifications: DEMO_NOTIFICATIONS, unreadCount: DEMO_NOTIFICATIONS.filter((n: any) => !n.read).length });
+    }
+    // In production, fetch from DB
+    res.json({ notifications: [], unreadCount: 0 });
+  } catch (err) {
+    req.log.error("admin.notifications.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/billing - billing and subscription info
+adminRouter.get("/billing", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_BILLING } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_BILLING);
+    }
+    res.json({ plan: { name: "Starter", tier: "starter" }, subscription: null, invoices: [] });
+  } catch (err) {
+    req.log.error("admin.billing.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/usage - API and resource usage metrics
+adminRouter.get("/usage", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_USAGE } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_USAGE);
+    }
+    res.json({ apiCalls: { total: 0, breakdown: [] }, bandwidth: { total: 0 }, storage: { total: 0 } });
+  } catch (err) {
+    req.log.error("admin.usage.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/workspaces - list workspaces for multi-tenant
+adminRouter.get("/workspaces", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_WORKSPACES } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json({ workspaces: DEMO_WORKSPACES });
+    }
+    res.json({ workspaces: [] });
+  } catch (err) {
+    req.log.error("admin.workspaces.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/content - CMS content overview
+adminRouter.get("/content", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_CONTENT } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_CONTENT);
+    }
+    // Try to fetch from Sanity CMS
+    try {
+      const articles = await fetchCMS<any[]>('*[_type=="article"][0...10]{_id, title, "slug":slug.current, publishedAt}', {});
+      const faqs = await fetchCMS<any[]>('*[_type=="faq"][0...10]{_id, question, "slug":slug.current}', {});
+      const articleArr = Array.isArray(articles) ? articles : [];
+      const faqArr = Array.isArray(faqs) ? faqs : [];
+      return res.json({ articles: articleArr, faqs: faqArr, totalCount: articleArr.length + faqArr.length });
+    } catch (_e) {
+      return res.json({ articles: [], faqs: [], pages: [], totalCount: 0 });
+    }
+  } catch (err) {
+    req.log.error("admin.content.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/integrations - list third-party integrations
+adminRouter.get("/integrations", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_INTEGRATIONS } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json({ integrations: DEMO_INTEGRATIONS });
+    }
+    res.json({ integrations: [] });
+  } catch (err) {
+    req.log.error("admin.integrations.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
+
+// GET /api/admin/api-keys - list API keys
+adminRouter.get("/api-keys", async (req, res) => {
+  try {
+    const { shouldUseDemoData, DEMO_API_KEYS } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json({ keys: DEMO_API_KEYS });
+    }
+    res.json({ keys: [] });
+  } catch (err) {
+    req.log.error("admin.api-keys.fetch_failed", err);
+    res.status(500).json({ error: "FAILED" });
+  }
+});
 

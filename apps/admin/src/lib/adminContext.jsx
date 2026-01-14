@@ -57,6 +57,8 @@ function computeCapabilities(admin) {
     canDeleteThemeConfig: roleAtLeast(role, "EDITOR"),
     canManagePersonalization: roleAtLeast(role, "EDITOR"),
     canViewPersonalization: roleAtLeast(role, "VIEWER"),
+    canManageLegal: roleAtLeast(role, "EDITOR"),
+    canManageContent: roleAtLeast(role, "EDITOR"),
   };
 }
 

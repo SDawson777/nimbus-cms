@@ -65,6 +65,24 @@ async function seed() {
     console.log('Seeded secondary admin:', secondaryEmail, 'role:', secondaryRole);
   }
 
+  // Optionally seed a viewer user (for RBAC e2e tests)
+  const viewerEmail = process.env.E2E_VIEWER_EMAIL;
+  if (viewerEmail) {
+    const viewerPassword = process.env.E2E_VIEWER_PASSWORD || 'e2e-viewer-pass';
+    const viewerId = process.env.E2E_VIEWER_ID || `e2e-viewer-${Date.now()}`;
+    const viewerHash = await bcrypt.hash(viewerPassword, 10);
+    // remove any existing same-email entry
+    cfg.admins = cfg.admins.filter((a) => a.email !== viewerEmail);
+    cfg.admins.unshift({
+      id: viewerId,
+      email: viewerEmail,
+      passwordHash: viewerHash,
+      role: 'VIEWER',
+      organizationSlug: process.env.E2E_ORG || 'e2e-org',
+    });
+    console.log('Seeded viewer admin:', viewerEmail, 'role: VIEWER');
+  }
+
   fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf8');
   console.log('Seeded admin:', email);
   return { cfgPath, backupPath };

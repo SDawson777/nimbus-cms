@@ -43,10 +43,17 @@ export E2E_ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD:-e2e-password}"
 export E2E_ADMIN_SECONDARY_EMAIL="${E2E_ADMIN_SECONDARY_EMAIL:-e2e-editor@example.com}"
 export E2E_ADMIN_SECONDARY_PASSWORD="${E2E_ADMIN_SECONDARY_PASSWORD:-e2e-editor-pass}"
 export E2E_ADMIN_SECONDARY_ROLE="${E2E_ADMIN_SECONDARY_ROLE:-EDITOR}"
+export E2E_VIEWER_EMAIL="${E2E_VIEWER_EMAIL:-e2e-viewer@example.com}"
+export E2E_VIEWER_PASSWORD="${E2E_VIEWER_PASSWORD:-e2e-viewer-pass}"
 export DATABASE_URL="${DATABASE_URL:-file:./dev.db}"
 export ADMIN_STORE="${ADMIN_STORE:-file}"
 export NODE_ENV="${NODE_ENV:-development}"
 export CORS_ORIGIN_ADMIN="${CORS_ORIGIN_ADMIN:-http://localhost:8080}"
+
+# Enable demo/fallback data for E2E tests (products, orders, analytics)
+export USE_DEMO_DATA="${USE_DEMO_DATA:-true}"
+export E2E_MODE="${E2E_MODE:-true}"
+
 # Relax global rate limits for local E2E so SPA asset fan-out doesn't trigger 429s
 export GLOBAL_RATE_LIMIT_MAX="${GLOBAL_RATE_LIMIT_MAX:-10000}"
 export GLOBAL_RATE_LIMIT_WINDOW_MS="${GLOBAL_RATE_LIMIT_WINDOW_MS:-600000}"
@@ -54,6 +61,11 @@ export ADMIN_GLOBAL_RATE_LIMIT_MAX="${ADMIN_GLOBAL_RATE_LIMIT_MAX:-1000}"
 export ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS="${ADMIN_GLOBAL_RATE_LIMIT_WINDOW_MS:-600000}"
 export ADMIN_LOGIN_RATE_LIMIT_MAX="${ADMIN_LOGIN_RATE_LIMIT_MAX:-1000}"
 export ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS="${ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS:-600000}"
+
+# Sanity CMS credentials for E2E tests
+export SANITY_PROJECT_ID="${SANITY_PROJECT_ID:-ygbu28p2}"
+export SANITY_DATASET="${SANITY_DATASET:-nimbus_demo}"
+export SANITY_API_TOKEN="${SANITY_API_TOKEN:-skPE7lw61OZSIuFeKJ5BG7TlFmXwnrqjMSFsMB5H8ZIEKMSK0ZADO26h2ecNYhVMl7nbM5T2nySB4jMekseFwYbcuwMPzMrW59v8r9uFA8qLUaCgf0xfVgbecbfi3yqk7u2Hd0GNvaRbqxwyQowo8x9rysVcsGpzXmio8yoWDUBMF1Q2EmN0}"
 
 eval "$PNPM -C server run seed:e2e"
 
@@ -64,6 +76,8 @@ if [ -f server/config/admins.json ]; then
 fi
 
 say "Starting server (background)"
+# Increase Node.js memory limit to prevent OOM during long test runs
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=512}"
 nohup node server/dist/index.js > "$ROOT_DIR/server.log" 2>&1 &
 echo $! > "$ROOT_DIR/server.pid"
 

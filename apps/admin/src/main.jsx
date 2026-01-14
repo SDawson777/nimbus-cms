@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -9,36 +9,69 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+// Critical path - eagerly loaded
 import Login from "./pages/Login";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
-import Articles from "./pages/Articles";
-import Faqs from "./pages/Faqs";
-import Legal from "./pages/Legal";
-import Analytics from "./pages/Analytics";
-import AnalyticsSettings from "./pages/AnalyticsSettings";
-import Settings from "./pages/Settings";
-import ThemePage from "./pages/Theme";
-import Personalization from "./pages/Personalization";
-import Orders from "./pages/Orders";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENTERPRISE: Code splitting with React.lazy for optimal bundle sizes
+// ═══════════════════════════════════════════════════════════════════════════
+const Products = lazy(() => import("./pages/Products"));
+const Articles = lazy(() => import("./pages/Articles"));
+const Faqs = lazy(() => import("./pages/Faqs"));
+const Legal = lazy(() => import("./pages/Legal"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const AnalyticsSettings = lazy(() => import("./pages/AnalyticsSettings"));
+const Settings = lazy(() => import("./pages/Settings"));
+const ThemePage = lazy(() => import("./pages/Theme"));
+const Personalization = lazy(() => import("./pages/Personalization"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Deals = lazy(() => import("./pages/Deals"));
+const Compliance = lazy(() => import("./pages/Compliance"));
+const Admins = lazy(() => import("./pages/Admins"));
+const HeatmapPage = lazy(() => import("./pages/Heatmap"));
+const UndoPage = lazy(() => import("./pages/Undo"));
+const Audit = lazy(() => import("./pages/Audit"));
+
 import { AdminProvider, useAdmin } from "./lib/adminContext";
 import { TenantProvider, WorkspaceSelector } from "./lib/tenantContext";
 import { DatasetProvider, DatasetSelector } from "./lib/datasetContext";
 import { AiChatWidget } from "./components/AiChatWidget";
-import Deals from "./pages/Deals";
-import Compliance from "./pages/Compliance";
-import Admins from "./pages/Admins";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { t } from "./lib/i18n";
 import AppFooter from "./components/AppFooter";
 import WelcomeBar from "./components/WelcomeBar";
 import { NotificationProvider } from "./components/NotificationCenter";
-import HeatmapPage from "./pages/Heatmap";
-import UndoPage from "./pages/Undo";
+import { ToastProvider } from "./components/Toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { initSentry } from "./lib/sentryInit";
+
+// Page loading fallback component
+function PageLoader() {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      minHeight: '400px',
+      flexDirection: 'column',
+      gap: '1rem'
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        border: '3px solid #e5e7eb',
+        borderTopColor: '#3b82f6',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite'
+      }} />
+      <p style={{ color: '#6b7280', margin: 0 }}>Loading...</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 function AppShell() {
   const { admin, loading, signOut } = useAdminGuard();
@@ -63,6 +96,7 @@ function AppShell() {
       { path: "/personalization", label: "Personalization" },
       { path: "/heatmap", label: "Heatmap" },
       { path: "/undo", label: "Undo" },
+      { path: "/audit", label: "Audit" },
     ],
     [],
   );
@@ -303,6 +337,16 @@ function AppShell() {
                 }
               />
               <Route
+                path="/audit"
+                element={
+                  <ProtectedRoute
+                    admin={admin}
+                    loading={loading}
+                    element={<Audit />}
+                  />
+                }
+              />
+              <Route
                 path="/analytics/settings"
                 element={
                   <ProtectedRoute
@@ -377,7 +421,9 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AppShell />
+        <Suspense fallback={<PageLoader />}>
+          <AppShell />
+        </Suspense>
       </BrowserRouter>
     </ErrorBoundary>
   );
@@ -391,7 +437,9 @@ createRoot(document.getElementById("root")).render(
     <TenantProvider>
       <DatasetProvider>
         <NotificationProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </NotificationProvider>
       </DatasetProvider>
     </TenantProvider>

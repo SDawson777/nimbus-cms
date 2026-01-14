@@ -138,6 +138,8 @@ export function DatasetSelector() {
 
   return (
     <select
+      name="store"
+      className="store-selector dataset-selector"
       value={activeDataset}
       onChange={(e) => setActiveDataset(e.target.value)}
       style={{

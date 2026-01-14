@@ -104,24 +104,35 @@ export async function loginAsViewer(
   page: Page,
   emailOrCreds: string | LoginCredentials,
   passwordMaybe?: string,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   const email = typeof emailOrCreds === 'string' ? emailOrCreds : emailOrCreds.email;
   const password = typeof emailOrCreds === 'string' ? passwordMaybe : emailOrCreds.password;
 
-  // Navigate to login page
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
-  
-  // Wait for login form to be visible
-  const emailSelector = 'input[autocomplete="username"], input[type="email"], input[name="email"]';
-  await expect(page.locator(emailSelector).first()).toBeVisible({ timeout: 10000 });
-  
-  // Fill in credentials
-  await page.locator(emailSelector).first().fill(email);
-  await page.locator('input[type="password"], input[autocomplete="current-password"], input[name="password"]').first().fill(password);
-  
-  // Click submit button
-  await page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")').first().click();
-  
-  // Wait for redirect (viewer might redirect to different page)
-  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+  try {
+    // Navigate to login page
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    
+    // Wait for login form to be visible
+    const emailSelector = 'input[autocomplete="username"], input[type="email"], input[name="email"]';
+    await expect(page.locator(emailSelector).first()).toBeVisible({ timeout: 10000 });
+    
+    // Fill in credentials
+    await page.locator(emailSelector).first().fill(email);
+    await page.locator('input[type="password"], input[autocomplete="current-password"], input[name="password"]').first().fill(password);
+    
+    // Click submit button
+    await page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")').first().click();
+    
+    // Wait for redirect (viewer might redirect to different page)
+    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    
+    // Check if we're past the login page (successful login)
+    const currentUrl = page.url();
+    const isLoggedIn = !currentUrl.includes('/login') || currentUrl.includes('/dashboard') || currentUrl.includes('/products');
+    
+    return { ok: isLoggedIn };
+  } catch (err) {
+    console.error('loginAsViewer failed', err);
+    return { ok: false };
+  }
 }

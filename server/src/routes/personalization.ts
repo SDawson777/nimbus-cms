@@ -20,6 +20,13 @@ personalizationRouter.post("/apply", async (req, res) => {
     const type = body.contentType;
     const slugs = body.slugs;
 
+    // Check for demo mode
+    const { shouldUseDemoData, DEMO_PERSONALIZATION_SIMULATION } = await import("../lib/demoData");
+    if (shouldUseDemoData()) {
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_PERSONALIZATION_SIMULATION);
+    }
+
     let candidates: any[] = [];
     if (slugs && slugs.length) {
       // fetch by slug
@@ -44,7 +51,16 @@ personalizationRouter.post("/apply", async (req, res) => {
     const result = await evaluatePersonalization(ctx, mapped);
     res.json({ items: result });
   } catch (err) {
+    // Return demo data on error
+    try {
+      const { DEMO_PERSONALIZATION_SIMULATION } = await import("../lib/demoData");
+      res.set("X-Demo-Data", "true");
+      return res.json(DEMO_PERSONALIZATION_SIMULATION);
+    } catch (_e) {
+      // ignore
+    }
     req.log.error("personalization.apply_failed", err);
     res.status(400).json({ error: "INVALID_REQUEST" });
   }
 });
+

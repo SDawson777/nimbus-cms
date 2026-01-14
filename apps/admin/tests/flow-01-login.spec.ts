@@ -13,8 +13,8 @@ test('UX Flow 1: Login and Dashboard Access', async ({ page }) => {
   
   await expect(emailInput).toBeVisible({ timeout: 10000 });
   
-  await emailInput.fill('demo@nimbus.app');
-  await passwordInput.fill('Nimbus!Demo123');
+  await emailInput.fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await passwordInput.fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   
   // Screenshot before login
   await page.screenshot({ path: '/tmp/flow1-before-login.png', fullPage: true });

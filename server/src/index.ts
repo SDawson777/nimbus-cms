@@ -36,7 +36,7 @@ import aiRouter from "./routes/ai";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
 import undoRouter from "./routes/undo";
-import { metricsHandler } from "./metrics";
+import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
 import { APP_ENV, PORT } from "./config/env";
@@ -119,6 +119,9 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Enterprise: Prometheus metrics collection middleware
+app.use(metricsMiddleware());
 
 // Parse cookies (used by admin auth)
 app.use(cookieParser());
@@ -235,6 +238,8 @@ app.get(/^\/admin\/.*$/, (_req, res) => res.sendFile(adminIndex));
 // Also serve the SPA index for legacy top-level admin routes
 app.get("/login", (_req, res) => res.sendFile(adminIndex));
 app.get("/dashboard", (_req, res) => res.sendFile(adminIndex));
+// Catch-all for nested dashboard routes (SPA client-side routing)
+app.get(/^\/dashboard\/.*$/, (_req, res) => res.sendFile(adminIndex));
 app.get("/settings", (_req, res) => res.sendFile(adminIndex));
 // Support additional SPA routes that use top-level paths.
 // Note: some of these paths overlap with API routers (e.g. /analytics, /personalization).
@@ -253,14 +258,36 @@ app.get(
     "/analytics/settings",
     "/heatmap",
     "/undo",
+    "/audit",
     "/theme",
     "/personalization",
+    "/notifications",
+    "/billing",
+    "/usage",
+    "/workspaces",
+    "/content",
+    "/integrations",
+    "/stores",
+    "/api",
+  ],
+  (_req, res) => res.sendFile(adminIndex),
+);
+// Settings sub-routes
+app.get(
+  [
+    "/settings/billing",
+    "/settings/usage",
+    "/settings/integrations",
+    "/settings/api",
+    "/settings/workspaces",
+    "/settings/notifications",
   ],
   (_req, res) => res.sendFile(adminIndex),
 );
 app.get("/admin/dashboard", requireAdmin, (_req, res) =>
   res.sendFile(path.join(staticDir, "admin", "dashboard.html")),
 );
+
 // All admin routes are handled by the SPA entrypoint; do not attempt to
 // serve separate dashboard/settings HTML files (the SPA renders these).
 

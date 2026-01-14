@@ -438,7 +438,7 @@ export default function Dashboard() {
       </div>
     ),
     heatmap:
-      stores.length > 1 && heatmapToken ? (
+      stores.length > 1 ? (
         <div>
           <h2 className="section-title">Location heatmap</h2>
           <p className="section-note">{CARD_COPY.heatmap}</p>

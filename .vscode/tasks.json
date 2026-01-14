@@ -190,6 +190,48 @@
 			"command": "echo 'exitfile:'; ls -lah /tmp/playwright-exit 2>/dev/null || echo 'none'; echo '8080:'; lsof -ti tcp:8080 || true; echo 'ts-node-dev pids:'; pgrep -fl ts-node-dev || true; echo 'playwright pids:'; pgrep -fl playwright || true",
 			"isBackground": false,
 			"group": "test"
+		},
+		{
+			"label": "e2e: install browsers",
+			"type": "shell",
+			"command": "cd apps/admin && npx -y pnpm exec playwright install --with-deps chromium",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "e2e: full evidence run",
+			"type": "shell",
+			"command": "cd /workspaces/nimbus-cms && chmod +x scripts/run-admin-e2e-local.sh && FORCE_EVIDENCE=true ./scripts/run-admin-e2e-local.sh 2>&1 | tee /tmp/playwright-out.log; EXIT_CODE=${PIPESTATUS[0]}; echo $EXIT_CODE > /tmp/playwright-exit; echo '--- Evidence ---'; echo \"Videos: $(find apps/admin/test-results -name '*.webm' 2>/dev/null | wc -l)\"; echo \"Screenshots: $(find apps/admin/test-results -name '*.png' 2>/dev/null | wc -l)\"; echo \"Traces: $(find apps/admin/test-results -name 'trace.zip' 2>/dev/null | wc -l)\"",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "e2e: package buyer proof",
+			"type": "shell",
+			"command": "cd apps/admin && TIMESTAMP=$(date +%Y%m%d-%H%M%S) && tar -czf ../../nimbus-e2e-buyer-proof-${TIMESTAMP}.tar.gz test-results playwright-report *.md && echo \"✅ Package created: nimbus-e2e-buyer-proof-${TIMESTAMP}.tar.gz\" && du -sh ../../nimbus-e2e-buyer-proof-${TIMESTAMP}.tar.gz",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "e2e: view report",
+			"type": "shell",
+			"command": "cd apps/admin && pnpm exec playwright show-report",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "buyer evidence: verify zip",
+			"type": "shell",
+			"command": "cd /workspaces/nimbus-cms && ZIP=$(ls -1t nimbus-buyer-evidence-*.zip 2>/dev/null | head -n 1); if [ -z \"$ZIP\" ]; then echo 'No nimbus-buyer-evidence-*.zip found in repo root.'; exit 1; fi; echo \"Using ZIP: $ZIP\"; ls -lah \"$ZIP\"; (command -v sha256sum >/dev/null 2>&1 && sha256sum \"$ZIP\") || true",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "buyer evidence: upload github release",
+			"type": "shell",
+			"command": "set -euo pipefail; cd /workspaces/nimbus-cms; ZIP=$(ls -1t nimbus-buyer-evidence-*.zip 2>/dev/null | head -n 1); if [ -z \"$ZIP\" ]; then echo 'No nimbus-buyer-evidence-*.zip found in repo root.'; exit 1; fi; TS=${ZIP#nimbus-buyer-evidence-}; TS=${TS%.zip}; TAG=buyer-evidence-${TS}; REPO=SDawson777/nimbus-cms; echo \"Repo: $REPO\"; echo \"Tag: $TAG\"; echo \"Asset: $ZIP\"; gh auth status -R \"$REPO\"; if gh release view \"$TAG\" -R \"$REPO\" >/dev/null 2>&1; then echo 'Release exists; uploading (clobbering if needed)...'; gh release upload \"$TAG\" \"$ZIP\" -R \"$REPO\" --clobber; else echo 'Creating release and uploading asset...'; gh release create \"$TAG\" \"$ZIP\" -R \"$REPO\" -t \"Nimbus buyer evidence $TS\" -n \"Automated E2E buyer evidence bundle (videos/screenshots/traces/report).\"; fi; echo '--- Release URL ---'; gh release view \"$TAG\" -R \"$REPO\" --json url -q .url",
+			"isBackground": false,
+			"group": "test"
 		}
 	]
 }

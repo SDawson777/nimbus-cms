@@ -11,8 +11,8 @@ test('UX Flow 25: Performance & Load Testing', async ({ page }) => {
   const loginLoadTime = Date.now() - loginStart;
   console.log(`Login page load: ${loginLoadTime}ms`);
   
-  await page.locator('input[autocomplete="username"]').first().fill('demo@nimbus.app');
-  await page.locator('input[type="password"]').first().fill('Nimbus!Demo123');
+  await page.locator('input[autocomplete="username"]').first().fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await page.locator('input[type="password"]').first().fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   await page.locator('button[type="submit"]').first().click();
   
   try {
@@ -35,7 +35,7 @@ test('UX Flow 25: Performance & Load Testing', async ({ page }) => {
   
   // === STEP 3: Rapid Navigation Test ===
   console.log('Step 3: Rapid Navigation Stress Test');
-  const routes = ['/analytics', '/orders', '/products', '/content', '/heatmap', '/dashboard'];
+  const routes = ['/analytics', '/orders', '/products', '/articles', '/heatmap', '/dashboard'];
   const navigationTimes: number[] = [];
   
   for (let i = 0; i < 3; i++) {

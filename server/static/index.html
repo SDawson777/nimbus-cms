@@ -2,95 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Nimbus Cannabis OS CMS — API & Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nimbus Admin</title>
+    <link rel="icon" type="image/svg+xml" href="/nimbus-icon.svg" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/styles.css" />
+    <script type="module" crossorigin src="/assets/index-DoqZD6i6.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-cBEukjmO.css">
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <header class="site-header">
-      <div class="container">
-        <h1>Nimbus Cannabis OS CMS</h1>
-        <p class="tag">Content API • Sanity Studio • Mobile-ready</p>
-      </div>
-    </header>
-
-    <main id="main-content" class="container">
-      <section class="intro">
-        <h2>Quick Links</h2>
-        <p>
-          Use these endpoints to explore the CMS content. All endpoints return
-          JSON suitable for the mobile app.
-        </p>
-
-        <div class="cards">
-          <a class="card" href="/content/legal?type=terms">Legal (terms)</a>
-          <a class="card" href="/content/fa_q">FAQs</a>
-          <a class="card" href="/content/articles">Articles</a>
-          <a class="card" href="/content/filters">Filters</a>
-          <a class="card" href="/api/admin/products">Admin: Products</a>
-          <a class="card" href="/status">Status</a>
-        </div>
-      </section>
-
-      <section class="how">
-        <h2>Previewing & Studio</h2>
-        <p>
-          To preview drafts, add
-          <code>?preview=true&amp;secret=YOUR_PREVIEW_SECRET</code> or set the
-          header <code>X-Preview: true</code> and <code>X-Preview-Secret</code>.
-        </p>
-        <p>
-          To open the Sanity Studio (content editing), run the Studio locally
-          with
-          <code>npm run dev:studio</code> or visit your deployed Studio. The API
-          and Studio share the same Sanity project/dataset configuration.
-        </p>
-      </section>
-
-      <section class="notes">
-        <h2>Notes for integrators</h2>
-        <ul>
-          <li>
-            Mobile base URL should point to this server; mobile expects
-            `/content/*` endpoints.
-          </li>
-          <li>
-            Legacy endpoints are available under
-            <code>/api/v1/content/*</code> for backwards compatibility.
-          </li>
-        </ul>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="container">
-        Built for buyers — clean API, preview security, and studio integration.
-      </div>
-    </footer>
+    <a class="skip-link" href="#root">Skip to main content</a>
     <div
       class="a11y-widget"
       aria-hidden="false"
-      style="position: fixed; right: 12px; bottom: 12px; z-index: 999"
+      style="z-index: var(--z-overlay)"
     >
       <button
-        id="a11y-contrast"
-        title="Toggle high contrast"
-        aria-pressed="false"
+        id="a11y-toggle"
+        class="a11y-toggle"
+        aria-expanded="false"
+        aria-controls="a11y-menu"
+        aria-label="Accessibility controls"
       >
-        Contrast
+        ☰
       </button>
-      <button id="a11y-large" title="Toggle large text" aria-pressed="false">
-        Large text
-      </button>
-      <button
-        id="a11y-dyslexic"
-        title="Toggle dyslexia-friendly font"
-        aria-pressed="false"
-      >
-        Dyslexic
-      </button>
+      <div id="a11y-menu" class="a11y-menu" hidden>
+        <p class="a11y-menu__title">Accessibility</p>
+        <button
+          id="a11y-contrast"
+          title="Toggle high contrast"
+          aria-pressed="false"
+        >
+          Contrast
+        </button>
+        <button
+          id="a11y-dyslexic"
+          title="Toggle dyslexia-friendly font"
+          aria-pressed="false"
+        >
+          Dyslexic
+        </button>
+        <button id="a11y-large" title="Toggle large text" aria-pressed="false">
+          Large text
+        </button>
+        <button id="a11y-motion" title="Reduce motion" aria-pressed="false">
+          Reduce motion
+        </button>
+        <button id="a11y-reset" title="Reset accessibility settings">
+          Reset
+        </button>
+      </div>
     </div>
+
+    <div id="root"></div>
     <script src="/a11y.js"></script>
   </body>
 </html>

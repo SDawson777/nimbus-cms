@@ -1,17 +1,31 @@
 {
   "admins": [
     {
-      "id": "e2e-1767770282152",
+      "id": "e2e-viewer-1768344964811",
+      "email": "e2e-viewer@example.com",
+      "passwordHash": "$2a$10$LI4WHCbs6xRpCwfPCyEbquo8E9hmI9diWl9FaK.sheJWA.gQHFLpe",
+      "role": "VIEWER",
+      "organizationSlug": "e2e-org"
+    },
+    {
+      "id": "e2e-secondary-1768344964727",
+      "email": "e2e-editor@example.com",
+      "passwordHash": "$2a$10$s5pFOD.5yiX1JEG5i3ET/uO3jTWF40DSAUsq4ZoBjNnvFlq3XQtkm",
+      "role": "EDITOR",
+      "organizationSlug": "e2e-org"
+    },
+    {
+      "id": "e2e-1768344964636",
       "email": "e2e-admin@example.com",
-      "passwordHash": "$2a$10$Pukg6idtwwbKkcqSVKR0uO.QQwmD5CqC1mYBUt8IBaYSJ8ZgtzXLm",
+      "passwordHash": "$2a$10$RFcFBz1XPDKUobS9FSYes.5.RA6OwiL.xuKQHsCTW27.qu86PrTAW",
       "role": "OWNER",
       "organizationSlug": "e2e-org"
     },
     {
-      "id": "e2e-secondary-1767765932050",
-      "email": "e2e-editor@example.com",
-      "passwordHash": "$2a$10$xrNkOXSg6/Urb/2XiOoRjeNP0S7bbjFlRM/DoQqEKqR9o7J8thJI.",
-      "role": "EDITOR",
+      "id": "e2e-1767905443059",
+      "email": "e2e@test.com",
+      "passwordHash": "$2a$10$qwYEAjsuEar7zqZ10Kw4x.ZKQH3ohnBX6UgOSdSgb72N1V0YXbj6i",
+      "role": "OWNER",
       "organizationSlug": "e2e-org"
     },
     {

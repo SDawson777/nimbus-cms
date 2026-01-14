@@ -12,8 +12,8 @@ test.describe('Legal/Compliance Flows', () => {
     evidence.attachToPage(page);
     await setupTest(page);
     
-    const email = process.env.E2E_ADMIN_EMAIL || 'demo@nimbus.app';
-    const password = process.env.E2E_ADMIN_PASSWORD || 'Nimbus!Demo123';
+    const email = process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com';
+    const password = process.env.E2E_ADMIN_PASSWORD || 'e2e-password';
     await loginAsAdmin(page, email, password);
   });
 

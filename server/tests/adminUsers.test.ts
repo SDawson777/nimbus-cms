@@ -1,31 +1,70 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import fs from 'fs';
-import path from 'path';
 
-vi.mock('../src/middleware/requireRole', () => {
+// Mock Prisma client
+const mockAdmins: any[] = [];
+const mockInvitations: any[] = [];
+
+vi.mock('../src/lib/prisma', () => {
   return {
-    requireRole: () => (_req: any, _res: any, next: any) => next(),
+    default: () => ({
+      adminUser: {
+        findMany: vi.fn().mockImplementation(() => Promise.resolve(mockAdmins.filter(a => !a.deletedAt))),
+        findUnique: vi.fn().mockImplementation(({ where }: any) => 
+          Promise.resolve(mockAdmins.find(a => a.email === where.email || a.id === where.id))
+        ),
+        create: vi.fn().mockImplementation(({ data }: any) => {
+          const admin = { id: `admin-${Date.now()}`, ...data, createdAt: new Date(), updatedAt: new Date() };
+          mockAdmins.push(admin);
+          return Promise.resolve(admin);
+        }),
+        update: vi.fn().mockImplementation(({ where, data }: any) => {
+          const idx = mockAdmins.findIndex(a => a.id === where.id);
+          if (idx === -1) throw { code: 'P2025' };
+          mockAdmins[idx] = { ...mockAdmins[idx], ...data, updatedAt: new Date() };
+          return Promise.resolve(mockAdmins[idx]);
+        }),
+      },
+      adminInvitation: {
+        create: vi.fn().mockImplementation(({ data }: any) => {
+          const invitation = { id: `inv-${Date.now()}`, ...data, createdAt: new Date() };
+          mockInvitations.push(invitation);
+          return Promise.resolve(invitation);
+        }),
+      },
+    }),
   };
 });
 
+vi.mock('../src/middleware/requireRole', () => {
+  return {
+    requireRole: () => (_req: any, _res: any, next: any) => {
+      // Set mock admin on request
+      (_req as any).admin = { 
+        id: 'test-admin',
+        email: 'test@example.com', 
+        role: 'OWNER',
+        organizationSlug: 'test-org'
+      };
+      next();
+    },
+  };
+});
+
+vi.mock('../src/lib/email', () => ({
+  sendInvitationEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
 import adminUsersRouter from '../src/routes/adminUsers';
 
-const CONFIG_PATH = path.join(__dirname, '..', 'config', 'admins.json');
-
 describe('adminUsers router', () => {
-  const backupPath = CONFIG_PATH + '.bak';
   let app: express.Express;
-  const OLD_ENV = process.env;
 
   beforeAll(() => {
-    // Force file-backed admin store for tests (avoids Prisma generate requirements)
-    process.env = { ...OLD_ENV, ADMIN_STORE: 'file' };
-
-    // backup existing config
-    if (fs.existsSync(CONFIG_PATH)) fs.copyFileSync(CONFIG_PATH, backupPath);
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ admins: [] }, null, 2));
+    // Clear mocks
+    mockAdmins.length = 0;
+    mockInvitations.length = 0;
 
     app = express();
     app.use(express.json());
@@ -34,11 +73,7 @@ describe('adminUsers router', () => {
   });
 
   afterAll(() => {
-    // restore backup
-    if (fs.existsSync(backupPath)) fs.copyFileSync(backupPath, CONFIG_PATH);
-    else fs.unlinkSync(CONFIG_PATH);
-
-    process.env = OLD_ENV;
+    vi.restoreAllMocks();
   });
 
   it('lists admins (initially empty)', async () => {
@@ -50,26 +85,46 @@ describe('adminUsers router', () => {
   });
 
   it('invites a new admin', async () => {
-    const res = await request(app).post('/invite').send({ email: 'x@example.com' });
+    const res = await request(app).post('/invite').send({ 
+      email: 'x@example.com',
+      role: 'EDITOR'  // Required field per Zod validation
+    });
     expect([200,201]).toContain(res.status);
-    expect(res.body).toHaveProperty('admin');
-    expect(res.body.admin.email).toBe('x@example.com');
+    expect(res.body).toHaveProperty('invitation');
+    expect(res.body.invitation.email).toBe('x@example.com');
   });
 
   it('updates an admin role', async () => {
-    const list = await request(app).get('/');
-    const id = list.body.admins[0].id;
-    const res = await request(app).put(`/${id}`).send({ role: 'VIEWER' });
+    // First, create an admin via the mock
+    mockAdmins.push({
+      id: 'admin-update-test',
+      email: 'update@example.com',
+      role: 'EDITOR',
+      organizationSlug: 'test-org',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    const res = await request(app).put('/admin-update-test').send({ role: 'VIEWER' });
     expect(res.status).toBe(200);
     expect(res.body.admin.role).toBe('VIEWER');
   });
 
   it('deletes an admin', async () => {
-    const list = await request(app).get('/');
-    const id = list.body.admins[0].id;
-    const res = await request(app).delete(`/${id}`);
+    // Create an admin to delete
+    mockAdmins.push({
+      id: 'admin-delete-test',
+      email: 'delete@example.com',
+      role: 'EDITOR',
+      organizationSlug: 'test-org',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    const res = await request(app).delete('/admin-delete-test');
     expect(res.status).toBe(200);
-    const after = await request(app).get('/');
-    expect(after.body.admins.find((a: any) => a.id === id)).toBeUndefined();
+    // Verify soft delete
+    const deleted = mockAdmins.find(a => a.id === 'admin-delete-test');
+    expect(deleted?.deletedAt).toBeDefined();
   });
 });

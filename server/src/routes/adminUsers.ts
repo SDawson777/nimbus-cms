@@ -1,10 +1,53 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
+import { z } from "zod";
 import getPrisma from "../lib/prisma";
 import { requireRole } from "../middleware/requireRole";
 import { sendInvitationEmail } from "../lib/email";
 
 const router = Router();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENTERPRISE: Zod validation schemas for input sanitization & type safety
+// ═══════════════════════════════════════════════════════════════════════════
+const AdminRoleEnum = z.enum([
+  "VIEWER",
+  "EDITOR", 
+  "STORE_MANAGER",
+  "BRAND_ADMIN",
+  "ORG_ADMIN",
+  "OWNER",
+]);
+
+const InviteAdminSchema = z.object({
+  email: z.string()
+    .email("Invalid email format")
+    .max(255, "Email too long")
+    .transform(val => val.toLowerCase().trim()),
+  role: AdminRoleEnum,
+  organizationSlug: z.string().max(100).optional(),
+  brandSlug: z.string().max(100).optional(),
+  storeSlug: z.string().max(100).optional(),
+});
+
+const UpdateAdminSchema = z.object({
+  role: AdminRoleEnum.optional(),
+  organizationSlug: z.string().max(100).optional().nullable(),
+  brandSlug: z.string().max(100).optional().nullable(),
+  storeSlug: z.string().max(100).optional().nullable(),
+});
+
+/**
+ * Validate request body against a Zod schema
+ * Returns parsed data or sends 400 error
+ */
+function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): { success: true; data: T } | { success: false; errors: z.ZodError } {
+  const result = schema.safeParse(body);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, errors: result.error };
+}
 
 // Require elevated role for all admin-user operations
 router.use(requireRole("ORG_ADMIN"));
@@ -51,16 +94,30 @@ router.post("/invite", expressJsonHandler, async (req: any, res: Response) => {
     const prisma = getPrisma();
     const currentAdmin = req.admin;
 
-    const { email, role, organizationSlug, brandSlug, storeSlug } = req.body;
-
-    if (!email || !role) {
-      return res.status(400).json({ error: "MISSING_FIELDS" });
+    // Validate input with Zod
+    const validation = validateBody(InviteAdminSchema, req.body);
+    if (!validation.success) {
+      const errorMessages = validation.errors.issues.map(i => `${i.path.join('.')}: ${i.message}`);
+      return res.status(400).json({ 
+        error: "VALIDATION_ERROR",
+        details: errorMessages,
+      });
     }
+
+    const { email, role, organizationSlug, brandSlug, storeSlug } = validation.data;
 
     // ORG_ADMIN can only invite to their own org
     const targetOrg = currentAdmin.role === "OWNER" 
       ? organizationSlug 
       : currentAdmin.organizationSlug;
+
+    // Role hierarchy check - can't invite higher roles
+    const roleHierarchy = ["VIEWER", "EDITOR", "STORE_MANAGER", "BRAND_ADMIN", "ORG_ADMIN", "OWNER"];
+    const currentRoleLevel = roleHierarchy.indexOf(currentAdmin.role);
+    const targetRoleLevel = roleHierarchy.indexOf(role);
+    if (targetRoleLevel > currentRoleLevel) {
+      return res.status(403).json({ error: "CANNOT_INVITE_HIGHER_ROLE" });
+    }
 
     // Check if admin already exists
     const existing = await prisma.adminUser.findUnique({
@@ -130,11 +187,22 @@ router.put("/:id", expressJsonHandler, async (req: any, res: Response) => {
     const prisma = getPrisma();
     const currentAdmin = req.admin;
     const { id } = req.params;
-    const { role, organizationSlug, brandSlug, storeSlug } = req.body || {};
 
     if (!id) {
       return res.status(400).json({ error: "MISSING_ID" });
     }
+
+    // Validate input with Zod
+    const validation = validateBody(UpdateAdminSchema, req.body);
+    if (!validation.success) {
+      const errorMessages = validation.errors.issues.map(i => `${i.path.join('.')}: ${i.message}`);
+      return res.status(400).json({ 
+        error: "VALIDATION_ERROR",
+        details: errorMessages,
+      });
+    }
+
+    const { role, organizationSlug, brandSlug, storeSlug } = validation.data;
 
     // Prevent self-modification
     if (id === currentAdmin.id) {

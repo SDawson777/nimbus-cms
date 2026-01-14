@@ -73,9 +73,10 @@ export function validateEnv() {
     }
   }
 
-  // Basic DB check
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL must be configured");
+  // Basic DB check - allow demo mode without DB
+  const demoMode = process.env.USE_DEMO_DATA === "true" || process.env.E2E_MODE === "true";
+  if (!process.env.DATABASE_URL && !demoMode) {
+    throw new Error("DATABASE_URL must be configured (or set USE_DEMO_DATA=true for demo mode)");
   }
 
   // Sanity optional - warn if missing in demo environments

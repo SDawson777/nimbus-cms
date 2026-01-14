@@ -29,12 +29,17 @@ export const ADMIN_SEED_ENABLED: boolean =
   (process.env.ADMIN_SEED_ENABLED || "false") === "true";
 export const DEMO_TENANT_SLUG: string = process.env.DEMO_TENANT_SLUG || "";
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+// In demo/E2E mode, allow running without a real database
+export const USE_DEMO_DATA: boolean =
+  process.env.USE_DEMO_DATA === "true" || process.env.E2E_MODE === "true";
+export const E2E_MODE: boolean = process.env.E2E_MODE === "true";
+
+if (!databaseUrl && !USE_DEMO_DATA) {
+  throw new Error("DATABASE_URL is required (or set USE_DEMO_DATA=true for demo mode)");
 }
-if (!jwtSecret) {
-  throw new Error("JWT_SECRET is required");
+if (!jwtSecret && !USE_DEMO_DATA) {
+  throw new Error("JWT_SECRET is required (or set USE_DEMO_DATA=true for demo mode)");
 }
 
-export const DATABASE_URL: string = databaseUrl;
-export const JWT_SECRET: string = jwtSecret;
+export const DATABASE_URL: string = databaseUrl || "file:./demo.db";
+export const JWT_SECRET: string = jwtSecret || "demo-secret-for-e2e-tests-only";

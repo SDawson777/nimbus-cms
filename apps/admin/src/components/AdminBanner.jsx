@@ -110,7 +110,7 @@ export default function AdminBanner() {
       mounted = false;
       clearInterval(id);
     };
-  }, [admin, openWeatherUrl]);
+  }, [admin, geo, openWeatherCity]);
 
   function normalizeCondition(condition) {
     const text = String(condition || "").toLowerCase();

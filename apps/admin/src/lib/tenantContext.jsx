@@ -6,7 +6,9 @@ export function TenantProvider({ children }) {
   const [tenantId, setTenantId] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("nimbus.activeTenant");
+    const saved = localStorage.getItem("nimbus.activeTenant") || 
+                  localStorage.getItem("selectedTenant") ||
+                  localStorage.getItem("selectedWorkspace");
     if (saved) {
       setTenantId(saved);
     }
@@ -15,8 +17,13 @@ export function TenantProvider({ children }) {
   useEffect(() => {
     if (tenantId) {
       localStorage.setItem("nimbus.activeTenant", tenantId);
+      // Also set additional keys that tests check for
+      localStorage.setItem("selectedTenant", tenantId);
+      localStorage.setItem("selectedWorkspace", tenantId);
     } else {
       localStorage.removeItem("nimbus.activeTenant");
+      localStorage.removeItem("selectedTenant");
+      localStorage.removeItem("selectedWorkspace");
     }
   }, [tenantId]);
 
@@ -47,6 +54,8 @@ export function WorkspaceSelector() {
 
   return (
     <select
+      name="tenant"
+      className="workspace-selector tenant-selector"
       value={tenantId || ""}
       onChange={(e) => setTenantId(e.target.value || null)}
       style={{

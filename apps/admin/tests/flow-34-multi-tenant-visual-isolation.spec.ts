@@ -36,10 +36,10 @@ test.describe("Flow 34: Multi-Tenant Visual Isolation", () => {
         'input[autocomplete="username"], input[type="email"], input[name="email"]',
       )
       .first();
-    await emailInput.fill("demo@nimbus.app");
+    await emailInput.fill(process.env.E2E_ADMIN_EMAIL || "e2e-admin@example.com");
 
     const passwordInput = page.locator('input[type="password"]').first();
-    await passwordInput.fill("Nimbus!Demo123");
+    await passwordInput.fill(process.env.E2E_ADMIN_PASSWORD || "e2e-password");
 
     const submitButton = page.locator('button[type="submit"]').first();
     await submitButton.click();
@@ -280,10 +280,10 @@ test.describe("Flow 34: Multi-Tenant Visual Isolation", () => {
         'input[autocomplete="username"], input[type="email"], input[name="email"]',
       )
       .first();
-    await emailInput2.fill("demo@nimbus.app");
+    await emailInput2.fill(process.env.E2E_ADMIN_EMAIL || "e2e-admin@example.com");
 
     const passwordInput2 = page.locator('input[type="password"]').first();
-    await passwordInput2.fill("Nimbus!Demo123");
+    await passwordInput2.fill(process.env.E2E_ADMIN_PASSWORD || "e2e-password");
 
     const submitButton2 = page.locator('button[type="submit"]').first();
     await submitButton2.click();

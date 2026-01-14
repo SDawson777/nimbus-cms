@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-const isCI = !!process.env.CI;
+// Force evidence capture for buyer proof - always record
+const isCI = process.env.CI === 'true' && process.env.FORCE_EVIDENCE !== 'true';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -46,13 +47,13 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5174',
     headless: process.env.E2E_HEADED !== 'true',
     viewport: { width: 1280, height: 800 },
-    // In CI: Disable recordings to prevent artifact bloat and log truncation
-    // Locally: Record everything for buyer evidence package
-    trace: isCI ? 'off' : 'on',
-    screenshot: isCI ? 'only-on-failure' : 'on',
-    video: isCI ? 'off' : 'on',
-    // Store artifacts in timestamped folder
-    outputDir: artifactsDir,
+    // BUYER PROOF: Record ALL evidence for marketing/demo package
+    // Always capture screenshots, videos, and traces for production verification
+    trace: 'on',
+    screenshot: 'on',
+    video: 'on',
+    // Store artifacts in test-results folder (standard location)
+    outputDir: 'test-results',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

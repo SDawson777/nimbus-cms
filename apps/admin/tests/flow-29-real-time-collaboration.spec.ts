@@ -8,8 +8,8 @@ test('UX Flow 29: Real-Time Collaboration', async ({ page, context }) => {
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
   
-  await page.locator('input[autocomplete="username"]').first().fill('demo@nimbus.app');
-  await page.locator('input[type="password"]').first().fill('Nimbus!Demo123');
+  await page.locator('input[autocomplete="username"]').first().fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await page.locator('input[type="password"]').first().fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   await page.locator('button[type="submit"]').first().click();
   
   try {
@@ -27,8 +27,8 @@ test('UX Flow 29: Real-Time Collaboration', async ({ page, context }) => {
   await page2.goto('/login');
   await page2.waitForLoadState('networkidle');
   
-  await page2.locator('input[autocomplete="username"]').first().fill('demo@nimbus.app');
-  await page2.locator('input[type="password"]').first().fill('Nimbus!Demo123');
+  await page2.locator('input[autocomplete="username"]').first().fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await page2.locator('input[type="password"]').first().fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   await page2.locator('button[type="submit"]').first().click();
   
   try {

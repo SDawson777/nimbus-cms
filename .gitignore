@@ -72,3 +72,10 @@ server/config/admins.json.bak.*
 # Built admin assets copied into server/static during E2E/CI
 server/static/assets/
 server/static/favicon.ico
+
+# Root-level evidence bundles and artifacts (do not commit)
+nimbus-buyer-evidence-*/
+nimbus-buyer-evidence-*.zip
+nimbus-buyer-video-evidence-*.zip
+nimbus-e2e-buyer-proof-*.tar.gz
+server.log

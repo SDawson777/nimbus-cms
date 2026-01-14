@@ -8,8 +8,8 @@ test('UX Flow 30: Mobile Responsiveness & PWA', async ({ page, context }) => {
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
   
-  await page.locator('input[autocomplete="username"]').first().fill('demo@nimbus.app');
-  await page.locator('input[type="password"]').first().fill('Nimbus!Demo123');
+  await page.locator('input[autocomplete="username"]').first().fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await page.locator('input[type="password"]').first().fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   await page.locator('button[type="submit"]').first().click();
   
   try {

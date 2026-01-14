@@ -7,8 +7,8 @@ test('UX Flow 9: Content Management (CMS)', async ({ page }) => {
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
   
-  await page.locator('input[autocomplete="username"]').first().fill('demo@nimbus.app');
-  await page.locator('input[type="password"]').first().fill('Nimbus!Demo123');
+  await page.locator('input[autocomplete="username"]').first().fill(process.env.E2E_ADMIN_EMAIL || 'e2e-admin@example.com');
+  await page.locator('input[type="password"]').first().fill(process.env.E2E_ADMIN_PASSWORD || 'e2e-password');
   await page.locator('button[type="submit"]').first().click();
   
   try {
@@ -17,10 +17,10 @@ test('UX Flow 9: Content Management (CMS)', async ({ page }) => {
     await page.waitForTimeout(2000);
   }
   
-  console.log('Navigating to Content...');
+  console.log('Navigating to Articles (Content)...');
   
-  // Navigate to content page
-  await page.goto('/content');
+  // Navigate to articles page - the main content management page
+  await page.goto('/articles');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1500);
   
