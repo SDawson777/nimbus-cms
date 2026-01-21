@@ -12,7 +12,6 @@ import { portableTextToHtml } from "../lib/portableText";
 import { logger } from "../lib/logger";
 import bannerRouter from "./admin/banner";
 import getPrisma from "../lib/prisma";
-import { OrderStatus } from "@prisma/client";
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -1639,7 +1638,7 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const allowed = new Set(Object.values(OrderStatus));
+      const allowed = new Set(['CREATED', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']);
       const statuses = parts.filter((s) => allowed.has(s as any)) as any[];
       if (statuses.length === 1) where.status = statuses[0];
       else if (statuses.length > 1) where.status = { in: statuses };
