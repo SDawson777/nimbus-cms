@@ -134,6 +134,7 @@ router.post("/invite", expressJsonHandler, async (req: any, res: Response) => {
 
     const invitation = await prisma.adminInvitation.create({
       data: {
+        id: crypto.randomUUID(),
         email,
         token,
         role,

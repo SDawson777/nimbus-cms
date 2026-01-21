@@ -33,7 +33,7 @@ router.get('/:workspace/overview', async (req, res) => {
     try {
       tenant = await prisma.tenant.findUnique({
         where: { slug: workspace },
-        include: { stores: true }
+        include: { Store: true }
       });
     } catch (dbErr) {
       // Database may not be available in demo mode
@@ -136,7 +136,7 @@ router.get('/:workspace/overview', async (req, res) => {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
-    const storeIds = tenant.stores.map(s => s.id);
+    const storeIds = tenant.Store.map((s: any) => s.id);
 
     // Parallel queries for performance
     const [
@@ -155,7 +155,7 @@ router.get('/:workspace/overview', async (req, res) => {
         where: {
           storeId: { in: storeIds },
           createdAt: { gte: startDate },
-          status: { in: ['PAID', 'FULFILLED'] }
+          status: { in: ['CONFIRMED', 'READY'] }
         },
         _sum: { total: true }
       }),
@@ -193,8 +193,8 @@ router.get('/:workspace/overview', async (req, res) => {
           createdAt: { gte: startDate }
         },
         include: {
-          user: { select: { name: true, email: true } },
-          store: { select: { name: true } }
+          User: { select: { name: true, email: true } },
+          Store: { select: { name: true } }
         },
         orderBy: { createdAt: 'desc' },
         take: 10
@@ -264,7 +264,7 @@ router.get('/:workspace/overview', async (req, res) => {
         where: {
           storeId: { in: storeIds },
           createdAt: { gte: prevStartDate, lt: startDate },
-          status: { in: ['PAID', 'FULFILLED'] }
+          status: { in: ['CONFIRMED', 'READY'] }
         },
         _sum: { total: true }
       }),
@@ -353,12 +353,12 @@ router.get('/:workspace/overview', async (req, res) => {
         revenue: ((p.purchasesLast30d || 0) * p.price).toFixed(2),
         imageUrl: p.imageUrl
       })),
-      recentOrders: recentOrders.map(o => ({
+      recentOrders: recentOrders.map((o: any) => ({
         id: o.id,
         total: o.total,
         status: o.status,
-        customer: o.user?.name || o.user?.email || 'Guest',
-        store: o.store.name,
+        customer: o.User?.name || o.User?.email || 'Guest',
+        store: o.Store.name,
         createdAt: o.createdAt
       }))
     };
@@ -385,14 +385,14 @@ router.get('/:workspace/products', async (req, res) => {
 
     const tenant = await prisma.tenant.findUnique({
       where: { slug: workspace },
-      include: { stores: true }
+      include: { Store: true }
     });
 
     if (!tenant) {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
-    const storeIds = tenant.stores.map(s => s.id);
+    const storeIds = tenant.Store.map((s: any) => s.id);
 
     const products = await prisma.product.findMany({
       where: {
@@ -401,9 +401,9 @@ router.get('/:workspace/products', async (req, res) => {
       },
       include: {
         _count: {
-          select: { reviews: true, orderItems: true }
+          select: { Review: true, OrderItem: true }
         },
-        reviews: {
+        Review: {
           select: { rating: true }
         }
       },
@@ -411,9 +411,9 @@ router.get('/:workspace/products', async (req, res) => {
       take: Number.parseInt(String(limit), 10)
     });
 
-    const formatted = products.map(p => {
-      const avgRating = p.reviews.length > 0
-        ? (p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length)
+    const formatted = products.map((p: any) => {
+      const avgRating = p.Review.length > 0
+        ? (p.Review.reduce((sum: any, r: any) => sum + r.rating, 0) / p.Review.length)
         : 0;
 
       return {
@@ -501,7 +501,7 @@ router.get('/:workspace/stores', async (req, res) => {
 
     const tenant = await prisma.tenant.findUnique({
       where: { slug: workspace },
-      include: { stores: true }
+      include: { Store: true }
     });
 
     if (!tenant) {
@@ -510,20 +510,20 @@ router.get('/:workspace/stores', async (req, res) => {
 
     // Get analytics for each store
     const storeAnalytics = await Promise.all(
-      tenant.stores.map(async (store) => {
+      tenant.Store.map(async (store: any) => {
         const [orderCount, revenue, customerCount] = await Promise.all([
           prisma.order.count({
             where: {
               storeId: store.id,
               createdAt: { gte: startDate },
-              status: { in: ['PAID', 'FULFILLED'] }
+              status: { in: ['CONFIRMED', 'READY'] }
             }
           }),
           prisma.order.aggregate({
             where: {
               storeId: store.id,
               createdAt: { gte: startDate },
-              status: { in: ['PAID', 'FULFILLED'] }
+              status: { in: ['CONFIRMED', 'READY'] }
             },
             _sum: { total: true }
           }),

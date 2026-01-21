@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import getPrisma from '../lib/prisma';
 import { logger } from '../lib/logger';
@@ -106,11 +107,13 @@ class PrismaAdminStore implements AdminStore {
   async invite(data: Omit<AdminRecord, 'id'>): Promise<AdminRecord> {
     const created = await this.prisma.adminUser.create({
       data: {
+        id: crypto.randomUUID(),
         email: data.email,
         role: (data.role as any) ?? 'EDITOR',
         organizationSlug: data.organizationSlug ?? null,
         brandSlug: data.brandSlug ?? null,
         storeSlug: data.storeSlug ?? null,
+        updatedAt: new Date(),
       },
     });
     return {

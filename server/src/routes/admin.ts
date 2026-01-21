@@ -1558,7 +1558,7 @@ adminRouter.get("/orders/stores", requireRole("VIEWER"), async (req, res) => {
     const prisma = getPrisma();
     const tenant = String((req.query as any).tenant || "").trim();
     const stores = await prisma.store.findMany({
-      where: tenant ? { tenant: { slug: tenant } } : undefined,
+      where: tenant ? { Tenant: { slug: tenant } } : undefined,
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     });
@@ -1661,16 +1661,16 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
       orderBy: { createdAt: "desc" },
       take,
       include: {
-        user: { select: { id: true, email: true, name: true } },
-        store: { 
+        User: { select: { id: true, email: true, name: true } },
+        Store: { 
           select: { 
             id: true, 
             name: true, 
             slug: true,
-            tenant: { select: { slug: true } }
+            Tenant: { select: { slug: true } }
           } 
         },
-        _count: { select: { items: true } },
+        _count: { select: { OrderItem: true } },
       },
     });
 
@@ -1701,7 +1701,7 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
     }
 
     res.json({
-      orders: orders.map((o) => ({
+      orders: orders.map((o: any) => ({
         id: o.id,
         status: o.status,
         total: o.total,
@@ -1709,9 +1709,9 @@ adminRouter.get("/orders", requireRole("VIEWER"), async (req, res) => {
         updatedAt: o.updatedAt,
         userId: o.userId,
         storeId: o.storeId,
-        user: o.user,
-        store: o.store,
-        itemCount: (o as any)._count?.items ?? 0,
+        user: o.User,
+        store: o.Store,
+        itemCount: (o as any)._count?.OrderItem ?? 0,
       })),
       canUpdateStatus: false,
       sourceOfTruth: "Nimbus database",
@@ -1749,13 +1749,13 @@ adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
     let order = await prisma.order.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, email: true, name: true } },
-        store: { select: { id: true, name: true, slug: true } },
-        items: {
+        User: { select: { id: true, email: true, name: true } },
+        Store: { select: { id: true, name: true, slug: true } },
+        OrderItem: {
           orderBy: { createdAt: "asc" },
           include: {
-            product: { select: { id: true, name: true, slug: true } },
-            variant: { select: { id: true, name: true, sku: true } },
+            Product: { select: { id: true, name: true, slug: true } },
+            ProductVariant: { select: { id: true, name: true, sku: true } },
           },
         },
       },
@@ -1777,9 +1777,9 @@ adminRouter.get("/orders/:id", requireRole("VIEWER"), async (req, res) => {
       return res.status(404).json({ error: "NOT_FOUND" });
     }
 
-    if (tenant && (order as any)?.store?.slug) {
+    if (tenant && (order as any)?.Store?.slug) {
       const scopedStore = await prisma.store.findFirst({
-        where: { id: (order as any).storeId, tenant: { slug: tenant } },
+        where: { id: (order as any).storeId, Tenant: { slug: tenant } },
         select: { id: true },
       });
       if (!scopedStore) return res.status(404).json({ error: "NOT_FOUND" });
@@ -2966,6 +2966,7 @@ adminRouter.post("/admin-users/invite", requireRole("ORG_ADMIN"), async (req: an
 
     const invitation = await prisma.adminInvitation.create({
       data: {
+        id: crypto.randomUUID(),
         email,
         token,
         role,
@@ -3059,6 +3060,7 @@ adminRouter.post("/admin-users/accept-invitation", async (req, res: any) => {
         updatedBy: invitation.email,
       },
       create: {
+        id: crypto.randomUUID(),
         email: invitation.email,
         passwordHash,
         role: invitation.role,
@@ -3066,6 +3068,7 @@ adminRouter.post("/admin-users/accept-invitation", async (req, res: any) => {
         brandSlug: invitation.brandSlug,
         storeSlug: invitation.storeSlug,
         createdBy: invitation.invitedBy || invitation.email,
+        updatedAt: new Date(),
       },
     });
 
@@ -3232,6 +3235,7 @@ adminRouter.post("/admin-users/:id/resend-invitation", requireRole("ORG_ADMIN"),
 
     const invitation = await prisma.adminInvitation.create({
       data: {
+        id: crypto.randomUUID(),
         email: admin.email,
         token,
         role: admin.role,
@@ -3289,6 +3293,7 @@ adminRouter.post("/admin-users/request-password-reset", async (req, res: any) =>
 
     await prisma.adminPasswordReset.create({
       data: {
+        id: crypto.randomUUID(),
         adminId: admin.id,
         token,
         expiresAt,

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import crypto from "crypto";
 import { ADMIN_SEED_ENABLED, APP_ENV, DEMO_TENANT_SLUG } from "./config/env";
 
 const prisma = new PrismaClient();
@@ -23,33 +24,40 @@ export async function seedControlPlane() {
 
   const tenant = await prisma.tenant.create({
     data: {
+      id: crypto.randomUUID(),
       slug: tenantSlug,
       name: APP_ENV === "demo" ? "Demo Operator" : "Preview Operator",
       status: "active",
       sanityDataset: APP_ENV === "demo" ? "nimbus_demo" : "nimbus_preview",
       region: "US-MI",
+      updatedAt: new Date(),
     },
   });
 
   await prisma.store.createMany({
     data: [
       {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         slug: "downtown-detroit",
         name: "Downtown Detroit",
         timezone: "America/Detroit",
+        updatedAt: new Date(),
       },
       {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         slug: "eastside",
         name: "Eastside",
         timezone: "America/Detroit",
+        updatedAt: new Date(),
       },
     ],
   });
 
   await prisma.theme.create({
     data: {
+      id: crypto.randomUUID(),
       tenantId: tenant.id,
       name: "Default",
       isDefault: true,
@@ -60,20 +68,25 @@ export async function seedControlPlane() {
           background: "#FFFFFF",
         },
       },
+      updatedAt: new Date(),
     },
   });
 
   await prisma.featureFlag.createMany({
     data: [
       {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         key: "ai_concierge",
         valueJson: { enabled: true },
+        updatedAt: new Date(),
       },
       {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         key: "journal_enabled",
         valueJson: { enabled: true },
+        updatedAt: new Date(),
       },
     ],
   });
