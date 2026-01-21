@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import { ADMIN_SEED_ENABLED, APP_ENV, DEMO_TENANT_SLUG } from "./config/env";
-
-const prisma = new PrismaClient();
+import getPrisma from "./lib/prisma";
 
 /**
  * Seeds control-plane data based on APP_ENV and ADMIN_SEED_ENABLED.
@@ -14,6 +12,7 @@ const prisma = new PrismaClient();
  */
 export async function seedControlPlane() {
   if (!ADMIN_SEED_ENABLED) return;
+  const prisma = getPrisma();
   const tenantSlug =
     DEMO_TENANT_SLUG ||
     (APP_ENV === "demo" ? "demo-operator" : "preview-operator");
