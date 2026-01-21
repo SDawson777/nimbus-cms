@@ -7,7 +7,6 @@ import express, { Request, Response } from 'express';
 import getPrisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = getPrisma();
 
 type OrdersByDayRow = { date: string | Date; count: number };
 type RevenueByDayRow = { date: string | Date; revenue: number | null };
@@ -18,6 +17,7 @@ type RevenueByDayRow = { date: string | Date; revenue: number | null };
  */
 router.get('/:workspace/overview', async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { workspace } = req.params;
     const { period = '30' } = req.query; // days
 
@@ -380,6 +380,7 @@ router.get('/:workspace/overview', async (req, res) => {
  */
 router.get('/:workspace/products', async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { workspace } = req.params;
     const { limit = 20 } = req.query;
 
@@ -445,6 +446,7 @@ router.get('/:workspace/products', async (req, res) => {
  */
 router.get('/:workspace/stores', async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { workspace } = req.params;
     const { period = '30' } = req.query;
 
