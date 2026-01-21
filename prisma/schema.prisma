@@ -21,6 +21,7 @@ model AccessibilitySetting {
 model Address {
   id        String   @id
   userId    String
+  label     String?
   fullName  String
   phone     String
   line1     String
@@ -29,6 +30,8 @@ model Address {
   state     String
   zipCode   String
   country   String   @default("US")
+  latitude  Float?
+  longitude Float?
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime
@@ -315,6 +318,8 @@ model JournalEntry {
   productId String
   rating    Int?
   notes     String?
+  mood      String?
+  effects   Json?
   tags      String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime
@@ -323,6 +328,7 @@ model JournalEntry {
 
   @@index([productId])
   @@index([userId])
+  @@index([userId, createdAt])
 }
 
 model LoyaltyBadge {
@@ -342,18 +348,21 @@ model LoyaltyBadge {
 }
 
 model LoyaltyStatus {
-  id        String    @id
-  userId    String    @unique
-  storeId   String
-  status    String
-  points    Int       @default(0)
-  updatedAt DateTime
-  deletedAt DateTime?
-  createdBy String?
-  updatedBy String?
-  meta      Json?
-  Store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id
+  userId         String    @unique
+  storeId        String
+  status         String
+  tier           String?
+  points         Int       @default(0)
+  lifetimePoints Int       @default(0)
+  tierExpiresAt  DateTime?
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+  meta           Json?
+  Store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -401,28 +410,37 @@ model NotificationPreference {
 }
 
 model Order {
-  id            String             @id
-  userId        String
-  storeId       String
-  status        OrderStatus        @default(CREATED)
-  paymentMethod OrderPaymentMethod @default(pay_at_pickup)
-  notes         String?
-  contactName   String?
-  contactPhone  String?
-  contactEmail  String?
-  subtotal      Float?
-  tax           Float?
-  total         Float
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime
-  deletedAt     DateTime?
-  createdBy     String?
-  updatedBy     String?
-  meta          Json?
-  version       Int                @default(1)
-  Store         Store              @relation(fields: [storeId], references: [id])
-  User          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  OrderItem     OrderItem[]
+  id              String             @id
+  userId          String
+  storeId         String
+  status          OrderStatus        @default(CREATED)
+  paymentMethod   OrderPaymentMethod @default(pay_at_pickup)
+  notes           String?
+  contactName     String?
+  contactPhone    String?
+  contactEmail    String?
+  subtotal        Float?
+  tax             Float?
+  discount        Float?
+  deliveryFee     Float?
+  tipAmount       Float?
+  deliveryAddress String?
+  deliveryNotes   String?
+  scheduledFor    DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  total           Float
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime
+  deletedAt       DateTime?
+  createdBy       String?
+  updatedBy       String?
+  meta            Json?
+  version         Int                @default(1)
+  Store           Store              @relation(fields: [storeId], references: [id])
+  User            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  OrderItem       OrderItem[]
 
   @@index([createdAt])
   @@index([status])
@@ -493,7 +511,10 @@ model Product {
   isActive         Boolean          @default(true)
   thcPercent       Float?
   cbdPercent       Float?
+  cbdMgPerUnit     Float?
   thcMgPerUnit     Float?
+  weight           Float?
+  labTestUrl       String?
   purchasesLast30d Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime
@@ -617,6 +638,9 @@ model Store {
   brandId           String?
   slug              String
   name              String
+  description       String?
+  logoUrl           String?
+  bannerUrl         String?
   address1          String?
   address2          String?
   city              String?
@@ -629,6 +653,13 @@ model Store {
   email             String?
   timezone          String?
   hours             Json?
+  licenseNumber     String?
+  licenseExpiry     DateTime?
+  minOrderAmount    Float?
+  deliveryRadius    Float?
+  deliveryFee       Float?
+  avgRating         Float?
+  reviewCount       Int?
   status            String          @default("active")
   isActive          Boolean         @default(true)
   isDeliveryEnabled Boolean         @default(false)
@@ -727,6 +758,7 @@ model User {
   ageVerified            Boolean                  @default(false)
   state                  String?
   fcmToken               String?
+  avatarUrl              String?
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime
   deletedAt              DateTime?
@@ -893,4 +925,16 @@ enum UserRole {
   STAFF
   MANAGER
   ADMIN
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ComplianceRuleType {
+  PURCHASE_LIMIT
+  AGE_REQUIREMENT
+  HOURS_OF_OPERATION
+  ID_VERIFICATION
 }
