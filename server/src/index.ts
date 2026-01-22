@@ -145,6 +145,7 @@ app.get("/ready", async (_req, res) => {
   > = {
     db: { ok: false, ms: 0 },
     sanity: { ok: false, ms: 0 },
+    redis: { ok: false, ms: 0 },
   };
 
   // DB check
@@ -180,7 +181,36 @@ app.get("/ready", async (_req, res) => {
     }
   }
 
-  const ok = Object.values(checks).every((c) => c.ok);
+  // Redis check (optional - only if REDIS_URL is configured)
+  {
+    const t0 = Date.now();
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      checks.redis = { ok: true, ms: 0, error: "not configured (optional)" };
+    } else {
+      try {
+        const IORedis = (await import("ioredis")).default;
+        const client = new IORedis(redisUrl, { 
+          connectTimeout: 5000,
+          maxRetriesPerRequest: 1,
+          lazyConnect: true,
+        });
+        await client.connect();
+        await client.ping();
+        await client.quit();
+        checks.redis = { ok: true, ms: Date.now() - t0 };
+      } catch (e: any) {
+        checks.redis = {
+          ok: false,
+          ms: Date.now() - t0,
+          error: e?.message ? String(e.message) : "redis check failed",
+        };
+      }
+    }
+  }
+
+  // Redis is optional - only db and sanity are required for "ok"
+  const ok = checks.db.ok && checks.sanity.ok;
   const status = ok ? 200 : 503;
   res.status(status).json({ ok, checks, ms: Date.now() - startedAt });
 });

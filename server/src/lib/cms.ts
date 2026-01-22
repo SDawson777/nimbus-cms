@@ -1,5 +1,15 @@
 import { createClient } from "@sanity/client";
 
+// Resolve dataset from multiple possible env var names
+function getSanityDataset(): string {
+  return (
+    process.env.SANITY_DATASET ||
+    process.env.SANITY_STUDIO_DATASET ||
+    process.env.SANITY_DATASET_DEFAULT ||
+    ""
+  );
+}
+
 export async function fetchCMS<T>(
   query: string,
   params: Record<string, any>,
@@ -10,7 +20,7 @@ export async function fetchCMS<T>(
   const client = createClient({
     projectId:
       process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
-    dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
+    dataset: getSanityDataset(),
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
     token: preview
       ? process.env.SANITY_PREVIEW_TOKEN ||
@@ -39,7 +49,7 @@ export function createWriteClient() {
   return createClient({
     projectId:
       process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID!,
-    dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET!,
+    dataset: getSanityDataset(),
     apiVersion: process.env.SANITY_API_VERSION || "2023-07-01",
     token:
       process.env.SANITY_API_TOKEN ||
