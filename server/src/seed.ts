@@ -507,16 +507,374 @@ export async function seedControlPlane() {
     });
     console.log(`[seedControlPlane] Created audit log entries`);
 
+    // ====================================================================
+    // SECOND TENANT: California Multi-Store Operator (Enterprise Demo)
+    // ====================================================================
+    console.log(`[seedControlPlane] Creating second tenant for multi-tenant demo...`);
+    
+    const tenant2 = await prisma.tenant.create({
+      data: {
+        id: crypto.randomUUID(),
+        slug: "cali-green-collective",
+        name: "Cali Green Collective",
+        status: "active",
+        sanityDataset: "nimbus_demo",
+        region: "US-CA",
+        updatedAt: new Date(),
+      },
+    });
+    console.log(`[seedControlPlane] Created second tenant: ${tenant2.name}`);
+
+    // Create 5 California stores
+    const caStores = await Promise.all([
+      prisma.store.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          slug: "sf-mission",
+          name: "SF Mission District",
+          timezone: "America/Los_Angeles",
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.store.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          slug: "sf-soma",
+          name: "SF SOMA",
+          timezone: "America/Los_Angeles",
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.store.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          slug: "oakland-downtown",
+          name: "Oakland Downtown",
+          timezone: "America/Los_Angeles",
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.store.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          slug: "la-venice",
+          name: "LA Venice Beach",
+          timezone: "America/Los_Angeles",
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.store.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          slug: "la-dtla",
+          name: "LA Downtown",
+          timezone: "America/Los_Angeles",
+          updatedAt: new Date(),
+        },
+      }),
+    ]);
+    console.log(`[seedControlPlane] Created ${caStores.length} California stores`);
+
+    // Create admin users for California tenant
+    await prisma.adminUser.createMany({
+      data: [
+        {
+          id: crypto.randomUUID(),
+          email: "cali-admin@nimbus.app",
+          passwordHash: adminPasswordHash,
+          role: "OWNER",
+          organizationSlug: "cali-green-collective",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: crypto.randomUUID(),
+          email: "sf-manager@nimbus.app",
+          passwordHash: adminPasswordHash,
+          role: "STORE_MANAGER",
+          organizationSlug: "cali-green-collective",
+          storeSlug: "sf-mission",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: crypto.randomUUID(),
+          email: "la-manager@nimbus.app",
+          passwordHash: adminPasswordHash,
+          role: "STORE_MANAGER",
+          organizationSlug: "cali-green-collective",
+          storeSlug: "la-venice",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+    });
+    console.log(`[seedControlPlane] Created 3 California admin users`);
+
+    // Create California products (different brands)
+    const caProducts = await Promise.all([
+      prisma.product.create({
+        data: {
+          id: crypto.randomUUID(),
+          storeId: caStores[0].id,
+          name: "Sunset Sherbet",
+          slug: "sunset-sherbet",
+          description: "Sweet citrus hybrid with purple hues",
+          brand: "Pacific Reserve",
+          category: "Flower",
+          type: "FLOWER",
+          status: "ACTIVE",
+          strainType: "Hybrid",
+          terpenes: ["Caryophyllene", "Limonene", "Linalool"],
+          price: 55.00,
+          defaultPrice: 55.00,
+          thcPercent: 28.0,
+          cbdPercent: 0.1,
+          isActive: true,
+          purchasesLast30d: 312,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.product.create({
+        data: {
+          id: crypto.randomUUID(),
+          storeId: caStores[0].id,
+          name: "Ocean Breeze Gummies",
+          slug: "ocean-breeze-gummies",
+          description: "Tropical flavored THC gummies, 10mg each",
+          brand: "Coastal Edibles",
+          category: "Edibles",
+          type: "EDIBLE",
+          status: "ACTIVE",
+          strainType: "Hybrid",
+          price: 28.00,
+          defaultPrice: 28.00,
+          thcPercent: 0.0,
+          thcMgPerUnit: 10.0,
+          isActive: true,
+          purchasesLast30d: 245,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.product.create({
+        data: {
+          id: crypto.randomUUID(),
+          storeId: caStores[3].id, // LA store
+          name: "Golden State Preroll",
+          slug: "golden-state-preroll",
+          description: "Premium 1g preroll infused with live resin",
+          brand: "Golden Farms",
+          category: "PreRoll",
+          type: "FLOWER",
+          status: "ACTIVE",
+          strainType: "Sativa",
+          price: 18.00,
+          defaultPrice: 18.00,
+          thcPercent: 32.0,
+          isActive: true,
+          purchasesLast30d: 189,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+    ]);
+    console.log(`[seedControlPlane] Created ${caProducts.length} California products`);
+
+    // Create California customers
+    const caUsers = await Promise.all([
+      prisma.user.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          storeId: caStores[0].id,
+          email: "alex.wong@example.com",
+          phone: "+1-415-555-0201",
+          name: "Alex Wong",
+          role: "CUSTOMER",
+          isActive: true,
+          ageVerified: true,
+          state: "CA",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.user.create({
+        data: {
+          id: crypto.randomUUID(),
+          tenantId: tenant2.id,
+          storeId: caStores[3].id,
+          email: "maria.garcia@example.com",
+          phone: "+1-310-555-0202",
+          name: "Maria Garcia",
+          role: "CUSTOMER",
+          isActive: true,
+          ageVerified: true,
+          state: "CA",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+    ]);
+    console.log(`[seedControlPlane] Created ${caUsers.length} California customers`);
+
+    // Create California orders
+    await Promise.all([
+      prisma.order.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId: caUsers[0].id,
+          storeId: caStores[0].id,
+          status: "COMPLETED",
+          paymentMethod: "card",
+          contactName: "Alex Wong",
+          contactPhone: "+1-415-555-0201",
+          contactEmail: "alex.wong@example.com",
+          subtotal: 83.00,
+          tax: 12.45,
+          discount: 0,
+          total: 95.45,
+          completedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.order.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId: caUsers[1].id,
+          storeId: caStores[3].id,
+          status: "READY",
+          paymentMethod: "card",
+          contactName: "Maria Garcia",
+          contactPhone: "+1-310-555-0202",
+          contactEmail: "maria.garcia@example.com",
+          subtotal: 54.00,
+          tax: 8.10,
+          discount: 5.00,
+          total: 57.10,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
+    ]);
+    console.log(`[seedControlPlane] Created 2 California orders`);
+
+    // Create California feature flags (different config)
+    await prisma.featureFlag.createMany({
+      data: [
+        { id: crypto.randomUUID(), tenantId: tenant2.id, key: "ai_concierge", valueJson: { enabled: true, model: "gpt-4o", maxTokens: 4096 }, updatedAt: new Date() },
+        { id: crypto.randomUUID(), tenantId: tenant2.id, key: "loyalty_program", valueJson: { enabled: true, pointsPerDollar: 2, redeemRatio: 50 }, updatedAt: new Date() },
+        { id: crypto.randomUUID(), tenantId: tenant2.id, key: "delivery_enabled", valueJson: { enabled: true, minOrder: 50, freeDeliveryMin: 100 }, updatedAt: new Date() },
+        { id: crypto.randomUUID(), tenantId: tenant2.id, key: "multi_location", valueJson: { enabled: true, maxStores: 25 }, updatedAt: new Date() },
+        { id: crypto.randomUUID(), tenantId: tenant2.id, key: "cannabis_tax_rate", valueJson: { enabled: true, exciseTax: 0.15, salesTax: 0.0875 }, updatedAt: new Date() },
+      ],
+    });
+    console.log(`[seedControlPlane] Created 5 California feature flags`);
+
+    // Create California theme
+    await prisma.theme.create({
+      data: {
+        id: crypto.randomUUID(),
+        tenantId: tenant2.id,
+        name: "Cali Green Theme",
+        isDefault: true,
+        configJson: {
+          palette: {
+            primary: "#10B981",
+            secondary: "#F59E0B",
+            background: "#FEFCE8",
+            surface: "#FFFFFF",
+            error: "#EF4444",
+            success: "#22C55E",
+            warning: "#F97316",
+            info: "#3B82F6",
+            textPrimary: "#1F2937",
+            textSecondary: "#6B7280",
+          },
+          typography: {
+            fontFamily: "Montserrat, system-ui, sans-serif",
+            headingFontFamily: "Poppins, Montserrat, sans-serif",
+          },
+          borderRadius: {
+            sm: "6px",
+            md: "12px",
+            lg: "16px",
+            xl: "24px",
+          },
+          logo: {
+            url: "https://via.placeholder.com/200x60?text=Cali+Green",
+            width: 200,
+            height: 60,
+          },
+        },
+        updatedAt: new Date(),
+      },
+    });
+    console.log(`[seedControlPlane] Created California theme`);
+
+    // Create California loyalty status
+    await Promise.all(
+      caUsers.map((user, idx) =>
+        prisma.loyaltyStatus.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: user.id,
+            storeId: user.storeId!,
+            status: "active",
+            tier: idx === 0 ? "platinum" : "gold",
+            points: idx === 0 ? 1200 : 450,
+            lifetimePoints: idx === 0 ? 5000 : 1800,
+            updatedAt: new Date(),
+          },
+        })
+      )
+    );
+    console.log(`[seedControlPlane] Created loyalty status for California users`);
+
+    // Create California API key
+    await prisma.apiKey.create({
+      data: {
+        id: crypto.randomUUID(),
+        tenantId: tenant2.id,
+        key: `nimbus_cali_${crypto.randomBytes(16).toString("hex")}`,
+        label: "California Integration Key",
+        createdAt: new Date(),
+      },
+    });
+    console.log(`[seedControlPlane] Created California API key`);
+
+    // Create California audit log
+    await prisma.auditLog.createMany({
+      data: [
+        { id: crypto.randomUUID(), tenantId: tenant2.id, actorId: null, action: "TENANT_CREATED", details: { name: tenant2.name }, createdAt: new Date() },
+        { id: crypto.randomUUID(), tenantId: tenant2.id, actorId: null, action: "MULTI_TENANT_SEED", details: { stores: caStores.length, products: caProducts.length }, createdAt: new Date() },
+      ],
+    });
+
     console.log(`[seedControlPlane] ✅ Successfully seeded comprehensive demo data for ${tenantSlug}`);
     console.log(`[seedControlPlane] Summary:`);
-    console.log(`  - 1 Tenant: ${tenant.name}`);
-    console.log(`  - 3 Stores: Downtown Detroit, Eastside, Ann Arbor`);
-    console.log(`  - 4 Admin Users (OWNER, STORE_MANAGER, EDITOR, VIEWER)`);
-    console.log(`  - ${products.length} Products across categories`);
-    console.log(`  - ${users.length} Customers`);
-    console.log(`  - ${orders.length} Orders with various statuses`);
-    console.log(`  - 10 Feature Flags`);
-    console.log(`  - API key for integrations`);
+    console.log(`  TENANT 1: ${tenant.name} (Michigan)`);
+    console.log(`    - 3 Stores: Downtown Detroit, Eastside, Ann Arbor`);
+    console.log(`    - 4 Admin Users (OWNER, STORE_MANAGER, EDITOR, VIEWER)`);
+    console.log(`    - ${products.length} Products across categories`);
+    console.log(`    - ${users.length} Customers`);
+    console.log(`    - ${orders.length} Orders with various statuses`);
+    console.log(`    - 10 Feature Flags`);
+    console.log(`  TENANT 2: ${tenant2.name} (California)`);
+    console.log(`    - 5 Stores: SF Mission, SF SOMA, Oakland, LA Venice, LA Downtown`);
+    console.log(`    - 3 Admin Users (OWNER, 2 STORE_MANAGERs)`);
+    console.log(`    - ${caProducts.length} Products`);
+    console.log(`    - ${caUsers.length} Customers`);
+    console.log(`    - 2 Orders`);
+    console.log(`    - 5 Feature Flags (different config)`);
+    console.log(`  TOTAL: 2 Tenants, 8 Stores, 7 Admin Users`);
   } catch (err) {
     console.error("[seedControlPlane] Error during seeding:", err);
     throw err;
