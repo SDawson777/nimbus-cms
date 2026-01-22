@@ -31,7 +31,8 @@ const quizSubmitLimiter = rateLimit({
 // ==========================================
 quizRouter.get("/articles/:slug/quiz", async (req, res) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
     const userId = (req as any).user?.id; // Optional - from JWT middleware
 
     const quiz = await fetchQuizByArticleSlug(slug, userId);
@@ -72,7 +73,9 @@ quizRouter.post(
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const { quizId } = req.params;
+      // Extract quizId as string (Express 5 params can be string | string[])
+      const rawQuizId = req.params.quizId;
+      const quizId = Array.isArray(rawQuizId) ? rawQuizId[0] : rawQuizId;
 
       // Validate request body
       const parseResult = submitSchema.safeParse(req.body);
@@ -128,7 +131,8 @@ quizRouter.get("/quizzes/:quizId/status", async (req, res) => {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const { quizId } = req.params;
+    const rawQuizId = req.params.quizId;
+    const quizId = Array.isArray(rawQuizId) ? rawQuizId[0] : rawQuizId;
     const status = await getUserQuizStatus(userId, quizId);
 
     if (!status) {
