@@ -11,15 +11,24 @@ import getPrisma from "./lib/prisma";
  * - prod: does nothing.
  */
 export async function seedControlPlane() {
-  if (!ADMIN_SEED_ENABLED) return;
+  console.log(`[seedControlPlane] Starting seed check: ADMIN_SEED_ENABLED=${ADMIN_SEED_ENABLED}, APP_ENV=${APP_ENV}`);
+  if (!ADMIN_SEED_ENABLED) {
+    console.log("[seedControlPlane] Seeding disabled, skipping");
+    return;
+  }
   const prisma = getPrisma();
   const tenantSlug =
     DEMO_TENANT_SLUG ||
     (APP_ENV === "demo" ? "demo-operator" : "preview-operator");
+  console.log(`[seedControlPlane] Checking for existing tenant: ${tenantSlug}`);
   const existing = await prisma.tenant.findUnique({
     where: { slug: tenantSlug },
   });
-  if (existing) return;
+  if (existing) {
+    console.log(`[seedControlPlane] Tenant ${tenantSlug} already exists, skipping seed`);
+    return;
+  }
+  console.log(`[seedControlPlane] Creating tenant ${tenantSlug}...`);
 
   const tenant = await prisma.tenant.create({
     data: {
