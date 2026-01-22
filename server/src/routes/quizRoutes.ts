@@ -67,7 +67,7 @@ quizRouter.post(
   async (req, res) => {
     try {
       // Require authentication
-      const userId = (req as any).user?.id;
+      const userId: string | undefined = (req as any).user?.id;
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }

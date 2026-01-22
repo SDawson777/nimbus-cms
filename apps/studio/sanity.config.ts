@@ -8,11 +8,8 @@ import dashboardConfig from "./src/dashboardConfig";
 import { schemaTypes } from "../../schemaTypes";
 import { PREVIEW_TOKEN_ENV } from "./config/preview";
 
-// Prefer generic SANITY_PROJECT_ID / SANITY_DATASET, fall back to SANITY_STUDIO_* for compatibility
-const projectId =
-  process.env.SANITY_PROJECT_ID ||
-  process.env.SANITY_STUDIO_PROJECT_ID ||
-  "ygbu28p2";
+// Hardcoded projectId for Sanity-hosted Studio (env vars not available at runtime)
+const projectId = "ygbu28p2";
 
 // For Sanity-hosted Studios (e.g. *.sanity.studio) the Studio is typically
 // served at the domain root. Allow overriding via env for reverse-proxied
