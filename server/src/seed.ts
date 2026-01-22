@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import { ADMIN_SEED_ENABLED, APP_ENV, DEMO_TENANT_SLUG } from "./config/env";
-
-// Use dynamic require to get the PrismaClient class - this ensures we use
-// the freshly generated client from init_and_start.sh, not the compiled-in reference
-type PrismaClientType = InstanceType<typeof import("@prisma/client").PrismaClient>;
+import { getPrisma } from "./lib/prisma";
 
 /**
  * Seeds control-plane data based on APP_ENV and ADMIN_SEED_ENABLED.
+ *
+ * Note: The primary seeding is now done in init_and_start.sh before the server starts.
+ * This function serves as a fallback for local development or if init script seeding fails.
  *
  * - demo: creates a "demo-operator" tenant with a couple of stores,
  *   a default theme, and feature flags set.
@@ -20,20 +20,7 @@ export async function seedControlPlane() {
     return;
   }
   
-  // Use dynamic require to force loading the freshly generated Prisma client
-  console.log("[seedControlPlane] Loading PrismaClient dynamically...");
-  let prisma: PrismaClientType;
-  try {
-    // Clear require cache and re-require to get fresh client
-    const prismaClientPath = require.resolve("@prisma/client");
-    delete require.cache[prismaClientPath];
-    const { PrismaClient } = require("@prisma/client");
-    prisma = new PrismaClient();
-    console.log("[seedControlPlane] PrismaClient created successfully");
-  } catch (e) {
-    console.error("[seedControlPlane] Failed to create PrismaClient:", e);
-    throw e;
-  }
+  const prisma = getPrisma();
   
   try {
     const tenantSlug =
@@ -44,8 +31,7 @@ export async function seedControlPlane() {
       where: { slug: tenantSlug },
     });
     if (existing) {
-      console.log(`[seedControlPlane] Tenant ${tenantSlug} already exists, skipping seed`);
-      await prisma.$disconnect();
+      console.log(`[seedControlPlane] Tenant ${tenantSlug} already exists (likely seeded by init script)`);
       return;
     }
     console.log(`[seedControlPlane] Creating tenant ${tenantSlug}...`);
@@ -122,10 +108,8 @@ export async function seedControlPlane() {
   console.log(
     `[seedControlPlane] Seeded tenant ${tenantSlug} for ${APP_ENV} environment`,
   );
-    await prisma.$disconnect();
   } catch (err) {
     console.error("[seedControlPlane] Error during seeding:", err);
-    await prisma.$disconnect();
     throw err;
   }
 }
