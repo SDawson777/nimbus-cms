@@ -4,8 +4,8 @@ import { visionTool } from "@sanity/vision";
 import { dashboardTool } from "@sanity/dashboard";
 import dashboardConfig from "./src/dashboardConfig";
 
-// Shared schemaTypes live at the monorepo root
-import { schemaTypes } from "../../schemaTypes";
+// Schema types are local to the studio
+import schemaTypes from "./schemaTypes";
 
 // Hardcoded values for Sanity-hosted Studio (env vars not available at runtime)
 const projectId = "ygbu28p2";
