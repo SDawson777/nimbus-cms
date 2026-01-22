@@ -5,11 +5,12 @@ import { defineField, defineType } from "sanity";
 // Sanity Studio v3+ client is imported via @sanity/client; avoid CommonJS require
 import { createClient } from "@sanity/client";
 
+// Hardcoded for Sanity-hosted Studio (env vars not available at runtime)
 const studioClient = createClient({
-  projectId:
-    process.env.SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID,
-  dataset: process.env.SANITY_DATASET || process.env.SANITY_STUDIO_DATASET,
+  projectId: "ygbu28p2",
+  dataset: "nimbus_demo",
   useCdn: false,
+  apiVersion: "2024-08-01",
 });
 
 export default defineType({
