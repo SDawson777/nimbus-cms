@@ -19,7 +19,15 @@ export async function seedControlPlane() {
   
   // Create a fresh PrismaClient for seeding - this ensures we use the
   // regenerated client from init_and_start.sh, not the compiled-in reference
-  const prisma = new PrismaClient();
+  console.log("[seedControlPlane] Creating PrismaClient...");
+  let prisma: PrismaClient;
+  try {
+    prisma = new PrismaClient();
+    console.log("[seedControlPlane] PrismaClient created successfully");
+  } catch (e) {
+    console.error("[seedControlPlane] Failed to create PrismaClient:", e);
+    throw e;
+  }
   
   try {
     const tenantSlug =
