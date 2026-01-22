@@ -16,12 +16,8 @@ const quizSubmitLimiter = rateLimit({
   max: 10, // 10 attempts per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    // Use user ID if authenticated, otherwise IP
-    const userId = (req as any).user?.id;
-    const ip = Array.isArray(req.ip) ? req.ip[0] : req.ip;
-    return userId || ip || "unknown";
-  },
+  // Use default IP-based key generator (handles IPv6 properly)
+  // User-based limiting happens via getUserQuizStatus in the service layer
   message: { error: "Too many quiz submissions. Please wait before trying again." },
 });
 

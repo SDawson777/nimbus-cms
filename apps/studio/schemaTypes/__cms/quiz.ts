@@ -51,7 +51,7 @@ export default defineType({
       name: "articleRef",
       type: "reference",
       title: "Linked Article",
-      to: [{ type: "article" }, { type: "greenhouseArticle" }],
+      to: [{ type: "article" }],
       group: "content",
       description: "Article this quiz is attached to",
     }),
