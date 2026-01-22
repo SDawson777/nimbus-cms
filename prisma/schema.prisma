@@ -372,10 +372,58 @@ model LoyaltyTransaction {
   amount      Int
   description String
   orderId     String?
+  quizId      String?
   createdAt   DateTime @default(now())
 
   @@index([orderId])
+  @@index([quizId])
   @@index([userId, createdAt])
+}
+
+// ==========================================
+// QUIZ LOYALTY INTEGRATION
+// ==========================================
+
+enum QuizAttemptStatus {
+  in_progress
+  failed
+  passed
+  expired
+}
+
+model QuizAttempt {
+  id            String            @id @default(cuid())
+  userId        String
+  quizId        String // Sanity document _id
+  attemptCount  Int               @default(0)
+  status        QuizAttemptStatus @default(in_progress)
+  score         Float?
+  passThreshold Float?
+  locked        Boolean           @default(false)
+  passedAt      DateTime?
+  lastAttemptAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  User          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+  @@index([userId])
+  @@index([quizId])
+  @@index([status])
+}
+
+model QuizReward {
+  id            String   @id @default(cuid())
+  userId        String
+  quizId        String // Sanity document _id
+  pointsAwarded Int
+  transactionId String? // Reference to LoyaltyTransaction
+  awardedAt     DateTime @default(now())
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+  @@index([userId])
+  @@index([quizId])
 }
 
 model Notification {
@@ -785,6 +833,8 @@ model User {
   UserDataPreference     UserDataPreference?
   UserEvent              UserEvent[]
   UserPreference         UserPreference?
+  QuizAttempt            QuizAttempt[]
+  QuizReward             QuizReward[]
 
   @@index([email])
 }

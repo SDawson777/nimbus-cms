@@ -299,6 +299,23 @@ export async function seedControlPlane() {
           updatedAt: new Date(),
         },
       }),
+      // Demo user for quiz testing
+      prisma.user.create({
+        data: {
+          id: "demo-quiz-user",
+          tenantId: tenant.id,
+          storeId: downtownStore.id,
+          email: "quiz-demo@nimbus.app",
+          phone: "+1-313-555-0199",
+          name: "Quiz Demo User",
+          role: "CUSTOMER",
+          isActive: true,
+          ageVerified: true,
+          state: "MI",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }),
     ]);
     console.log(`[seedControlPlane] Created ${users.length} customers`);
 
@@ -461,6 +478,25 @@ export async function seedControlPlane() {
       },
     });
     console.log(`[seedControlPlane] Created API key`);
+
+    // Create loyalty status for demo users (required for quiz rewards)
+    await Promise.all(
+      users.map((user, idx) =>
+        prisma.loyaltyStatus.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: user.id,
+            storeId: user.storeId!,
+            status: "active",
+            tier: idx === 0 ? "gold" : "silver",
+            points: idx === 0 ? 500 : 100,
+            lifetimePoints: idx === 0 ? 1500 : 300,
+            updatedAt: new Date(),
+          },
+        })
+      )
+    );
+    console.log(`[seedControlPlane] Created loyalty status for ${users.length} users`);
 
     // Create audit log entries
     await prisma.auditLog.createMany({

@@ -36,6 +36,7 @@ import aiRouter from "./routes/ai";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
 import undoRouter from "./routes/undo";
+import quizRouter from "./routes/quizRoutes";
 import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -328,6 +329,12 @@ app.use("/api/v1/content", contentRouter);
 app.use("/api/v1/nimbus/content", contentRouter);
 // Mount content routes for mobile and external consumers (mobile contract)
 app.use("/content", contentRouter);
+
+// Quiz routes (article-linked quizzes with loyalty rewards)
+app.use("/api/v1/content", quizRouter);
+app.use("/api/v1/nimbus/content", quizRouter);
+app.use("/api/v1", quizRouter);
+app.use("/api/v1/nimbus", quizRouter);
 
 // personalization public endpoints
 app.use("/personalization", personalizationRouter);
