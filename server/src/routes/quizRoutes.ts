@@ -19,7 +19,8 @@ const quizSubmitLimiter = rateLimit({
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise IP
     const userId = (req as any).user?.id;
-    return userId || req.ip || "unknown";
+    const ip = Array.isArray(req.ip) ? req.ip[0] : req.ip;
+    return userId || ip || "unknown";
   },
   message: { error: "Too many quiz submissions. Please wait before trying again." },
 });

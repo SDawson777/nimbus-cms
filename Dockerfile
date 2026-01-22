@@ -1,24 +1,23 @@
 # --- Build stage: API only ---
 FROM node:20-slim AS api-builder
 
-WORKDIR /app/server
+WORKDIR /app
 
 # Install required system packages for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# Ensure Prisma schema is available for postinstall generate
-WORKDIR /app
+# Copy Prisma schema first (for generate step)
 COPY prisma ./prisma
-WORKDIR /app/server
 
-# Copy manifest only and install deps (tolerate peer issues)
+# Copy server manifest and install deps
+WORKDIR /app/server
 COPY server/package.json ./
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma client from schema (must be after npm install)
+# Generate Prisma client from current schema (AFTER npm install)
 RUN npx prisma generate --schema=../prisma/schema.prisma
 
-# Copy source
+# Copy server source and build
 COPY server ./
 RUN npm run build
 
