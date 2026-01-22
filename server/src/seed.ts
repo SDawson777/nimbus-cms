@@ -1,6 +1,6 @@
+import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import { ADMIN_SEED_ENABLED, APP_ENV, DEMO_TENANT_SLUG } from "./config/env";
-import getPrisma from "./lib/prisma";
 
 /**
  * Seeds control-plane data based on APP_ENV and ADMIN_SEED_ENABLED.
@@ -16,8 +16,12 @@ export async function seedControlPlane() {
     console.log("[seedControlPlane] Seeding disabled, skipping");
     return;
   }
+  
+  // Create a fresh PrismaClient for seeding - this ensures we use the
+  // regenerated client from init_and_start.sh, not the compiled-in reference
+  const prisma = new PrismaClient();
+  
   try {
-    const prisma = getPrisma();
     const tenantSlug =
       DEMO_TENANT_SLUG ||
       (APP_ENV === "demo" ? "demo-operator" : "preview-operator");
@@ -27,6 +31,7 @@ export async function seedControlPlane() {
     });
     if (existing) {
       console.log(`[seedControlPlane] Tenant ${tenantSlug} already exists, skipping seed`);
+      await prisma.$disconnect();
       return;
     }
     console.log(`[seedControlPlane] Creating tenant ${tenantSlug}...`);
@@ -103,8 +108,10 @@ export async function seedControlPlane() {
   console.log(
     `[seedControlPlane] Seeded tenant ${tenantSlug} for ${APP_ENV} environment`,
   );
+    await prisma.$disconnect();
   } catch (err) {
     console.error("[seedControlPlane] Error during seeding:", err);
+    await prisma.$disconnect();
     throw err;
   }
 }

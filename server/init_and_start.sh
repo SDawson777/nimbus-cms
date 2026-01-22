@@ -9,8 +9,12 @@ if command -v npx >/dev/null 2>&1; then
     echo "[init] prisma migrate deploy succeeded or no migrations pending"
   else
     echo "[init] prisma migrate deploy failed or no migrations; attempting prisma db push"
-    npx prisma db push --schema=../prisma/schema.prisma --accept-data-loss || echo "[init] WARNING: prisma db push failed; continuing startup"
+    npx prisma db push --schema=../prisma/schema.prisma --accept-data-loss --skip-generate || echo "[init] WARNING: prisma db push failed; continuing startup"
   fi
+  
+  # Always regenerate Prisma client to ensure it's ready
+  echo "[init] Regenerating Prisma client..."
+  npx prisma generate --schema=../prisma/schema.prisma || echo "[init] WARNING: prisma generate failed"
 else
   echo "[init] npx not found; skipping migrations"
 fi
