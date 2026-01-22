@@ -1,6 +1,9 @@
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import { ADMIN_SEED_ENABLED, APP_ENV, DEMO_TENANT_SLUG } from "./config/env";
+
+// Use dynamic require to get the PrismaClient class - this ensures we use
+// the freshly generated client from init_and_start.sh, not the compiled-in reference
+type PrismaClientType = InstanceType<typeof import("@prisma/client").PrismaClient>;
 
 /**
  * Seeds control-plane data based on APP_ENV and ADMIN_SEED_ENABLED.
@@ -17,11 +20,14 @@ export async function seedControlPlane() {
     return;
   }
   
-  // Create a fresh PrismaClient for seeding - this ensures we use the
-  // regenerated client from init_and_start.sh, not the compiled-in reference
-  console.log("[seedControlPlane] Creating PrismaClient...");
-  let prisma: PrismaClient;
+  // Use dynamic require to force loading the freshly generated Prisma client
+  console.log("[seedControlPlane] Loading PrismaClient dynamically...");
+  let prisma: PrismaClientType;
   try {
+    // Clear require cache and re-require to get fresh client
+    const prismaClientPath = require.resolve("@prisma/client");
+    delete require.cache[prismaClientPath];
+    const { PrismaClient } = require("@prisma/client");
     prisma = new PrismaClient();
     console.log("[seedControlPlane] PrismaClient created successfully");
   } catch (e) {
