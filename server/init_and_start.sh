@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 set -e
 
+echo "[init] Current directory: $(pwd)"
+echo "[init] Node modules location: $(ls -la node_modules 2>&1 | head -3 || echo 'not found')"
+
 # Apply Prisma migrations if present, otherwise push schema
 echo "[init] Applying Prisma migrations (if any)..."
 if command -v npx >/dev/null 2>&1; then
@@ -12,12 +15,15 @@ if command -v npx >/dev/null 2>&1; then
     npx prisma db push --schema=../prisma/schema.prisma --accept-data-loss --skip-generate || echo "[init] WARNING: prisma db push failed; continuing startup"
   fi
   
-  # Always regenerate Prisma client to ensure it's ready
+  # Regenerate Prisma client - now without custom output path it will go to default location
   echo "[init] Regenerating Prisma client..."
   npx prisma generate --schema=../prisma/schema.prisma || echo "[init] WARNING: prisma generate failed"
   
+  echo "[init] Prisma client locations:"
+  ls -la node_modules/.prisma/client 2>&1 | head -5 || echo "  Not at node_modules/.prisma/client"
+  ls -la ../node_modules/.prisma/client 2>&1 | head -5 || echo "  Not at ../node_modules/.prisma/client"
+  
   # Run seed as a separate process BEFORE starting the main server
-  # This ensures the fresh Prisma client is used
   if [ "${ADMIN_SEED_ENABLED}" = "true" ]; then
     echo "[init] Running seed..."
     node -e "
