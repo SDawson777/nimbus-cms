@@ -15,6 +15,9 @@ WORKDIR /app/server
 COPY server/package.json ./
 RUN npm install --legacy-peer-deps
 
+# Generate Prisma client from schema (must be after npm install)
+RUN npx prisma generate --schema=../prisma/schema.prisma
+
 # Copy source
 COPY server ./
 RUN npm run build
