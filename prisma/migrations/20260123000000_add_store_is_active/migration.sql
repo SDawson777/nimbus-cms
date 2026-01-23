@@ -9,6 +9,9 @@ ALTER TABLE "Store" ADD COLUMN IF NOT EXISTS "avgRating" DOUBLE PRECISION;
 ALTER TABLE "Store" ADD COLUMN IF NOT EXISTS "reviewCount" INTEGER;
 ALTER TABLE "Store" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
 
+-- Add missing Product columns
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "subcategory" TEXT;
+
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "Store_isActive_idx" ON "Store"("isActive");
 CREATE INDEX IF NOT EXISTS "Store_brandId_idx" ON "Store"("brandId");
