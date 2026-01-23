@@ -81,6 +81,7 @@ export async function seedDemoDatabase() {
       sanityDataset: demoSanityDataset,
       primaryDomain: pickEnv("DEMO_PRIMARY_DOMAIN") || "demo.nimbus.app",
       region: pickEnv("DEMO_REGION") || "US-MI",
+      updatedAt: new Date(),
     },
   });
 
@@ -101,6 +102,7 @@ export async function seedDemoDatabase() {
       sanityDataset: tenantBSanityDataset,
       primaryDomain: pickEnv("DEMO_TENANT_B_PRIMARY_DOMAIN") || "tenant-b.nimbus.app",
       region: pickEnv("DEMO_TENANT_B_REGION") || "US-IL",
+      updatedAt: new Date(),
     },
   });
 
