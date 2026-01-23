@@ -1,4 +1,4 @@
-import { PrismaClient, ProductCategory, ProductStatus, ProductType, UserRole, OrderStatus, ContentType } from "@prisma/client";
+import { PrismaClient, ProductCategory, ProductStatus, ProductType, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -831,26 +831,22 @@ export async function seedDemoDatabase() {
       update: {
         userId: customer.id,
         storeId: store1.id,
-        status: OrderStatus.FULFILLED,
+        status: "FULFILLED",
         total: firstProduct.price,
       },
       create: {
         id: orderId,
         userId: customer.id,
         storeId: store1.id,
-        status: OrderStatus.FULFILLED,
+        status: "FULFILLED",
         total: firstProduct.price,
-        updatedAt: new Date(),
-        OrderItem: {
+        items: {
           create: [
             {
-              id: `${orderId}-item-1`,
               productId: firstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              unitPrice: firstProduct.price,
-              lineTotal: firstProduct.price,
-              updatedAt: new Date(),
+              price: firstProduct.price,
             },
           ],
         },
@@ -874,26 +870,22 @@ export async function seedDemoDatabase() {
       update: {
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: OrderStatus.PAID,
+        status: "PAID",
         total: tenantBFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: OrderStatus.PAID,
+        status: "PAID",
         total: tenantBFirstProduct.price,
-        updatedAt: new Date(),
-        OrderItem: {
+        items: {
           create: [
             {
-              id: `${orderId}-item-1`,
               productId: tenantBFirstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              unitPrice: tenantBFirstProduct.price,
-              lineTotal: tenantBFirstProduct.price,
-              updatedAt: new Date(),
+              price: tenantBFirstProduct.price,
             },
           ],
         },
@@ -916,26 +908,22 @@ export async function seedDemoDatabase() {
       update: {
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: OrderStatus.PENDING,
+        status: "PENDING",
         total: previewFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: OrderStatus.PENDING,
+        status: "PENDING",
         total: previewFirstProduct.price,
-        updatedAt: new Date(),
-        OrderItem: {
+        items: {
           create: [
             {
-              id: `${orderId}-item-1`,
               productId: previewFirstProduct.id,
               variantId: variant?.id,
               quantity: 2,
-              unitPrice: previewFirstProduct.price,
-              lineTotal: previewFirstProduct.price * 2,
-              updatedAt: new Date(),
+              price: previewFirstProduct.price,
             },
           ],
         },
@@ -960,26 +948,22 @@ export async function seedDemoDatabase() {
         update: {
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: OrderStatus.FULFILLED,
+          status: "FULFILLED",
           total: secondProduct.price * 1.5,
         },
         create: {
           id: "order-preview-0002",
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: OrderStatus.FULFILLED,
+          status: "FULFILLED",
           total: secondProduct.price * 1.5,
-          updatedAt: new Date(),
-          OrderItem: {
+          items: {
             create: [
               {
-                id: "order-preview-0002-item-1",
                 productId: secondProduct.id,
                 variantId: variant2?.id,
                 quantity: 1,
-                unitPrice: secondProduct.price,
-                lineTotal: secondProduct.price,
-                updatedAt: new Date(),
+                price: secondProduct.price,
               },
             ],
           },
@@ -992,42 +976,42 @@ export async function seedDemoDatabase() {
   // so we intentionally keep slugs tenant-prefixed.
   const legalPages = [
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenant.slug}-terms`,
       title: "Demo Operator – Terms",
       body: "# Terms (Demo Operator)\n\nDemo legal content for evaluating tenant scoping.",
     },
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenant.slug}-privacy`,
       title: "Demo Operator – Privacy",
       body: "# Privacy (Demo Operator)\n\nDemo privacy content for evaluating tenant scoping.",
     },
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenant.slug}-accessibility`,
       title: "Demo Operator – Accessibility",
       body: "# Accessibility (Demo Operator)\n\nDemo accessibility content for evaluating tenant scoping.",
     },
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenantB.slug}-terms`,
       title: "Tenant B – Terms",
       body: "# Terms (Tenant B)\n\nTenant B legal content for verifying isolation.",
     },
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenantB.slug}-privacy`,
       title: "Tenant B – Privacy",
       body: "# Privacy (Tenant B)\n\nTenant B privacy content for verifying isolation.",
     },
     {
-      type: ContentType.legal,
+      type: "legal",
       locale: "en",
       slug: `${tenantB.slug}-accessibility`,
       title: "Tenant B – Accessibility",
@@ -1074,7 +1058,6 @@ export async function seedDemoDatabase() {
       storeId: store1.id,
       status: "Gold",
       points: 420,
-      updatedAt: new Date(),
     },
   });
 
