@@ -925,11 +925,11 @@ enum OrderPaymentMethod {
 }
 
 enum OrderStatus {
-  CREATED
-  CONFIRMED
-  READY
-  COMPLETED
+  PENDING
+  PAID
+  FULFILLED
   CANCELLED
+  REFUNDED
 }
 
 enum ProductCategory {

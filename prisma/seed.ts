@@ -831,14 +831,14 @@ export async function seedDemoDatabase() {
       update: {
         userId: customer.id,
         storeId: store1.id,
-        status: OrderStatus.COMPLETED,
+        status: OrderStatus.FULFILLED,
         total: firstProduct.price,
       },
       create: {
         id: orderId,
         userId: customer.id,
         storeId: store1.id,
-        status: OrderStatus.COMPLETED,
+        status: OrderStatus.FULFILLED,
         total: firstProduct.price,
         updatedAt: new Date(),
         OrderItem: {
@@ -874,14 +874,14 @@ export async function seedDemoDatabase() {
       update: {
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: OrderStatus.CONFIRMED,
+        status: OrderStatus.PAID,
         total: tenantBFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: OrderStatus.CONFIRMED,
+        status: OrderStatus.PAID,
         total: tenantBFirstProduct.price,
         updatedAt: new Date(),
         OrderItem: {
@@ -916,14 +916,14 @@ export async function seedDemoDatabase() {
       update: {
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: OrderStatus.CREATED,
+        status: OrderStatus.PENDING,
         total: previewFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: OrderStatus.CREATED,
+        status: OrderStatus.PENDING,
         total: previewFirstProduct.price,
         updatedAt: new Date(),
         OrderItem: {
@@ -960,14 +960,14 @@ export async function seedDemoDatabase() {
         update: {
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: OrderStatus.COMPLETED,
+          status: OrderStatus.FULFILLED,
           total: secondProduct.price * 1.5,
         },
         create: {
           id: "order-preview-0002",
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: OrderStatus.COMPLETED,
+          status: OrderStatus.FULFILLED,
           total: secondProduct.price * 1.5,
           updatedAt: new Date(),
           OrderItem: {
