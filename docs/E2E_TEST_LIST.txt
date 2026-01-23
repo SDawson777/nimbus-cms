@@ -1,0 +1,91 @@
+01. [chromium] › admin-flow.spec.ts:3:1 › admin flows: login, admin-user CRUD, navigation
+02. [chromium] › admin-users-load.spec.ts:3:1 › admins: user list loads for an admin
+03. [chromium] › check-cors.spec.ts:2:1 › check for CORS errors
+04. [chromium] › compliance-snapshot-rbac.spec.ts:8:1 › compliance snapshot: unauthenticated is blocked; editor is forbidden (RBAC)
+05. [chromium] › content-csrf.spec.ts:3:1 › CSRF protection and AI draft (content) create smoke
+06. [chromium] › debug-baseurl.spec.ts:2:1 › debug baseURL
+07. [chromium] › debug-login-form.spec.ts:2:1 › debug login form submission
+08. [chromium] › debug-login-html.spec.ts:2:1 › debug login page HTML
+09. [chromium] › debug-network.spec.ts:2:1 › debug API request
+10. [chromium] › e2e-analytics-users-flows.spec.ts:24:3 › Analytics, Users, and Critical Features › Analytics Dashboard - load and verify widgets
+11. [chromium] › e2e-analytics-users-flows.spec.ts:60:3 › Analytics, Users, and Critical Features › Analytics - period filter functionality
+12. [chromium] › e2e-analytics-users-flows.spec.ts:93:3 › Analytics, Users, and Critical Features › Heatmap - geographic visualization
+13. [chromium] › e2e-analytics-users-flows.spec.ts:153:3 › Analytics, Users, and Critical Features › Admin Users - invite and manage
+14. [chromium] › e2e-analytics-users-flows.spec.ts:200:3 › Analytics, Users, and Critical Features › Orders - view orders list
+15. [chromium] › e2e-analytics-users-flows.spec.ts:223:3 › Analytics, Users, and Critical Features › Undo - version control/rollback
+16. [chromium] › e2e-auth-flows.spec.ts:21:3 › Auth Flows - Login, Logout, RBAC › Valid admin login - should authenticate and redirect to dashboard
+17. [chromium] › e2e-auth-flows.spec.ts:56:3 › Auth Flows - Login, Logout, RBAC › Invalid login - should show error and not authenticate
+18. [chromium] › e2e-auth-flows.spec.ts:94:3 › Auth Flows - Login, Logout, RBAC › Logout - should clear session and redirect to login
+19. [chromium] › e2e-auth-flows.spec.ts:130:3 › Auth Flows - Login, Logout, RBAC › RBAC - non-admin user cannot access admin-only routes
+20. [chromium] › e2e-auth-flows.spec.ts:169:3 › Auth Flows - Login, Logout, RBAC › Auth flow - password reset request
+21. [chromium] › e2e-auth-flows.spec.ts:200:3 › Auth Flows - Login, Logout, RBAC › Auth flow - accept invitation page loads
+22. [chromium] › e2e-content-flows.spec.ts:24:3 › Content/CMS Flows › Articles - create new article
+23. [chromium] › e2e-content-flows.spec.ts:102:3 › Content/CMS Flows › FAQs - create and edit FAQ
+24. [chromium] › e2e-content-flows.spec.ts:121:3 › Content/CMS Flows › Products - view products list
+25. [chromium] › e2e-content-flows.spec.ts:144:3 › Content/CMS Flows › Deals - manage deals/promotions
+26. [chromium] › e2e-flow-index.spec.ts:29:3 › Flow Index - All Routes Smoke Test › Comprehensive route check - all pages accessible
+27. [chromium] › e2e-flow-index.spec.ts:126:3 › Flow Index - All Routes Smoke Test › Navigation via Suite Map menu
+28. [chromium] › e2e-flow-index.spec.ts:148:3 › Flow Index - All Routes Smoke Test › Deep link navigation - direct URL access
+29. [chromium] › e2e-flow-index.spec.ts:170:3 › Flow Index - All Routes Smoke Test › Page load performance - no critical delays
+30. [chromium] › e2e-flow-index.spec.ts:190:3 › Flow Index - All Routes Smoke Test › Error boundary - app recovers from errors
+31. [chromium] › e2e-flow-index.spec.ts:226:3 › Flow Index - All Routes Smoke Test › Browser compatibility - localStorage and sessionStorage
+32. [chromium] › e2e-legal-compliance-flows.spec.ts:24:3 › Legal/Compliance Flows › Legal - view legal documents
+33. [chromium] › e2e-legal-compliance-flows.spec.ts:54:3 › Legal/Compliance Flows › Legal - create new version of legal document
+34. [chromium] › e2e-legal-compliance-flows.spec.ts:85:3 › Legal/Compliance Flows › Legal - version history
+35. [chromium] › e2e-legal-compliance-flows.spec.ts:111:3 › Legal/Compliance Flows › Compliance - view compliance dashboard
+36. [chromium] › e2e-legal-compliance-flows.spec.ts:139:3 › Legal/Compliance Flows › Compliance - snapshot and RBAC
+37. [chromium] › e2e-org-tenant-flows.spec.ts:26:3 › Org/Tenant Management Flows › Switch organization/tenant - selection persists
+38. [chromium] › e2e-org-tenant-flows.spec.ts:91:3 › Org/Tenant Management Flows › Tenant/workspace context - data scoped to selected tenant
+39. [chromium] › e2e-org-tenant-flows.spec.ts:109:3 › Org/Tenant Management Flows › Multi-store selection - store picker functionality
+40. [chromium] › e2e-personalization-flows.spec.ts:24:3 › Personalization Flows › Personalization - create new rule
+41. [chromium] › e2e-personalization-flows.spec.ts:91:3 › Personalization Flows › Personalization - enable/disable rule
+42. [chromium] › e2e-personalization-flows.spec.ts:127:3 › Personalization Flows › Personalization - rule list and state persistence
+43. [chromium] › e2e-theme-settings-flows.spec.ts:24:3 › Theme/Branding Flows › Theme - change theme tokens/colors
+44. [chromium] › e2e-theme-settings-flows.spec.ts:54:3 › Theme/Branding Flows › Theme - preview and save changes
+45. [chromium] › e2e-theme-settings-flows.spec.ts:105:3 › Theme/Branding Flows › Settings - update settings field
+46. [chromium] › e2e-theme-settings-flows.spec.ts:153:3 › Theme/Branding Flows › Settings - persistence verification
+47. [chromium] › flow-01-login.spec.ts:2:1 › UX Flow 1: Login and Dashboard Access
+48. [chromium] › flow-02-navigation.spec.ts:2:1 › UX Flow 2: Navigate Main Menu
+49. [chromium] › flow-03-analytics.spec.ts:2:1 › UX Flow 3: View Analytics Dashboard
+50. [chromium] › flow-04-theme.spec.ts:2:1 › UX Flow 4: Theme Customization
+51. [chromium] › flow-05-admin-users.spec.ts:2:1 › UX Flow 5: Admin User Management
+52. [chromium] › flow-06-heatmap-store-analytics.spec.ts:2:1 › UX Flow 6: Heatmap & Store Analytics
+53. [chromium] › flow-07-analytics-deep-dive.spec.ts:2:1 › UX Flow 7: Analytics Dashboard Deep Dive
+54. [chromium] › flow-08-product-management.spec.ts:2:1 › UX Flow 8: Product Management
+55. [chromium] › flow-09-content-cms.spec.ts:2:1 › UX Flow 9: Content Management (CMS)
+56. [chromium] › flow-10-legal-compliance.spec.ts:2:1 › UX Flow 10: Legal & Compliance Documents
+57. [chromium] › flow-11-order-management.spec.ts:2:1 › UX Flow 11: Order Management
+58. [chromium] › flow-12-theme-customization.spec.ts:2:1 › UX Flow 12: Theme Customization Deep Dive
+59. [chromium] › flow-13-personalization-rules.spec.ts:2:1 › UX Flow 13: Personalization Rules Engine
+60. [chromium] › flow-14-user-role-management.spec.ts:2:1 › UX Flow 14: User & Role Management
+61. [chromium] › flow-15-multi-store-management.spec.ts:2:1 › UX Flow 15: Multi-Store Management
+62. [chromium] › flow-16-notifications.spec.ts:2:1 › UX Flow 16: Notifications Center
+63. [chromium] › flow-17-settings-configuration.spec.ts:2:1 › UX Flow 17: Settings & Configuration
+64. [chromium] › flow-18-search-filters.spec.ts:2:1 › UX Flow 18: Search & Filters
+65. [chromium] › flow-19-reports-exports.spec.ts:2:1 › UX Flow 19: Reports & Data Exports
+66. [chromium] › flow-20-audit-security.spec.ts:2:1 › UX Flow 20: Audit & Security Logs
+67. [chromium] › flow-21-error-handling.spec.ts:2:1 › UX Flow 21: Error Handling & Edge Cases
+68. [chromium] › flow-22-workspace-switching.spec.ts:2:1 › UX Flow 22: Workspace/Tenant Switching
+69. [chromium] › flow-23-e2e-customer-journey.spec.ts:2:1 › UX Flow 23: End-to-End Customer Journey Simulation
+70. [chromium] › flow-24-multi-tenant-isolation.spec.ts:2:1 › UX Flow 24: Multi-Tenant Data Isolation & Security
+71. [chromium] › flow-25-performance-load.spec.ts:2:1 › UX Flow 25: Performance & Load Testing
+72. [chromium] › flow-26-disaster-recovery.spec.ts:2:1 › UX Flow 26: Disaster Recovery & Business Continuity
+73. [chromium] › flow-27-white-label-theming.spec.ts:2:1 › UX Flow 27: White-Label Theming & Branding
+74. [chromium] › flow-28-compliance-audit.spec.ts:2:1 › UX Flow 28: Compliance & Audit Trail
+75. [chromium] › flow-29-real-time-collaboration.spec.ts:2:1 › UX Flow 29: Real-Time Collaboration
+76. [chromium] › flow-30-mobile-pwa.spec.ts:2:1 › UX Flow 30: Mobile Responsiveness & PWA
+77. [chromium] › flow-31-integration-ecosystem.spec.ts:2:1 › UX Flow 31: Integration Ecosystem & APIs
+78. [chromium] › flow-32-cost-transparency.spec.ts:2:1 › UX Flow 32: Cost Transparency & Resource Usage
+79. [chromium] › flow-33-heatmap-interaction.spec.ts:17:3 › Flow 33: Interactive Geographic Heatmap › Complete heatmap interaction flow
+80. [chromium] › flow-34-multi-tenant-visual-isolation.spec.ts:19:3 › Flow 34: Multi-Tenant Visual Isolation › Visual proof of tenant data segregation
+81. [chromium] › flow-35-order-lifecycle.spec.ts:19:3 › Flow 35: Order Lifecycle Management › Complete order workflow from pending to fulfilled
+82. [chromium] › flow-36-product-crud.spec.ts:19:3 › Flow 36: Product CRUD Operations › Complete product management workflow
+83. [chromium] › login.spec.ts:3:1 › admin login API works and dashboard is reachable
+84. [chromium] › orders.spec.ts:3:1 › orders: list loads and drawer opens when available
+85. [chromium] › rbac.spec.ts:3:1 › RBAC: owner vs editor access
+86. [chromium] › settings-theme-persistence.spec.ts:3:1 › settings: theme/accent persists and preview reflects change
+87. [chromium] › smoke-login.spec.ts:2:1 › smoke test: login and reach dashboard
+88. [chromium] › tenant-scope.spec.ts:3:1 › tenant switching: adds tenant query param to admin API calls
+89. [chromium] › trace-all-requests.spec.ts:2:1 › trace all network requests
+
+COUNT: 89

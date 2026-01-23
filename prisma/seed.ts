@@ -1,4 +1,4 @@
-import { PrismaClient, ProductCategory, ProductStatus, ProductType, UserRole } from "@prisma/client";
+import { PrismaClient, ProductStatus, ProductType, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -523,7 +523,7 @@ export async function seedDemoDatabase() {
       slug: "demo-nimbus-og",
       name: "Nimbus OG",
       type: ProductType.FLOWER,
-      category: ProductCategory.Flower,
+      category: "Flower",
       brand: "Nimbus",
       price: 35,
       variants: [
@@ -535,7 +535,7 @@ export async function seedDemoDatabase() {
       slug: "demo-midnight-mints",
       name: "Midnight Mints Gummies",
       type: ProductType.EDIBLE,
-      category: ProductCategory.Edibles,
+      category: "Edibles",
       brand: "Nimbus",
       price: 18,
       variants: [{ sku: "DD-MINTS-10PK", name: "10 pack", price: 18, stock: 80 }],
@@ -544,7 +544,7 @@ export async function seedDemoDatabase() {
       slug: "demo-sunrise-preroll",
       name: "Sunrise Sativa Pre-Roll",
       type: ProductType.FLOWER,
-      category: ProductCategory.PreRoll,
+      category: "Pre-roll",
       brand: "Nimbus",
       price: 12,
       variants: [{ sku: "DD-SUNRISE-PR-1G", name: "1g", price: 12, stock: 60 }],
@@ -553,7 +553,7 @@ export async function seedDemoDatabase() {
       slug: "demo-live-resin-cart",
       name: "Limonene Live Resin Cart",
       type: ProductType.VAPE,
-      category: ProductCategory.Vape,
+      category: "Vapes",
       brand: "Nimbus",
       price: 55,
       variants: [{ sku: "DD-LIVE-RESIN-1G", name: "1g", price: 55, stock: 40 }],
@@ -562,7 +562,7 @@ export async function seedDemoDatabase() {
       slug: "demo-cbd-tincture",
       name: "Calm CBD Tincture",
       type: ProductType.TOPICAL,
-      category: ProductCategory.Tincture,
+      category: "Wellness",
       brand: "Nimbus",
       price: 45,
       variants: [{ sku: "DD-CBD-30ML", name: "30ml", price: 45, stock: 50 }],
@@ -574,7 +574,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-ice-pop",
       name: "Aurora Ice Pop",
       type: ProductType.FLOWER,
-      category: ProductCategory.Flower,
+      category: "Flower",
       brand: "Aurora",
       price: 42,
       variants: [
@@ -586,7 +586,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-citrus-seltzer",
       name: "Aurora Citrus Seltzer (5mg)",
       type: ProductType.EDIBLE,
-      category: ProductCategory.Edibles,
+      category: "Edibles",
       brand: "Aurora",
       price: 9,
       variants: [
@@ -597,7 +597,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-diamonds",
       name: "Aurora Diamonds",
       type: ProductType.CONCENTRATE,
-      category: ProductCategory.Concentrate,
+      category: "Concentrates",
       brand: "Aurora",
       price: 60,
       variants: [
@@ -611,7 +611,7 @@ export async function seedDemoDatabase() {
       slug: "coastal-haze",
       name: "Coastal Haze",
       type: ProductType.FLOWER,
-      category: ProductCategory.Flower,
+      category: "Flower",
       brand: "Coastal",
       price: 40,
       variants: [
@@ -624,7 +624,7 @@ export async function seedDemoDatabase() {
       slug: "golden-gate-gummies",
       name: "Golden Gate Gummies",
       type: ProductType.EDIBLE,
-      category: ProductCategory.Edibles,
+      category: "Edibles",
       brand: "Coastal",
       price: 22,
       variants: [
@@ -635,7 +635,7 @@ export async function seedDemoDatabase() {
       slug: "bay-breeze-vape",
       name: "Bay Breeze Vape Cart",
       type: ProductType.VAPE,
-      category: ProductCategory.Vape,
+      category: "Vaporizers",
       brand: "Coastal",
       price: 48,
       variants: [
@@ -647,7 +647,7 @@ export async function seedDemoDatabase() {
       slug: "pacific-relief-balm",
       name: "Pacific Relief CBD Balm",
       type: ProductType.TOPICAL,
-      category: ProductCategory.Topical,
+      category: "Wellness",
       brand: "Coastal",
       price: 38,
       variants: [
