@@ -422,6 +422,7 @@ export async function seedDemoDatabase() {
       email: adminEmail,
       passwordHash: await bcrypt.hash(adminPassword, 10),
       role: "OWNER",
+      updatedAt: new Date(),
     },
   });
 
