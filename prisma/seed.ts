@@ -74,6 +74,7 @@ export async function seedDemoDatabase() {
       region: pickEnv("DEMO_REGION") || "US-MI",
     },
     create: {
+      id: demoTenantSlug,
       slug: demoTenantSlug,
       name: "Demo Operator",
       status: "active",
@@ -93,6 +94,7 @@ export async function seedDemoDatabase() {
       region: pickEnv("DEMO_TENANT_B_REGION") || "US-IL",
     },
     create: {
+      id: tenantBSlug,
       slug: tenantBSlug,
       name: "Tenant B Operator",
       status: "active",
