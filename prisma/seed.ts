@@ -418,6 +418,7 @@ export async function seedDemoDatabase() {
       role: "OWNER",
     },
     create: {
+      id: "admin-owner",
       email: adminEmail,
       passwordHash: await bcrypt.hash(adminPassword, 10),
       role: "OWNER",
@@ -436,6 +437,7 @@ export async function seedDemoDatabase() {
       isActive: true,
     },
     create: {
+      id: `${tenant.id}-${customerEmail}`,
       tenantId: tenant.id,
       storeId: store1.id,
       email: customerEmail,
@@ -443,6 +445,7 @@ export async function seedDemoDatabase() {
       role: UserRole.CUSTOMER,
       passwordHash: await bcrypt.hash(customerPassword, 10),
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -457,6 +460,7 @@ export async function seedDemoDatabase() {
       isActive: true,
     },
     create: {
+      id: `${tenantB.id}-tenantb.customer@nimbus.local`,
       tenantId: tenantB.id,
       storeId: tenantBStore.id,
       email: "tenantb.customer@nimbus.local",
@@ -464,6 +468,7 @@ export async function seedDemoDatabase() {
       role: UserRole.CUSTOMER,
       passwordHash: await bcrypt.hash(customerPassword, 10),
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
