@@ -1,4 +1,4 @@
-import { PrismaClient, ProductStatus, ProductType, UserRole } from "@prisma/client";
+import { PrismaClient, ProductCategory, ProductStatus, ProductType, UserRole, OrderStatus, ContentType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -523,7 +523,7 @@ export async function seedDemoDatabase() {
       slug: "demo-nimbus-og",
       name: "Nimbus OG",
       type: ProductType.FLOWER,
-      category: "Flower",
+      category: ProductCategory.Flower,
       brand: "Nimbus",
       price: 35,
       variants: [
@@ -535,7 +535,7 @@ export async function seedDemoDatabase() {
       slug: "demo-midnight-mints",
       name: "Midnight Mints Gummies",
       type: ProductType.EDIBLE,
-      category: "Edibles",
+      category: ProductCategory.Edibles,
       brand: "Nimbus",
       price: 18,
       variants: [{ sku: "DD-MINTS-10PK", name: "10 pack", price: 18, stock: 80 }],
@@ -544,7 +544,7 @@ export async function seedDemoDatabase() {
       slug: "demo-sunrise-preroll",
       name: "Sunrise Sativa Pre-Roll",
       type: ProductType.FLOWER,
-      category: "Pre-roll",
+      category: ProductCategory.PreRoll,
       brand: "Nimbus",
       price: 12,
       variants: [{ sku: "DD-SUNRISE-PR-1G", name: "1g", price: 12, stock: 60 }],
@@ -553,7 +553,7 @@ export async function seedDemoDatabase() {
       slug: "demo-live-resin-cart",
       name: "Limonene Live Resin Cart",
       type: ProductType.VAPE,
-      category: "Vapes",
+      category: ProductCategory.Vape,
       brand: "Nimbus",
       price: 55,
       variants: [{ sku: "DD-LIVE-RESIN-1G", name: "1g", price: 55, stock: 40 }],
@@ -562,7 +562,7 @@ export async function seedDemoDatabase() {
       slug: "demo-cbd-tincture",
       name: "Calm CBD Tincture",
       type: ProductType.TOPICAL,
-      category: "Wellness",
+      category: ProductCategory.Tincture,
       brand: "Nimbus",
       price: 45,
       variants: [{ sku: "DD-CBD-30ML", name: "30ml", price: 45, stock: 50 }],
@@ -574,7 +574,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-ice-pop",
       name: "Aurora Ice Pop",
       type: ProductType.FLOWER,
-      category: "Flower",
+      category: ProductCategory.Flower,
       brand: "Aurora",
       price: 42,
       variants: [
@@ -586,7 +586,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-citrus-seltzer",
       name: "Aurora Citrus Seltzer (5mg)",
       type: ProductType.EDIBLE,
-      category: "Edibles",
+      category: ProductCategory.Edibles,
       brand: "Aurora",
       price: 9,
       variants: [
@@ -597,7 +597,7 @@ export async function seedDemoDatabase() {
       slug: "aurora-diamonds",
       name: "Aurora Diamonds",
       type: ProductType.CONCENTRATE,
-      category: "Concentrates",
+      category: ProductCategory.Concentrate,
       brand: "Aurora",
       price: 60,
       variants: [
@@ -611,7 +611,7 @@ export async function seedDemoDatabase() {
       slug: "coastal-haze",
       name: "Coastal Haze",
       type: ProductType.FLOWER,
-      category: "Flower",
+      category: ProductCategory.Flower,
       brand: "Coastal",
       price: 40,
       variants: [
@@ -624,7 +624,7 @@ export async function seedDemoDatabase() {
       slug: "golden-gate-gummies",
       name: "Golden Gate Gummies",
       type: ProductType.EDIBLE,
-      category: "Edibles",
+      category: ProductCategory.Edibles,
       brand: "Coastal",
       price: 22,
       variants: [
@@ -635,7 +635,7 @@ export async function seedDemoDatabase() {
       slug: "bay-breeze-vape",
       name: "Bay Breeze Vape Cart",
       type: ProductType.VAPE,
-      category: "Vaporizers",
+      category: ProductCategory.Vape,
       brand: "Coastal",
       price: 48,
       variants: [
@@ -647,7 +647,7 @@ export async function seedDemoDatabase() {
       slug: "pacific-relief-balm",
       name: "Pacific Relief CBD Balm",
       type: ProductType.TOPICAL,
-      category: "Wellness",
+      category: ProductCategory.Topical,
       brand: "Coastal",
       price: 38,
       variants: [
@@ -831,22 +831,26 @@ export async function seedDemoDatabase() {
       update: {
         userId: customer.id,
         storeId: store1.id,
-        status: "FULFILLED",
+        status: OrderStatus.COMPLETED,
         total: firstProduct.price,
       },
       create: {
         id: orderId,
         userId: customer.id,
         storeId: store1.id,
-        status: "FULFILLED",
+        status: OrderStatus.COMPLETED,
         total: firstProduct.price,
-        items: {
+        updatedAt: new Date(),
+        OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: firstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              price: firstProduct.price,
+              unitPrice: firstProduct.price,
+              lineTotal: firstProduct.price,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -870,22 +874,26 @@ export async function seedDemoDatabase() {
       update: {
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: "PAID",
+        status: OrderStatus.CONFIRMED,
         total: tenantBFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: tenantBCustomer.id,
         storeId: tenantBStore.id,
-        status: "PAID",
+        status: OrderStatus.CONFIRMED,
         total: tenantBFirstProduct.price,
-        items: {
+        updatedAt: new Date(),
+        OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: tenantBFirstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              price: tenantBFirstProduct.price,
+              unitPrice: tenantBFirstProduct.price,
+              lineTotal: tenantBFirstProduct.price,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -908,22 +916,26 @@ export async function seedDemoDatabase() {
       update: {
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: "PENDING",
+        status: OrderStatus.CREATED,
         total: previewFirstProduct.price,
       },
       create: {
         id: orderId,
         userId: previewCustomer.id,
         storeId: previewStore1.id,
-        status: "PENDING",
+        status: OrderStatus.CREATED,
         total: previewFirstProduct.price,
-        items: {
+        updatedAt: new Date(),
+        OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: previewFirstProduct.id,
               variantId: variant?.id,
               quantity: 2,
-              price: previewFirstProduct.price,
+              unitPrice: previewFirstProduct.price,
+              lineTotal: previewFirstProduct.price * 2,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -948,22 +960,26 @@ export async function seedDemoDatabase() {
         update: {
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: "FULFILLED",
+          status: OrderStatus.COMPLETED,
           total: secondProduct.price * 1.5,
         },
         create: {
           id: "order-preview-0002",
           userId: previewCustomer.id,
           storeId: previewStore1.id,
-          status: "FULFILLED",
+          status: OrderStatus.COMPLETED,
           total: secondProduct.price * 1.5,
-          items: {
+          updatedAt: new Date(),
+          OrderItem: {
             create: [
               {
+                id: "order-preview-0002-item-1",
                 productId: secondProduct.id,
                 variantId: variant2?.id,
                 quantity: 1,
-                price: secondProduct.price,
+                unitPrice: secondProduct.price,
+                lineTotal: secondProduct.price,
+                updatedAt: new Date(),
               },
             ],
           },
@@ -976,42 +992,42 @@ export async function seedDemoDatabase() {
   // so we intentionally keep slugs tenant-prefixed.
   const legalPages = [
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenant.slug}-terms`,
       title: "Demo Operator – Terms",
       body: "# Terms (Demo Operator)\n\nDemo legal content for evaluating tenant scoping.",
     },
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenant.slug}-privacy`,
       title: "Demo Operator – Privacy",
       body: "# Privacy (Demo Operator)\n\nDemo privacy content for evaluating tenant scoping.",
     },
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenant.slug}-accessibility`,
       title: "Demo Operator – Accessibility",
       body: "# Accessibility (Demo Operator)\n\nDemo accessibility content for evaluating tenant scoping.",
     },
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenantB.slug}-terms`,
       title: "Tenant B – Terms",
       body: "# Terms (Tenant B)\n\nTenant B legal content for verifying isolation.",
     },
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenantB.slug}-privacy`,
       title: "Tenant B – Privacy",
       body: "# Privacy (Tenant B)\n\nTenant B privacy content for verifying isolation.",
     },
     {
-      type: "legal",
+      type: ContentType.legal,
       locale: "en",
       slug: `${tenantB.slug}-accessibility`,
       title: "Tenant B – Accessibility",
@@ -1058,6 +1074,7 @@ export async function seedDemoDatabase() {
       storeId: store1.id,
       status: "Gold",
       points: 420,
+      updatedAt: new Date(),
     },
   });
 
