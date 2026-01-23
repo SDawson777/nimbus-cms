@@ -354,6 +354,7 @@ export async function seedDemoDatabase() {
   } else {
     await prisma.theme.create({
       data: {
+        id: `${tenant.id}-default`,
         tenantId: tenant.id,
         name: "Nimbus Demo",
         isDefault: true,
@@ -365,6 +366,7 @@ export async function seedDemoDatabase() {
             accent: "#3F7AFC",
           },
         },
+        updatedAt: new Date(),
       },
     });
   }
@@ -391,6 +393,7 @@ export async function seedDemoDatabase() {
   } else {
     await prisma.theme.create({
       data: {
+        id: `${tenantB.id}-default`,
         tenantId: tenantB.id,
         name: "Tenant B – Aurora",
         isDefault: true,
@@ -402,6 +405,7 @@ export async function seedDemoDatabase() {
             accent: "#F97316",
           },
         },
+        updatedAt: new Date(),
       },
     });
   }
