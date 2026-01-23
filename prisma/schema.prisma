@@ -459,7 +459,7 @@ model Order {
   id              String             @id
   userId          String
   storeId         String
-  status          OrderStatus        @default(CREATED)
+  status          OrderStatus        @default(PENDING)
   paymentMethod   OrderPaymentMethod @default(pay_at_pickup)
   notes           String?
   contactName     String?
