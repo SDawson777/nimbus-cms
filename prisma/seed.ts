@@ -134,6 +134,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Detroit",
       isPickupEnabled: true,
       isDeliveryEnabled: false,
+      updatedAt: new Date(),
     },
   });
 
@@ -165,6 +166,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Detroit",
       isPickupEnabled: true,
       isDeliveryEnabled: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -196,6 +198,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Chicago",
       isPickupEnabled: true,
       isDeliveryEnabled: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -253,6 +256,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Los_Angeles",
       isPickupEnabled: true,
       isDeliveryEnabled: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -288,6 +292,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Los_Angeles",
       isPickupEnabled: true,
       isDeliveryEnabled: false,
+      updatedAt: new Date(),
     },
   });
 
@@ -323,6 +328,7 @@ export async function seedDemoDatabase() {
       timezone: "America/Los_Angeles",
       isPickupEnabled: true,
       isDeliveryEnabled: true,
+      updatedAt: new Date(),
     },
   });
 
