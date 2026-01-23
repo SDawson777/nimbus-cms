@@ -11,27 +11,7 @@ ALTER TABLE "Store" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT
 
 -- Add missing Product columns
 ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "subcategory" TEXT;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "defaultPrice" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "brandId" TEXT;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "terpenes" TEXT[] DEFAULT ARRAY[]::TEXT[];
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "thcPercent" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "cbdPercent" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "cbdMgPerUnit" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "thcMgPerUnit" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "weight" DOUBLE PRECISION;
-ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "labTestUrl" TEXT;
-
--- Add missing ProductVariant columns
-ALTER TABLE "ProductVariant" ADD COLUMN IF NOT EXISTS "active" BOOLEAN NOT NULL DEFAULT true;
-ALTER TABLE "ProductVariant" ADD COLUMN IF NOT EXISTS "thcPercent" DOUBLE PRECISION;
-ALTER TABLE "ProductVariant" ADD COLUMN IF NOT EXISTS "cbdPercent" DOUBLE PRECISION;
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "Store_isActive_idx" ON "Store"("isActive");
 CREATE INDEX IF NOT EXISTS "Store_brandId_idx" ON "Store"("brandId");
-CREATE INDEX IF NOT EXISTS "Product_brand_idx" ON "Product"("brand");
-CREATE INDEX IF NOT EXISTS "Product_category_idx" ON "Product"("category");
-CREATE INDEX IF NOT EXISTS "Product_name_idx" ON "Product"("name");
-CREATE INDEX IF NOT EXISTS "Product_purchasesLast30d_idx" ON "Product"("purchasesLast30d");
-CREATE INDEX IF NOT EXISTS "Product_status_idx" ON "Product"("status");
-CREATE INDEX IF NOT EXISTS "Product_strainType_idx" ON "Product"("strainType");
