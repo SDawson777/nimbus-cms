@@ -121,6 +121,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: false,
     },
     create: {
+      id: `${tenant.id}-downtown-detroit`,
       tenantId: tenant.id,
       slug: "downtown-detroit",
       name: "Downtown Detroit",
@@ -151,6 +152,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: true,
     },
     create: {
+      id: `${tenant.id}-eastside`,
       tenantId: tenant.id,
       slug: "eastside",
       name: "Eastside",
@@ -181,6 +183,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: true,
     },
     create: {
+      id: `${tenantB.id}-chicago-loop`,
       tenantId: tenantB.id,
       slug: "chicago-loop",
       name: "Chicago Loop",
@@ -207,12 +210,14 @@ export async function seedDemoDatabase() {
       region: pickEnv("PREVIEW_REGION") || "US-CA",
     },
     create: {
+      id: previewTenantSlug,
       slug: previewTenantSlug,
       name: "Preview Operator",
       status: "active",
       sanityDataset: previewSanityDataset,
       primaryDomain: pickEnv("PREVIEW_PRIMARY_DOMAIN") || "preview.nimbus.app",
       region: pickEnv("PREVIEW_REGION") || "US-CA",
+      updatedAt: new Date(),
     },
   });
 
@@ -233,6 +238,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: true,
     },
     create: {
+      id: `${previewTenant.id}-san-francisco`,
       tenantId: previewTenant.id,
       slug: "san-francisco",
       name: "San Francisco",
@@ -267,6 +273,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: false,
     },
     create: {
+      id: `${previewTenant.id}-oakland`,
       tenantId: previewTenant.id,
       slug: "oakland",
       name: "Oakland",
@@ -301,6 +308,7 @@ export async function seedDemoDatabase() {
       isDeliveryEnabled: true,
     },
     create: {
+      id: `${previewTenant.id}-san-jose`,
       tenantId: previewTenant.id,
       slug: "san-jose",
       name: "San Jose",
