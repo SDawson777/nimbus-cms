@@ -484,6 +484,7 @@ export async function seedDemoDatabase() {
       isActive: true,
     },
     create: {
+      id: `${previewTenant.id}-preview.customer@nimbus.local`,
       tenantId: previewTenant.id,
       storeId: previewStore1.id,
       email: "preview.customer@nimbus.local",
@@ -491,6 +492,7 @@ export async function seedDemoDatabase() {
       role: UserRole.CUSTOMER,
       passwordHash: await bcrypt.hash(customerPassword, 10),
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -504,12 +506,14 @@ export async function seedDemoDatabase() {
       isActive: true,
     },
     create: {
+      id: `${tenant.id}-demo.staff@nimbus.local`,
       tenantId: tenant.id,
       storeId: store1.id,
       email: "demo.staff@nimbus.local",
       name: "Demo Staff",
       role: UserRole.STAFF,
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -668,6 +672,7 @@ export async function seedDemoDatabase() {
         isActive: true,
       },
       create: {
+        id: `${store1.id}-${p.slug}`,
         storeId: store1.id,
         slug: `${store1.slug}-${p.slug}`,
         name: p.name,
@@ -679,6 +684,7 @@ export async function seedDemoDatabase() {
         description:
           "Seeded demo product for Nimbus canonical demo environment.",
         isActive: true,
+        updatedAt: new Date(),
       },
     });
 
@@ -692,11 +698,13 @@ export async function seedDemoDatabase() {
           stock: v.stock,
         },
         create: {
+          id: `${product.id}-${v.sku}`,
           productId: product.id,
           sku: v.sku,
           name: v.name,
           price: v.price,
           stock: v.stock,
+          updatedAt: new Date(),
         },
       });
     }
@@ -717,6 +725,7 @@ export async function seedDemoDatabase() {
         isActive: true,
       },
       create: {
+        id: `${tenantBStore.id}-${p.slug}`,
         storeId: tenantBStore.id,
         slug: `${tenantBStore.slug}-${p.slug}`,
         name: p.name,
@@ -727,6 +736,7 @@ export async function seedDemoDatabase() {
         price: p.price,
         description: "Seeded demo product for Tenant B isolation validation.",
         isActive: true,
+        updatedAt: new Date(),
       },
     });
 
@@ -740,11 +750,13 @@ export async function seedDemoDatabase() {
           stock: v.stock,
         },
         create: {
+          id: `${product.id}-${v.sku}`,
           productId: product.id,
           sku: v.sku,
           name: v.name,
           price: v.price,
           stock: v.stock,
+          updatedAt: new Date(),
         },
       });
     }
@@ -765,6 +777,7 @@ export async function seedDemoDatabase() {
         isActive: true,
       },
       create: {
+        id: `${previewStore1.id}-${p.slug}`,
         storeId: previewStore1.id,
         slug: `${previewStore1.slug}-${p.slug}`,
         name: p.name,
@@ -775,6 +788,7 @@ export async function seedDemoDatabase() {
         price: p.price,
         description: "Seeded preview product for staging environment.",
         isActive: true,
+        updatedAt: new Date(),
       },
     });
 
@@ -788,11 +802,13 @@ export async function seedDemoDatabase() {
           stock: v.stock,
         },
         create: {
+          id: `${product.id}-${v.sku}`,
           productId: product.id,
           sku: v.sku,
           name: v.name,
           price: v.price,
           stock: v.stock,
+          updatedAt: new Date(),
         },
       });
     }
@@ -1019,6 +1035,7 @@ export async function seedDemoDatabase() {
         isPublished: true,
       },
       create: {
+        id: `${page.slug.startsWith(`${tenantB.slug}-`) ? tenantB.id : tenant.id}-${page.slug}`,
         tenantId: page.slug.startsWith(`${tenantB.slug}-`) ? tenantB.id : tenant.id,
         type: page.type,
         locale: page.locale,
@@ -1026,6 +1043,7 @@ export async function seedDemoDatabase() {
         title: page.title,
         body: page.body,
         isPublished: true,
+        updatedAt: new Date(),
       },
     });
   }
@@ -1035,6 +1053,7 @@ export async function seedDemoDatabase() {
     where: { userId: customer.id },
     update: { storeId: store1.id, status: "Gold", points: 420 },
     create: {
+      id: `${customer.id}-loyalty`,
       userId: customer.id,
       storeId: store1.id,
       status: "Gold",
