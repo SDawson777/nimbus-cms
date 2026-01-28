@@ -155,7 +155,7 @@ router.get('/:workspace/overview', async (req, res) => {
         where: {
           storeId: { in: storeIds },
           createdAt: { gte: startDate },
-          status: { in: ['COMPLETED', 'READY'] as const }
+          status: { in: ['PAID', 'FULFILLED'] as const }
         },
         _sum: { total: true }
       }),
@@ -264,7 +264,7 @@ router.get('/:workspace/overview', async (req, res) => {
         where: {
           storeId: { in: storeIds },
           createdAt: { gte: prevStartDate, lt: startDate },
-          status: { in: ['COMPLETED', 'READY'] as const }
+          status: { in: ['PAID', 'FULFILLED'] as const }
         },
         _sum: { total: true }
       }),
@@ -518,14 +518,14 @@ router.get('/:workspace/stores', async (req, res) => {
             where: {
               storeId: store.id,
               createdAt: { gte: startDate },
-              status: { in: ['COMPLETED', 'READY'] as const }
+              status: { in: ['PAID', 'FULFILLED'] as const }
             }
           }),
           prisma.order.aggregate({
             where: {
               storeId: store.id,
               createdAt: { gte: startDate },
-              status: { in: ['COMPLETED', 'READY'] as const }
+              status: { in: ['PAID', 'FULFILLED'] as const }
             },
             _sum: { total: true }
           }),
