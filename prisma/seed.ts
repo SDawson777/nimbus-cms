@@ -1077,13 +1077,14 @@ export async function seedDemoDatabase() {
   // Loyalty
   await prisma.loyaltyStatus.upsert({
     where: { userId: customer.id },
-    update: { storeId: store1.id, status: "Gold", points: 420 },
+    update: { storeId: store1.id, status: "Gold", points: 420, updatedAt: new Date() },
     create: {
       id: `${customer.id}-loyalty`,
       userId: customer.id,
       storeId: store1.id,
       status: "Gold",
       points: 420,
+      updatedAt: new Date(),
     },
   });
 
