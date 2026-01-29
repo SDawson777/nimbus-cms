@@ -839,6 +839,7 @@ export async function seedDemoDatabase() {
         storeId: store1.id,
         status: "FULFILLED",
         total: firstProduct.price,
+        updatedAt: new Date(),
       },
       create: {
         id: orderId,
@@ -856,6 +857,7 @@ export async function seedDemoDatabase() {
             },
           ],
         },
+        updatedAt: new Date(),
       },
     });
   }
@@ -878,6 +880,7 @@ export async function seedDemoDatabase() {
         storeId: tenantBStore.id,
         status: "PAID",
         total: tenantBFirstProduct.price,
+        updatedAt: new Date(),
       },
       create: {
         id: orderId,
@@ -895,6 +898,7 @@ export async function seedDemoDatabase() {
             },
           ],
         },
+        updatedAt: new Date(),
       },
     });
   }
@@ -916,6 +920,7 @@ export async function seedDemoDatabase() {
         storeId: previewStore1.id,
         status: "PENDING",
         total: previewFirstProduct.price,
+        updatedAt: new Date(),
       },
       create: {
         id: orderId,
@@ -933,6 +938,7 @@ export async function seedDemoDatabase() {
             },
           ],
         },
+        updatedAt: new Date(),
       },
     });
 
@@ -956,6 +962,7 @@ export async function seedDemoDatabase() {
           storeId: previewStore1.id,
           status: "FULFILLED",
           total: secondProduct.price * 1.5,
+          updatedAt: new Date(),
         },
         create: {
           id: "order-preview-0002",
@@ -973,6 +980,7 @@ export async function seedDemoDatabase() {
               },
             ],
           },
+          updatedAt: new Date(),
         },
       });
     }
