@@ -847,13 +847,15 @@ export async function seedDemoDatabase() {
         storeId: store1.id,
         status: "FULFILLED",
         total: firstProduct.price,
-        items: {
+        OrderItem: {
           create: [
             {
               productId: firstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              price: firstProduct.price,
+              unitPrice: firstProduct.price,
+              lineTotal: firstProduct.price,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -888,13 +890,15 @@ export async function seedDemoDatabase() {
         storeId: tenantBStore.id,
         status: "PAID",
         total: tenantBFirstProduct.price,
-        items: {
+        OrderItem: {
           create: [
             {
               productId: tenantBFirstProduct.id,
               variantId: variant?.id,
               quantity: 1,
-              price: tenantBFirstProduct.price,
+              unitPrice: tenantBFirstProduct.price,
+              lineTotal: tenantBFirstProduct.price,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -928,13 +932,15 @@ export async function seedDemoDatabase() {
         storeId: previewStore1.id,
         status: "PENDING",
         total: previewFirstProduct.price,
-        items: {
+        OrderItem: {
           create: [
             {
               productId: previewFirstProduct.id,
               variantId: variant?.id,
               quantity: 2,
-              price: previewFirstProduct.price,
+              unitPrice: previewFirstProduct.price,
+              lineTotal: previewFirstProduct.price * 2,
+              updatedAt: new Date(),
             },
           ],
         },
@@ -970,13 +976,15 @@ export async function seedDemoDatabase() {
           storeId: previewStore1.id,
           status: "FULFILLED",
           total: secondProduct.price * 1.5,
-          items: {
+          OrderItem: {
             create: [
               {
                 productId: secondProduct.id,
                 variantId: variant2?.id,
                 quantity: 1,
-                price: secondProduct.price,
+                unitPrice: secondProduct.price,
+                lineTotal: secondProduct.price,
+                updatedAt: new Date(),
               },
             ],
           },
