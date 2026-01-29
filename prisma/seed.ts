@@ -850,6 +850,7 @@ export async function seedDemoDatabase() {
         OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: firstProduct.id,
               variantId: variant?.id,
               quantity: 1,
@@ -893,6 +894,7 @@ export async function seedDemoDatabase() {
         OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: tenantBFirstProduct.id,
               variantId: variant?.id,
               quantity: 1,
@@ -935,6 +937,7 @@ export async function seedDemoDatabase() {
         OrderItem: {
           create: [
             {
+              id: `${orderId}-item-1`,
               productId: previewFirstProduct.id,
               variantId: variant?.id,
               quantity: 2,
@@ -979,6 +982,7 @@ export async function seedDemoDatabase() {
           OrderItem: {
             create: [
               {
+                id: "order-preview-0002-item-1",
                 productId: secondProduct.id,
                 variantId: variant2?.id,
                 quantity: 1,
