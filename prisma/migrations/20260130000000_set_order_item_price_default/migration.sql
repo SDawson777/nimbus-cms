@@ -1,0 +1,2 @@
+ALTER TABLE "OrderItem"
+ALTER COLUMN "price" SET DEFAULT 0;
