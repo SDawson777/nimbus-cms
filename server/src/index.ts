@@ -226,6 +226,13 @@ app.get("/", (_req, res) => {
       `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Nimbus CMS API</title><style>:root{--primary:#3F7AFC}body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;color:#111827;line-height:1.5}.chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#DBEAFE;color:#1E40AF;font-size:12px;margin-left:8px}.card{background:#fff;border:1px solid #E5E7EB;border-radius:8px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);max-width:720px}a{color:var(--primary);text-decoration:none}a:hover{text-decoration:underline}ul{padding-left:18px}code{background:#F3F4F6;padding:2px 6px;border-radius:4px}</style></head><body><div class="card"><h1 style="margin-top:0">Nimbus CMS API <span class="chip">online</span></h1><p>Status: <strong>OK</strong></p><ul><li>Time: ${new Date().toISOString()}</li><li>Environment: ${process.env.NODE_ENV || "development"}</li></ul><p>Quick links:</p><ul><li><a href="/status">/status</a></li><li><a href="/api/v1/status">/api/v1/status</a></li><li><a href="/content">/content</a> (public content routes)</li><li><a href="/docs">/docs</a> (OpenAPI documentation)</li></ul><p>Admin API is available under <code>/api/admin</code> (requires auth & CSRF).</p></div></body></html>`,
     );
 });
+
+// PUBLIC MOBILE APP ENDPOINTS - Mount BEFORE static files to prevent conflicts
+// These must be registered early to avoid being caught by static file handlers
+app.use("/products", productsRouter);
+app.use("/stores", storesRouter);
+app.use("/recommendations", recommendationsRouter);
+
 const staticDir = path.join(__dirname, "..", "static");
 app.use(express.static(staticDir));
 // Note: keep the custom landing HTML handler above; do not override it with
@@ -324,14 +331,6 @@ app.get("/admin/dashboard", requireAdmin, (_req, res) =>
 
 // All admin routes are handled by the SPA entrypoint; do not attempt to
 // serve separate dashboard/settings HTML files (the SPA renders these).
-
-// PUBLIC MOBILE APP ENDPOINTS - Must come before admin routes to avoid auth requirements
-// Mount public products endpoint for mobile app
-app.use("/products", productsRouter);
-// Mount public stores endpoint for mobile app
-app.use("/stores", storesRouter);
-// Mount recommendations endpoint for mobile app
-app.use("/recommendations", recommendationsRouter);
 
 // content routes (existing + new)
 // Mount content routes for legacy API consumers
