@@ -37,6 +37,9 @@ import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
 import undoRouter from "./routes/undo";
 import quizRouter from "./routes/quizRoutes";
+import { productsRouter } from "./routes/products";
+import { storesRouter } from "./routes/stores";
+import { recommendationsRouter } from "./routes/recommendations";
 import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -321,6 +324,14 @@ app.get("/admin/dashboard", requireAdmin, (_req, res) =>
 
 // All admin routes are handled by the SPA entrypoint; do not attempt to
 // serve separate dashboard/settings HTML files (the SPA renders these).
+
+// PUBLIC MOBILE APP ENDPOINTS - Must come before admin routes to avoid auth requirements
+// Mount public products endpoint for mobile app
+app.use("/products", productsRouter);
+// Mount public stores endpoint for mobile app
+app.use("/stores", storesRouter);
+// Mount recommendations endpoint for mobile app
+app.use("/recommendations", recommendationsRouter);
 
 // content routes (existing + new)
 // Mount content routes for legacy API consumers

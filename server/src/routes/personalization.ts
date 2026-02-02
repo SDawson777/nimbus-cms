@@ -2,8 +2,94 @@ import { Router } from "express";
 import { fetchCMS } from "../lib/cms";
 import { evaluatePersonalization } from "../lib/personalization";
 import { z } from "zod";
+import getPrisma from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 export const personalizationRouter = Router();
+
+/**
+ * GET /personalization/home
+ * "For You Today" personalized feed for mobile app
+ * Returns greeting, message, and product recommendations
+ */
+personalizationRouter.get("/home", async (req, res) => {
+  try {
+    const schema = z.object({
+      recommendations: z.coerce.boolean().default(true),
+      userId: z.string().optional(),
+      storeId: z.string().optional(),
+      limit: z.coerce.number().min(1).max(20).default(4),
+    });
+
+    const params = schema.parse(req.query);
+
+    // Generate personalized greeting based on time of day
+    const hour = new Date().getHours();
+    let greeting = "Good morning";
+    if (hour >= 12 && hour < 17) greeting = "Good afternoon";
+    else if (hour >= 17) greeting = "Good evening";
+
+    const message = "Here are some products picked just for you";
+
+    // Fetch recommendations if requested
+    let recommendations: any[] = [];
+    if (params.recommendations) {
+      const prisma = getPrisma();
+
+      // Get popular products or user-specific recommendations
+      const products = await prisma.product.findMany({
+        where: {
+          isActive: true,
+        },
+        take: params.limit,
+        orderBy: {
+          purchasesLast30d: "desc",
+        },
+        select: {
+          id: true,
+          name: true,
+          brand: true,
+          category: true,
+          strainType: true,
+          slug: true,
+          description: true,
+          defaultPrice: true,
+          thcPercent: true,
+          cbdPercent: true,
+          imageUrl: true,
+        },
+      });
+
+      recommendations = products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        strainType: p.strainType,
+        slug: p.slug,
+        description: p.description,
+        price: p.defaultPrice,
+        thcPercent: p.thcPercent,
+        cbdPercent: p.cbdPercent,
+        image: p.imageUrl,
+      }));
+    }
+
+    res.json({
+      greeting,
+      message,
+      recommendations,
+    });
+  } catch (error: any) {
+    logger.error("personalization.home.error", error);
+    // Return friendly fallback response
+    res.json({
+      greeting: "Welcome back",
+      message: "Explore our featured products",
+      recommendations: [],
+    });
+  }
+});
 
 // POST /apply
 personalizationRouter.post("/apply", async (req, res) => {
