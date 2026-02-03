@@ -199,11 +199,11 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
 
     // Get store-specific inventory if storeId provided
     let storeProducts: any[] = [];
-    const storeIdStr = Array.isArray(storeId) ? storeId[0] : storeId;
-    if (storeIdStr && typeof storeIdStr === "string") {
+    const storeIdParam = Array.isArray(storeId) ? storeId[0] : storeId;
+    if (storeIdParam) {
       storeProducts = await prisma.storeProduct.findMany({
         where: {
-          storeId: storeIdStr,
+          storeId: String(storeIdParam),
           productId: id,
           active: true,
         },
@@ -213,7 +213,20 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
       });
     }
 
-    const variants = (product.ProductVariant || []).map((v: any) => {
+    // Type assertion for product with included relations
+    const productWithVariants = product as typeof product & {
+      ProductVariant: Array<{
+        id: string;
+        name: string;
+        price: number;
+        active: boolean;
+        thcPercent?: number | null;
+        cbdPercent?: number | null;
+        sku?: string | null;
+      }>;
+    };
+
+    const variants = (productWithVariants.ProductVariant || []).map((v) => {
       const sp = storeProducts.find((x) => x.variantId === v.id);
       return {
         id: v.id,
