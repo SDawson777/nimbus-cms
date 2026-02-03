@@ -1,5 +1,5 @@
 # --- Build stage: API only ---
-# Cache bust: 2026-02-03-v2
+# Cache bust: 2026-02-03-v3-force-rebuild
 FROM node:20-slim AS api-builder
 
 WORKDIR /app
@@ -17,6 +17,9 @@ RUN npm install --legacy-peer-deps
 
 # Generate Prisma client from current schema (AFTER npm install)
 RUN npx prisma generate --schema=../prisma/schema.prisma
+
+# Force cache invalidation with timestamp
+RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v3
 
 # Copy server source and build
 COPY server ./
