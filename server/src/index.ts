@@ -138,6 +138,32 @@ app.get("/healthz", (_req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint to check route registration and file paths
+app.get("/debug/routes", (_req, res) => {
+  const repoRoot = path.resolve(__dirname, "..", "..");
+  const staticDir = path.join(__dirname, "..", "static");
+  const adminSpaDistDir = path.join(repoRoot, "apps", "admin", "dist");
+  const adminSpaIndex = path.join(adminSpaDistDir, "index.html");
+  const staticAdminIndex = path.join(staticDir, "index.html");
+  
+  res.status(200).json({
+    paths: {
+      __dirname,
+      repoRoot,
+      staticDir,
+      adminSpaDistDir,
+      adminSpaIndex,
+      staticAdminIndex,
+    },
+    exists: {
+      staticDir: fs.existsSync(staticDir),
+      adminSpaIndex: fs.existsSync(adminSpaIndex),
+      staticAdminIndex: fs.existsSync(staticAdminIndex),
+    },
+    staticDirContents: fs.existsSync(staticDir) ? fs.readdirSync(staticDir).slice(0, 20) : [],
+  });
+});
+
 // Readiness endpoint (DB + Sanity).
 // - Used by uptime monitors and deploy platforms.
 // - Returns 200 only when the service can talk to core dependencies.
