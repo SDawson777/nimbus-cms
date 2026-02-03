@@ -95,21 +95,14 @@ for i in $(seq 1 60); do
     READY=1
     break
   fi
-  code2="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/admin/login || true)"
-  if [ "$code2" = "200" ]; then
-    READY=1
-    break
-  fi
   sleep 1
 done
 
 if [ "$READY" != "1" ]; then
-  echo "Server did not become ready. Tail server.log:" >&2
+  echo "API server did not become ready. Tail server.log:" >&2
   tail -n 200 "$ROOT_DIR/server.log" >&2 || true
   exit 3
 fi
-
-curl -s -D - http://localhost:8080/admin/login -o "$LOG_DIR/ci-login.html" || true
 
 say "Running Playwright (E2E_BASE_URL=http://localhost:8080)"
 export E2E_BASE_URL="http://localhost:8080"

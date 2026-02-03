@@ -142,9 +142,9 @@ jobs:
 
       - name: Wait for services
         run: |
-          # Wait up to 4 minutes for both services to become available. If they
-          # don't respond in time, dump diagnostics to help troubleshoot.
-          pnpm -w dlx wait-on --timeout 240000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
+          # Wait up to 4 minutes for API server to become available (admin SPA is on Vercel)
+          # Only check /healthz endpoint since admin is hosted separately
+          pnpm -w dlx wait-on --timeout 240000 http://localhost:8080/healthz || (
             echo "\nERROR: Services did not become ready within timeout. Dumping diagnostics...\n";
             echo "---- server.log (last 200 lines) ----";
             if [ -f server.log ]; then tail -n 200 server.log; else echo "(no server.log)"; fi;

@@ -94,7 +94,8 @@ jobs:
 
       - name: Wait for services
         run: |
-          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz http://localhost:8080/admin/login || (
+          # Wait for API server only (admin SPA is on Vercel)
+          pnpm -w dlx wait-on --timeout 120000 http://localhost:8080/healthz || (
             echo "Services failed to start. Dumping logs...";
             tail -n 200 server.log || true;
             exit 1
