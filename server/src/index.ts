@@ -315,14 +315,14 @@ if (fs.existsSync(adminIndex)) {
   app.get("/settings", noAdminHandler);
 }
 // Support additional SPA routes that use top-level paths.
-// Note: some of these paths overlap with API routers (e.g. /analytics, /personalization).
+// Note: Paths that are now mobile API routes (/products, /stores, /personalization, /recommendations)
+// are removed from this list to prevent conflicts with API routers.
 // We only serve HTML for GET navigations; API calls use non-GET methods and/or subpaths.
 if (fs.existsSync(adminIndex)) {
   app.get(
     [
       "/admins",
       "/orders",
-      "/products",
       "/articles",
       "/faqs",
       "/deals",
@@ -334,14 +334,12 @@ if (fs.existsSync(adminIndex)) {
       "/undo",
       "/audit",
       "/theme",
-      "/personalization",
       "/notifications",
       "/billing",
       "/usage",
       "/workspaces",
       "/content",
       "/integrations",
-      "/stores",
       "/api",
     ],
     (_req, res) => res.sendFile(adminIndex),
