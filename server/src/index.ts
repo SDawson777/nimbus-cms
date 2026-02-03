@@ -246,7 +246,18 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 const adminSpaDistDir = path.join(repoRoot, "apps", "admin", "dist");
 const adminSpaIndex = path.join(adminSpaDistDir, "index.html");
 const adminSpaAssets = path.join(adminSpaDistDir, "assets");
-const hasAdminSpa = fs.existsSync(adminSpaIndex);
+let hasAdminSpa = fs.existsSync(adminSpaIndex);
+
+// In Docker/production, admin SPA is copied to server/static instead of apps/admin/dist
+// Check server/static as fallback location
+if (!hasAdminSpa) {
+  const staticAdminIndex = path.join(staticDir, "index.html");
+  const staticAdminAssets = path.join(staticDir, "assets");
+  if (fs.existsSync(staticAdminIndex) && fs.existsSync(staticAdminAssets)) {
+    hasAdminSpa = true;
+  }
+}
+
 if (hasAdminSpa && fs.existsSync(adminSpaAssets)) {
   app.use("/assets", express.static(adminSpaAssets));
 }
@@ -269,7 +280,10 @@ app.use("/api/datasets", datasetsRouter);
 // Serve admin static pages (login and dashboard)
 // The built admin `index.html` is copied into `static/` root so assets
 // resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
-const adminIndex = hasAdminSpa ? adminSpaIndex : path.join(staticDir, "index.html");
+// In Docker/production, check server/static first; in dev, check apps/admin/dist
+const adminIndex = fs.existsSync(adminSpaIndex)
+  ? adminSpaIndex
+  : path.join(staticDir, "index.html");
 // Use a route pattern that is compatible with path-to-regexp: use a named
 // parameter with a wildcard to capture any admin subpath.
 // Serve SPA index for base admin route and any nested admin paths
