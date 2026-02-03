@@ -20,12 +20,13 @@ RUN npm install --legacy-peer-deps
 RUN npx prisma generate --schema=../prisma/schema.prisma
 
 # Force cache invalidation with timestamp
-RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v5
+RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v6
 
 # Copy server source files to current working directory (/app/server)
 COPY server/src ./src
 COPY server/tsconfig.json ./
 COPY server/prisma ./prisma
+COPY server/init_and_start.sh ./init_and_start.sh
 RUN npm run build
 
 # --- Runtime stage ---
