@@ -11,18 +11,19 @@ RUN apt-get update -y && apt-get install -y openssl
 COPY prisma ./prisma
 
 # Copy server manifest and install deps
+COPY server/package.json ./server/package.json
 WORKDIR /app/server
-COPY server/package.json ./
 RUN npm install --legacy-peer-deps
 
 # Generate Prisma client from current schema (AFTER npm install)
 RUN npx prisma generate --schema=../prisma/schema.prisma
 
 # Force cache invalidation with timestamp
-RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v3
+RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v4
 
-# Copy server source and build
-COPY server ./
+# Copy server source and build (copy contents, not directory)
+COPY server/src ./src
+COPY server/tsconfig.json ./tsconfig.json
 RUN npm run build
 
 # --- Runtime stage ---
