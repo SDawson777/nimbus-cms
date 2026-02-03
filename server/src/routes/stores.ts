@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import express, { Router, Request, Response } from "express";
 import { z } from "zod";
 import getPrisma from "../lib/prisma";
 import { logger } from "../lib/logger";

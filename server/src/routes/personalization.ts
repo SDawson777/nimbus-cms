@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router, Request, Response } from "express";
 import { fetchCMS } from "../lib/cms";
 import { evaluatePersonalization } from "../lib/personalization";
 import { z } from "zod";
