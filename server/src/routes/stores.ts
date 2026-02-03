@@ -160,7 +160,7 @@ storesRouter.get("/:id", async (req: Request, res: Response) => {
     const prisma = getPrisma();
 
     const store = await prisma.store.findUnique({
-      where: { id },
+      where: { id: String(id) },
       select: {
         id: true,
         name: true,

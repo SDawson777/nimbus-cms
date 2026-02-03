@@ -199,10 +199,11 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
 
     // Get store-specific inventory if storeId provided
     let storeProducts: any[] = [];
-    if (storeId && typeof storeId === "string") {
+    const storeIdStr = Array.isArray(storeId) ? storeId[0] : storeId;
+    if (storeIdStr && typeof storeIdStr === "string") {
       storeProducts = await prisma.storeProduct.findMany({
         where: {
-          storeId,
+          storeId: storeIdStr,
           productId: id,
           active: true,
         },
@@ -212,7 +213,7 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
       });
     }
 
-    const variants = product.ProductVariant.map((v: any) => {
+    const variants = (product.ProductVariant || []).map((v: any) => {
       const sp = storeProducts.find((x) => x.variantId === v.id);
       return {
         id: v.id,
