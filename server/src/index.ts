@@ -281,67 +281,87 @@ app.use("/api/datasets", datasetsRouter);
 // The built admin `index.html` is copied into `static/` root so assets
 // resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
 // In Docker/production, check server/static first; in dev, check apps/admin/dist
+const staticAdminIndex = path.join(staticDir, "index.html");
 const adminIndex = fs.existsSync(adminSpaIndex)
   ? adminSpaIndex
-  : path.join(staticDir, "index.html");
-// Use a route pattern that is compatible with path-to-regexp: use a named
-// parameter with a wildcard to capture any admin subpath.
-// Serve SPA index for base admin route and any nested admin paths
-app.get("/admin", (_req, res) => res.sendFile(adminIndex));
-app.get(/^\/admin\/.*$/, (_req, res) => res.sendFile(adminIndex));
+  : staticAdminIndex;
 
-// Also serve the SPA index for legacy top-level admin routes
-app.get("/login", (_req, res) => res.sendFile(adminIndex));
-app.get("/dashboard", (_req, res) => res.sendFile(adminIndex));
-// Catch-all for nested dashboard routes (SPA client-side routing)
-app.get(/^\/dashboard\/.*$/, (_req, res) => res.sendFile(adminIndex));
-app.get("/settings", (_req, res) => res.sendFile(adminIndex));
+// Only register admin SPA routes if the index file actually exists
+// This prevents ENOENT errors when admin SPA isn't built
+if (fs.existsSync(adminIndex)) {
+  // Use a route pattern that is compatible with path-to-regexp: use a named
+  // parameter with a wildcard to capture any admin subpath.
+  // Serve SPA index for base admin route and any nested admin paths
+  app.get("/admin", (_req, res) => res.sendFile(adminIndex));
+  app.get(/^\/admin\/.*$/, (_req, res) => res.sendFile(adminIndex));
+
+  // Also serve the SPA index for legacy top-level admin routes
+  app.get("/login", (_req, res) => res.sendFile(adminIndex));
+  app.get("/dashboard", (_req, res) => res.sendFile(adminIndex));
+  // Catch-all for nested dashboard routes (SPA client-side routing)
+  app.get(/^\/dashboard\/.*$/, (_req, res) => res.sendFile(adminIndex));
+  app.get("/settings", (_req, res) => res.sendFile(adminIndex));
+} else {
+  // Admin SPA not available - provide helpful error messages
+  const noAdminHandler: express.RequestHandler = (_req, res) => {
+    res.status(503).json({
+      ok: false,
+      error: "Admin SPA not built. Run 'cd apps/admin && npm run build' or deploy with full Docker build.",
+    });
+  };
+  app.get("/admin", noAdminHandler);
+  app.get("/login", noAdminHandler);
+  app.get("/dashboard", noAdminHandler);
+  app.get("/settings", noAdminHandler);
+}
 // Support additional SPA routes that use top-level paths.
 // Note: some of these paths overlap with API routers (e.g. /analytics, /personalization).
 // We only serve HTML for GET navigations; API calls use non-GET methods and/or subpaths.
-app.get(
-  [
-    "/admins",
-    "/orders",
-    "/products",
-    "/articles",
-    "/faqs",
-    "/deals",
-    "/compliance",
-    "/legal",
-    "/analytics",
-    "/analytics/settings",
-    "/heatmap",
-    "/undo",
-    "/audit",
-    "/theme",
-    "/personalization",
-    "/notifications",
-    "/billing",
-    "/usage",
-    "/workspaces",
-    "/content",
-    "/integrations",
-    "/stores",
-    "/api",
-  ],
-  (_req, res) => res.sendFile(adminIndex),
-);
-// Settings sub-routes
-app.get(
-  [
-    "/settings/billing",
-    "/settings/usage",
-    "/settings/integrations",
-    "/settings/api",
-    "/settings/workspaces",
-    "/settings/notifications",
-  ],
-  (_req, res) => res.sendFile(adminIndex),
-);
-app.get("/admin/dashboard", requireAdmin, (_req, res) =>
-  res.sendFile(path.join(staticDir, "admin", "dashboard.html")),
-);
+if (fs.existsSync(adminIndex)) {
+  app.get(
+    [
+      "/admins",
+      "/orders",
+      "/products",
+      "/articles",
+      "/faqs",
+      "/deals",
+      "/compliance",
+      "/legal",
+      "/analytics",
+      "/analytics/settings",
+      "/heatmap",
+      "/undo",
+      "/audit",
+      "/theme",
+      "/personalization",
+      "/notifications",
+      "/billing",
+      "/usage",
+      "/workspaces",
+      "/content",
+      "/integrations",
+      "/stores",
+      "/api",
+    ],
+    (_req, res) => res.sendFile(adminIndex),
+  );
+  // Settings sub-routes
+  app.get(
+    [
+      "/settings/billing",
+      "/settings/usage",
+      "/settings/integrations",
+      "/settings/api",
+      "/settings/workspaces",
+      "/settings/notifications",
+    ],
+    (_req, res) => res.sendFile(adminIndex),
+  );
+  app.get("/admin/dashboard", requireAdmin, (_req, res) =>
+    res.sendFile(path.join(staticDir, "admin", "dashboard.html")),
+  );
+}
 
 // All admin routes are handled by the SPA entrypoint; do not attempt to
 // serve separate dashboard/settings HTML files (the SPA renders these).
