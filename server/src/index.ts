@@ -259,33 +259,11 @@ app.use("/products", productsRouter);
 app.use("/stores", storesRouter);
 app.use("/recommendations", recommendationsRouter);
 
+// Admin SPA is hosted separately on Vercel, not served from this API server
+// Only serve static assets if they exist (for local development)
 const staticDir = path.join(__dirname, "..", "static");
-app.use(express.static(staticDir));
-// Note: keep the custom landing HTML handler above; do not override it with
-// a static index file handler. Static assets will still be served from
-// `staticDir`.
-
-// If the React admin SPA has been built (apps/admin), serve its hashed assets
-// and use its index.html for SPA routes. This keeps auth cookies same-origin
-// (no cross-site cookies needed) and enables Playwright e2e against one server.
-const repoRoot = path.resolve(__dirname, "..", "..");
-const adminSpaDistDir = path.join(repoRoot, "apps", "admin", "dist");
-const adminSpaIndex = path.join(adminSpaDistDir, "index.html");
-const adminSpaAssets = path.join(adminSpaDistDir, "assets");
-let hasAdminSpa = fs.existsSync(adminSpaIndex);
-
-// In Docker/production, admin SPA is copied to server/static instead of apps/admin/dist
-// Check server/static as fallback location
-if (!hasAdminSpa) {
-  const staticAdminIndex = path.join(staticDir, "index.html");
-  const staticAdminAssets = path.join(staticDir, "assets");
-  if (fs.existsSync(staticAdminIndex) && fs.existsSync(staticAdminAssets)) {
-    hasAdminSpa = true;
-  }
-}
-
-if (hasAdminSpa && fs.existsSync(adminSpaAssets)) {
-  app.use("/assets", express.static(adminSpaAssets));
+if (fs.existsSync(staticDir)) {
+  app.use(express.static(staticDir));
 }
 
 // Serve a lightweight login page for preview/dev
@@ -303,89 +281,7 @@ app.use("/admin", adminAuthRouter);
 app.use("/api/v1/nimbus/admin", adminAuthRouter);
 // Datasets API - provides list of available Sanity datasets
 app.use("/api/datasets", datasetsRouter);
-// Serve admin static pages (login and dashboard)
-// The built admin `index.html` is copied into `static/` root so assets
-// resolve at `/assets/*`. Use the root index.html as the SPA entrypoint.
-// In Docker/production, check server/static first; in dev, check apps/admin/dist
-const staticAdminIndex = path.join(staticDir, "index.html");
-const adminIndex = fs.existsSync(adminSpaIndex)
-  ? adminSpaIndex
-  : staticAdminIndex;
-
-// Only register admin SPA routes if the index file actually exists
-// This prevents ENOENT errors when admin SPA isn't built
-if (fs.existsSync(adminIndex)) {
-  // Use a route pattern that is compatible with path-to-regexp: use a named
-  // parameter with a wildcard to capture any admin subpath.
-  // Serve SPA index for base admin route and any nested admin paths
-  app.get("/admin", (_req, res) => res.sendFile(adminIndex));
-  app.get(/^\/admin\/.*$/, (_req, res) => res.sendFile(adminIndex));
-
-  // Also serve the SPA index for legacy top-level admin routes
-  app.get("/login", (_req, res) => res.sendFile(adminIndex));
-  app.get("/dashboard", (_req, res) => res.sendFile(adminIndex));
-  // Catch-all for nested dashboard routes (SPA client-side routing)
-  app.get(/^\/dashboard\/.*$/, (_req, res) => res.sendFile(adminIndex));
-  app.get("/settings", (_req, res) => res.sendFile(adminIndex));
-} else {
-  // Admin SPA not available - provide helpful error messages
-  const noAdminHandler: express.RequestHandler = (_req, res) => {
-    res.status(503).json({
-      ok: false,
-      error: "Admin SPA not built. Run 'cd apps/admin && npm run build' or deploy with full Docker build.",
-    });
-  };
-  app.get("/admin", noAdminHandler);
-  app.get("/login", noAdminHandler);
-  app.get("/dashboard", noAdminHandler);
-  app.get("/settings", noAdminHandler);
-}
-// Support additional SPA routes that use top-level paths.
-// Note: Paths that are now mobile API routes (/products, /stores, /personalization, /recommendations)
-// are removed from this list to prevent conflicts with API routers.
-// We only serve HTML for GET navigations; API calls use non-GET methods and/or subpaths.
-if (fs.existsSync(adminIndex)) {
-  app.get(
-    [
-      "/admins",
-      "/orders",
-      "/articles",
-      "/faqs",
-      "/deals",
-      "/compliance",
-      "/legal",
-      "/analytics",
-      "/analytics/settings",
-      "/heatmap",
-      "/undo",
-      "/audit",
-      "/theme",
-      "/notifications",
-      "/billing",
-      "/usage",
-      "/workspaces",
-      "/content",
-      "/integrations",
-      "/api",
-    ],
-    (_req, res) => res.sendFile(adminIndex),
-  );
-  // Settings sub-routes
-  app.get(
-    [
-      "/settings/billing",
-      "/settings/usage",
-      "/settings/integrations",
-      "/settings/api",
-      "/settings/workspaces",
-      "/settings/notifications",
-    ],
-    (_req, res) => res.sendFile(adminIndex),
-  );
-  app.get("/admin/dashboard", requireAdmin, (_req, res) =>
-    res.sendFile(path.join(staticDir, "admin", "dashboard.html")),
-  );
-}
+// Note: Admin SPA is hosted on Vercel, not served from this API server
 
 // All admin routes are handled by the SPA entrypoint; do not attempt to
 // serve separate dashboard/settings HTML files (the SPA renders these).
