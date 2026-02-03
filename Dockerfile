@@ -1,4 +1,5 @@
 # --- Build stage: API only ---
+# Cache bust: 2026-02-03-v2
 FROM node:20-slim AS api-builder
 
 WORKDIR /app
