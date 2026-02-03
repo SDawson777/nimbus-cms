@@ -1,30 +1,10 @@
-# Server Dockerfile for Nimbus Cannabis OS CMS API and Admin console
-# Purpose: build the Admin SPA, compile the Express API, and package both for production use
+# Server Dockerfile for Nimbus Cannabis OS CMS API
+# Purpose: compile the Express API and package for production use
+# Note: Admin SPA is hosted separately on Vercel, not built here
 
 #############################################################
-## Stage 1: Admin builder (apps/admin)
-## - Installs Admin SPA deps and runs the production build
-## - Fails fast when the dist folder is missing/empty
-#############################################################
-FROM node:20 AS admin-builder
-WORKDIR /app/apps/admin
-
-# Install Admin SPA dependencies
-COPY apps/admin/package.json ./
-RUN npm install
-
-# Build Admin SPA
-COPY apps/admin ./
-RUN npm run build
-
-# Ensure build output exists and is non-empty
-RUN test -d dist && test "$(ls -A dist)" || \
-	(echo "Admin build failed or produced no output" && exit 1)
-
-#############################################################
-## Stage 2: API builder (server/)
-## - Installs root deps, builds the Express server, and copies admin dist
-## - Copies admin output to /app/server/admin-dist and /app/dist with guards
+## Stage 1: API builder (server/)
+## - Installs deps, builds the Express server
 #############################################################
 FROM node:20 AS api-builder
 WORKDIR /app
@@ -40,26 +20,11 @@ RUN cd server && npm install
 COPY server ./server
 RUN cd server && npm run build
 
-# Copy Admin SPA output so the API can serve the SPA at /admin
-# - server/static is the runtime-served location
-# - server/admin-dist is a stable extraction path used by CI and diligence docs
-RUN mkdir -p server/static server/admin-dist dist
-COPY --from=admin-builder /app/apps/admin/dist ./server/static
-COPY --from=admin-builder /app/apps/admin/dist ./server/admin-dist
-COPY --from=admin-builder /app/apps/admin/dist ./dist
-
-# Verify targets exist and are non-empty
-RUN test -d server/static && test "$(ls -A server/static)" || \
-	(echo "server/static missing after copy" && exit 1)
-RUN test -d server/admin-dist && test "$(ls -A server/admin-dist)" || \
-	(echo "server/admin-dist missing after copy" && exit 1)
-RUN test -d dist && test "$(ls -A dist)" || \
-	(echo "dist missing after copy" && exit 1)
-
 #############################################################
-## Stage 3: Runtime (node:20-slim)
-## - Copies compiled artifacts and admin dist
+## Stage 2: Runtime (node:20-slim)
+## - Copies compiled API artifacts only
 ## - Optimized for production deploys (Railway / GitHub Actions)
+## - Note: Admin SPA hosted separately on Vercel
 #############################################################
 FROM node:20-slim AS runtime
 WORKDIR /app
@@ -76,11 +41,8 @@ COPY --from=api-builder /app/prisma ./prisma
 COPY --from=api-builder /app/server/package.json ./server/package.json
 RUN cd server && npm install --omit=dev
 
-# Copy compiled server + admin static assets from api-builder
+# Copy compiled server from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist
-COPY --from=api-builder /app/server/static ./server/static
-COPY --from=api-builder /app/server/admin-dist ./server/admin-dist
-COPY --from=api-builder /app/dist ./dist
 
 EXPOSE 4010
 
