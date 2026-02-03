@@ -135,7 +135,12 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve a small static landing page for human visitors / buyers
 app.get("/healthz", (_req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    version: "mobile-api-v1.0.0",
+    commit: "a28207c"
+  });
 });
 
 // Debug endpoint to check route registration and file paths
