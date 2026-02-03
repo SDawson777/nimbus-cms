@@ -1,6 +1,7 @@
 # Server Dockerfile for Nimbus Cannabis OS CMS API
 # Purpose: compile the Express API and package for production use
 # Note: Admin SPA is hosted separately on Vercel, not built here
+# Cache bust: 2026-02-03-v1
 
 #############################################################
 ## Stage 1: API builder (server/)
@@ -16,7 +17,7 @@ COPY prisma ./prisma
 COPY server/package.json ./server/
 RUN cd server && npm install
 
-# Copy server source and build
+# Copy server source and build (cache bust to force rebuild)
 COPY server ./server
 RUN cd server && npm run build
 
