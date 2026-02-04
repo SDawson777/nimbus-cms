@@ -1,4 +1,6 @@
-# GitHub Action: verifies the production Docker image and admin-dist contents
+# GitHub Action: verifies the production Docker image and API endpoints
+# This workflow validates that the Docker build produces a working API server
+# Note: Admin SPA is hosted separately on Vercel, not in the Docker container
 name: docker-build
 
 on:
@@ -20,22 +22,30 @@ jobs:
       - name: Build production image
         run: docker build -f server/Dockerfile -t nimbus-cms-test .
 
-      - name: Extract and validate admin-dist
+      - name: Test API endpoints
         run: |
           set -euo pipefail
-          docker create --name nimbus-cms-test-container nimbus-cms-test
-          docker cp nimbus-cms-test-container:/app/server/admin-dist ./admin-dist
-          if [ ! -d "./admin-dist" ]; then
-            echo "::error ::admin-dist directory was not copied from the container"
-            docker rm nimbus-cms-test-container >/dev/null 2>&1 || true
-            exit 1
-          fi
-          if [ -z "$(ls -A ./admin-dist)" ]; then
-            echo "::error ::admin-dist directory is empty after extraction"
-            docker rm nimbus-cms-test-container >/dev/null 2>&1 || true
-            exit 1
-          fi
-          docker rm nimbus-cms-test-container >/dev/null 2>&1
+          # Start container in background
+          docker run -d --name nimbus-cms-test-container -p 8080:8080 nimbus-cms-test
+          
+          # Wait for server to start
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if docker exec nimbus-cms-test-container curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then
+              echo "✅ Server is ready"
+              break
+            fi
+            sleep 1
+          done
+          
+          # Test main endpoints
+          echo "Testing API endpoints..."
+          docker exec nimbus-cms-test-container curl -fsS http://localhost:8080/healthz
+          docker exec nimbus-cms-test-container curl -fsS http://localhost:8080/products?limit=2
+          echo "✅ API endpoints working"
+          
+          # Cleanup
+          docker rm -f nimbus-cms-test-container >/dev/null 2>&1 || true
 
       - name: Docker build result
         run: echo "Docker build passed ✔"
