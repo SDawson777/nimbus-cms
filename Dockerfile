@@ -35,7 +35,7 @@ FROM node:20-slim AS runtime
 WORKDIR /app/server
 
 # Install required system packages for Prisma in runtime too
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl curl
 
 ENV NODE_ENV=production
 ENV PORT=8080

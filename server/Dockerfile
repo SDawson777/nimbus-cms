@@ -45,7 +45,7 @@ ENV PORT=8080
 ENV USE_DEMO_DATA=true
 
 # Install system dependency for Prisma runtime
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl curl
 
 # Ensure Prisma schema is available for postinstall generate
 COPY --from=api-builder /app/prisma ./prisma
