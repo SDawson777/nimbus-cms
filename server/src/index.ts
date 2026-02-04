@@ -334,6 +334,9 @@ app.use("/api/v1/nimbus/analytics", requireAdmin, analyticsDataRouter);
 // AI chat endpoint (protected by RBAC)
 app.use("/api/v1/nimbus/ai", aiRouter);
 
+// Mobile AI endpoint (no auth required)
+app.use("/api/ai", aiRouter);
+
 // status routes (legacy and a simple /status alias)
 app.use("/api/v1/status", statusRouter);
 app.use("/status", statusRouter);
