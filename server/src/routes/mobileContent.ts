@@ -130,7 +130,7 @@ mobileContentRouter.get("/:type/:slug", async (req: Request, res: Response) => {
     
     const page = await prisma.contentPage.findFirst({
       where: {
-        type,
+        type: type as any, // Cast to ContentType enum
         slug,
         tenantId,
         isPublished: true
