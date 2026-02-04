@@ -26,17 +26,35 @@ jobs:
         run: |
           set -euo pipefail
           # Start container in background
-          docker run -d --name nimbus-cms-test-container -p 8080:8080 nimbus-cms-test
+          CONTAINER_ID=$(docker run -d --name nimbus-cms-test-container -p 8080:8080 nimbus-cms-test)
+          echo "Started container: $CONTAINER_ID"
           
-          # Wait for server to start
+          # Wait for server to start and check if container is still running
           echo "Waiting for server to start..."
           for i in {1..30}; do
+            if ! docker ps -q --filter "id=$CONTAINER_ID" | grep -q .; then
+              echo "❌ Container exited unexpectedly"
+              echo "Container logs:"
+              docker logs nimbus-cms-test-container || true
+              docker rm -f nimbus-cms-test-container >/dev/null 2>&1 || true
+              exit 1
+            fi
+            
             if docker exec nimbus-cms-test-container curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then
               echo "✅ Server is ready"
               break
             fi
             sleep 1
           done
+          
+          # Final check if container is still running
+          if ! docker ps -q --filter "id=$CONTAINER_ID" | grep -q .; then
+            echo "❌ Container stopped during startup"
+            echo "Container logs:"
+            docker logs nimbus-cms-test-container || true
+            docker rm -f nimbus-cms-test-container >/dev/null 2>&1 || true
+            exit 1
+          fi
           
           # Test main endpoints
           echo "Testing API endpoints..."
