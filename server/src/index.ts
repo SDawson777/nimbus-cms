@@ -33,7 +33,7 @@ import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
 import analyticsDataRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
-import { contentRouter } from "./routes/content";
+import { mobileContentRouter } from "./routes/content";
 import { webhooksRouter } from "./routes/webhooks";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
