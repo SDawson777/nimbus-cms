@@ -33,6 +33,8 @@ import adminSessionInfoRouter from "./routes/adminSessionInfo";
 import analyticsRouter from "./routes/analytics";
 import analyticsDataRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
+import { contentRouter } from "./routes/content";
+import { webhooksRouter } from "./routes/webhooks";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
 import undoRouter from "./routes/undo";
@@ -336,6 +338,12 @@ app.use("/api/v1/nimbus/ai", aiRouter);
 
 // Mobile AI endpoint (no auth required)
 app.use("/api/ai", aiRouter);
+
+// Content endpoints for mobile app
+app.use("/content", contentRouter);
+
+// Webhook endpoints for Sanity CMS sync
+app.use("/webhooks", webhooksRouter);
 
 // status routes (legacy and a simple /status alias)
 app.use("/api/v1/status", statusRouter);
