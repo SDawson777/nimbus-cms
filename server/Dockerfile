@@ -14,12 +14,23 @@ WORKDIR /app
 COPY prisma ./prisma
 
 # Install server dependencies and build API
-COPY server/package.json ./server/
-RUN cd server && npm install
+COPY server/package.json ./server/package.json
+COPY server/package-lock.json ./server/package-lock.json
+WORKDIR /app/server
+RUN npm install
 
-# Copy server source and build (cache bust to force rebuild)
-COPY server ./server
-RUN cd server && npm run build
+# Generate Prisma client from current schema (AFTER npm install)
+RUN npx prisma generate --schema=../prisma/schema.prisma
+
+# Force cache invalidation with timestamp
+RUN echo "Cache bust timestamp: $(date)" > /tmp/cache_bust_2026_02_03_v7
+
+# Copy server source files to current working directory (/app/server)
+COPY server/src ./src
+COPY server/tsconfig.json ./
+COPY server/prisma ./prisma
+COPY server/init_and_start.sh ./init_and_start.sh
+RUN npm run build
 
 #############################################################
 ## Stage 2: Runtime (node:20-slim)
