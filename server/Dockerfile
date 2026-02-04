@@ -41,7 +41,7 @@ RUN npm run build
 FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=4010
+ENV PORT=8080
 
 # Install system dependency for Prisma runtime
 RUN apt-get update -y && apt-get install -y openssl
@@ -56,7 +56,7 @@ RUN cd server && npm install --omit=dev
 # Copy compiled server from api-builder
 COPY --from=api-builder /app/server/dist ./server/dist
 
-EXPOSE 4010
+EXPOSE 8080
 
 # Launch the Express API
 CMD ["node", "server/dist/index.js"]
