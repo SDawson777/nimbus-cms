@@ -339,8 +339,8 @@ app.use("/api/v1/nimbus/ai", aiRouter);
 // Mobile AI endpoint (no auth required)
 app.use("/api/ai", aiRouter);
 
-// Content endpoints for mobile app
-app.use("/content", contentRouter);
+// Mobile content endpoints  
+app.use("/mobile/content", mobileContentRouter);
 
 // Webhook endpoints for Sanity CMS sync
 app.use("/webhooks", webhooksRouter);

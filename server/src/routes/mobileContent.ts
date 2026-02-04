@@ -189,7 +189,9 @@ mobileContentRouter.get("/pages", async (req: Request, res: Response) => {
     };
 
     if (params.type) {
-      where.type = params.type;
+      where.type = {
+        equals: params.type
+      };
     }
 
     const pages = await prisma.contentPage.findMany({
