@@ -201,3 +201,4 @@ Expected: 9 tests passed.
 - **Monitoring**: use `/metrics` Prometheus endpoint and wire logs to your aggregator (see `docs/observability.md`).
 
 # Force Railway redeploy
+# Trigger redeploy - content sync Tue Feb  3 23:02:17 EST 2026
