@@ -200,3 +200,4 @@ Expected: 9 tests passed.
 - **License report**: generate dependency license summary with `pnpm licenses:generate` (writes `docs/licenses.md`).
 - **Monitoring**: use `/metrics` Prometheus endpoint and wire logs to your aggregator (see `docs/observability.md`).
 
+# Force Railway redeploy
