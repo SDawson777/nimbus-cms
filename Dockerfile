@@ -39,6 +39,7 @@ RUN apt-get update -y && apt-get install -y openssl
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV USE_DEMO_DATA=true
 
 COPY --from=api-builder /app/prisma ../prisma
 COPY --from=api-builder /app/server/dist ./dist

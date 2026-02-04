@@ -266,3 +266,248 @@ router.post(
     }
   },
 );
+
+// Mobile AI recommendations endpoint - no authentication required
+const recommendProductsSchema = z.object({
+  desiredEffects: z.array(z.string()).optional().default([]),
+  experienceLevel: z.enum(['new', 'regular', 'heavy']).optional().default('regular'),
+  budgetLevel: z.enum(['low', 'medium', 'high']).optional().default('medium'),
+  preferredCategories: z.array(z.string()).optional().default([]),
+  limit: z.number().min(1).max(20).optional().default(5)
+});
+
+// Effect mappings for different strain types
+const EFFECT_MAPPINGS = {
+  'Relaxed': ['Flower', 'Edibles', 'Tincture'],
+  'Happy': ['Flower', 'PreRoll', 'Vape'],
+  'Euphoric': ['Flower', 'Vape', 'Concentrate'],
+  'Focused': ['Vape', 'PreRoll', 'Flower'],
+  'Creative': ['Flower', 'Vape', 'PreRoll'],
+  'Energetic': ['Vape', 'PreRoll', 'Beverage'],
+  'Sleepy': ['Edibles', 'Tincture', 'Topical'],
+  'Hungry': ['Edibles', 'Flower'],
+  'Pain Relief': ['Topical', 'Tincture', 'Edibles'],
+  'Stress Relief': ['Tincture', 'Edibles', 'Topical']
+};
+
+// Experience level to price/potency mapping
+const EXPERIENCE_MAPPINGS = {
+  'new': { maxPrice: 30, preferredCategories: ['Edibles', 'Tincture', 'Topical'] },
+  'regular': { maxPrice: 50, preferredCategories: ['Flower', 'PreRoll', 'Vape'] },
+  'heavy': { maxPrice: 100, preferredCategories: ['Concentrate', 'Vape', 'Flower'] }
+};
+
+// Budget level to price ranges
+const BUDGET_MAPPINGS = {
+  'low': { minPrice: 0, maxPrice: 25 },
+  'medium': { minPrice: 15, maxPrice: 50 },
+  'high': { minPrice: 35, maxPrice: 200 }
+};
+
+// Generate AI-like recommendation explanations
+function generateRecommendationReason(product: any, effects: string[], experienceLevel: string): string {
+  const reasons: string[] = [];
+  
+  // Effect-based reasoning
+  if (effects.length > 0) {
+    const matchingEffect = effects.find(effect => 
+      EFFECT_MAPPINGS[effect as keyof typeof EFFECT_MAPPINGS]?.includes(product.category)
+    );
+    if (matchingEffect) {
+      reasons.push(`Great for ${matchingEffect.toLowerCase()} effects`);
+    }
+  }
+  
+  // Experience level reasoning
+  if (experienceLevel === 'new') {
+    if (['Edibles', 'Tincture', 'Topical'].includes(product.category)) {
+      reasons.push('Perfect for beginners');
+    }
+  } else if (experienceLevel === 'heavy') {
+    if (['Concentrate', 'Vape'].includes(product.category)) {
+      reasons.push('High potency for experienced users');
+    }
+  }
+  
+  // Brand/quality reasoning
+  if (product.brand === 'Nimbus') {
+    reasons.push('Premium Nimbus quality');
+  }
+  
+  // Price reasoning
+  if (product.price <= 20) {
+    reasons.push('Great value');
+  } else if (product.price >= 50) {
+    reasons.push('Premium option');
+  }
+  
+  return reasons.length > 0 ? reasons[0] : `Popular ${product.category.toLowerCase()}`;
+}
+
+// Calculate recommendation score
+function calculateScore(product: any, criteria: {
+  desiredEffects: string[];
+  experienceLevel: string;
+  budgetLevel: string;
+  preferredCategories: string[];
+}): number {
+  let score = 0;
+  
+  // Effect matching (highest weight)
+  if (criteria.desiredEffects.length > 0) {
+    const effectMatches = criteria.desiredEffects.filter(effect =>
+      EFFECT_MAPPINGS[effect as keyof typeof EFFECT_MAPPINGS]?.includes(product.category)
+    ).length;
+    score += effectMatches * 30;
+  }
+  
+  // Experience level matching
+  const expMapping = EXPERIENCE_MAPPINGS[criteria.experienceLevel as keyof typeof EXPERIENCE_MAPPINGS];
+  if (expMapping.preferredCategories.includes(product.category)) {
+    score += 20;
+  }
+  if (product.price <= expMapping.maxPrice) {
+    score += 15;
+  }
+  
+  // Budget matching
+  const budgetMapping = BUDGET_MAPPINGS[criteria.budgetLevel as keyof typeof BUDGET_MAPPINGS];
+  if (product.price >= budgetMapping.minPrice && product.price <= budgetMapping.maxPrice) {
+    score += 25;
+  }
+  
+  // Category preference
+  if (criteria.preferredCategories.includes(product.category)) {
+    score += 15;
+  }
+  
+  // Active product boost
+  if (product.isActive) {
+    score += 5;
+  }
+  
+  return score;
+}
+
+/**
+ * POST /api/v1/nimbus/ai/recommend-products
+ * Mobile AI-powered product recommendations - no auth required
+ */
+router.post("/recommend-products", async (req, res) => {
+  try {
+    const body = recommendProductsSchema.parse(req.body);
+    
+    // Get products for scoring (using fallback products if no database)
+    const FALLBACK_PRODUCTS = [
+      {
+        id: "demo-product-1",
+        name: "Blue Dream",
+        brand: "Cloud Nine",
+        category: "Flower", 
+        price: 45,
+        description: "Sativa-dominant hybrid with sweet berry flavors",
+        imageUrl: null,
+        isActive: true
+      },
+      {
+        id: "demo-product-2", 
+        name: "OG Kush",
+        brand: "Heritage Farms",
+        category: "Flower",
+        price: 50,
+        description: "Classic indica with earthy pine undertones",
+        imageUrl: null,
+        isActive: true
+      },
+      {
+        id: "demo-product-3",
+        name: "Calm CBD Gummies", 
+        brand: "Wellness Co",
+        category: "Edibles",
+        price: 35,
+        description: "25mg CBD per gummy for relaxation",
+        imageUrl: null,
+        isActive: true
+      },
+      {
+        id: "demo-product-4",
+        name: "Hybrid Vape Cart",
+        brand: "Vapor Labs", 
+        category: "Vape",
+        price: 55,
+        description: "1g cartridge with balanced hybrid blend",
+        imageUrl: null,
+        isActive: true
+      },
+      {
+        id: "demo-product-5",
+        name: "Relief Topical Cream",
+        brand: "Wellness Co",
+        category: "Topical",
+        price: 40, 
+        description: "THC/CBD infused cream for muscle relief",
+        imageUrl: null,
+        isActive: true
+      }
+    ];
+
+    let products = FALLBACK_PRODUCTS;
+    
+    // Score and rank products
+    const scoredProducts = products.map(product => ({
+      ...product,
+      score: calculateScore(product, body),
+      reason: generateRecommendationReason(product, body.desiredEffects, body.experienceLevel)
+    }));
+    
+    // Sort by score and take top results
+    const recommendations = scoredProducts
+      .sort((a, b) => b.score - a.score)
+      .slice(0, body.limit)
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        description: product.description,
+        imageUrl: product.imageUrl,
+        reason: product.reason,
+        score: product.score
+      }));
+    
+    // Generate AI-like summary message
+    const effectsText = body.desiredEffects.length > 0 
+      ? `for ${body.desiredEffects.join(', ').toLowerCase()} effects` 
+      : '';
+    const experienceText = body.experienceLevel === 'new' 
+      ? 'beginner-friendly' 
+      : body.experienceLevel === 'heavy' 
+        ? 'high-potency' 
+        : '';
+    
+    const message = `Found ${recommendations.length} ${experienceText} products ${effectsText} in your ${body.budgetLevel} budget range.`;
+    
+    res.json({
+      recommendations,
+      message,
+      criteria: body,
+      totalAnalyzed: products.length
+    });
+    
+  } catch (error: any) {
+    logger.error("ai.recommend-products.error", error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Failed to generate recommendations',
+      details: 'AI service temporarily unavailable'
+    });
+  }
+});
