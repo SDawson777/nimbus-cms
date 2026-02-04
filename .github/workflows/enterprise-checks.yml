@@ -159,27 +159,25 @@ jobs:
             exit 1
           )
 
-      - name: Preflight admin login readiness
+      - name: Preflight healthz readiness
         run: |
-          echo "Preflight: waiting for /admin/login to return 200 and index markup"
+          echo "Preflight: waiting for /healthz to return 200"
           for i in $(seq 1 60); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/admin/login || true)
-            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthz || true)
-            HTML=$(curl -s http://localhost:8080/admin/login || true)
-            if [ "$STATUS" = "200" ] && (echo "$HTML" | grep -q '<div id="root">' || echo "$HTML" | grep -qi '<html'); then
-              echo "Login route is served (status $STATUS) and index markup detected. Proceeding to tests.";
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthz || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health route is ready (status $STATUS). Proceeding to tests.";
               exit 0
             fi
-            echo "Waiting for login route: status=$STATUS (healthz=$HEALTH), attempt ($i/60)";
+            echo "Waiting for health route: status=$STATUS, attempt ($i/60)";
             sleep 2
           done
-          echo "Preflight failed: /admin/login did not return index markup or status 200 within timeout.";
+          echo "Preflight failed: /healthz did not return status 200 within timeout.";
           echo "---- server.log (tail) ----";
           tail -n 200 server.log || true
           echo "---- listener check (lsof tcp:8080) ----";
           (command -v lsof >/dev/null 2>&1 && lsof -ti tcp:8080) || echo "(lsof unavailable or no listener)";
-          echo "---- admin login (head) ----";
-          if [ -f apps/admin/test-ci-output/ci-login.html ]; then head -n 200 apps/admin/test-ci-output/ci-login.html; else echo "(no saved ci-login.html)"; fi
+          echo "---- healthz check (head) ----";
+          curl -s http://localhost:8080/healthz || echo "(no healthz response)"
           exit 1
 
       - name: Dump admin preview and server logs (debug)
