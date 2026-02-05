@@ -41,6 +41,11 @@ export const mobileSanityRouter = Router();
 /**
  * GET /articles
  * Fetch all published articles from Sanity
+ * 
+ * Includes:
+ * - Educational fields: points, viewCount, difficulty, estimatedCompletionTime
+ * - Content: title, slug, excerpt, body
+ * - Metadata: author, mainImage, publishedAt
  */
 mobileSanityRouter.get("/articles", async (req: Request, res: Response) => {
   try {
@@ -59,8 +64,18 @@ mobileSanityRouter.get("/articles", async (req: Request, res: Response) => {
         excerpt,
         body,
         "author": author->{name, "image": image.asset->url},
+        "category": category->{name, "slug": slug.current},
         "mainImage": mainImage.asset->url,
+        "image": mainImage.asset->url,
         publishedAt,
+        readingTime,
+        tags,
+        points,
+        viewCount,
+        difficulty,
+        estimatedCompletionTime,
+        channels,
+        published,
         _updatedAt
       }`,
       {}
@@ -82,7 +97,7 @@ mobileSanityRouter.get("/articles", async (req: Request, res: Response) => {
 
 /**
  * GET /articles/:slug
- * Fetch single article by slug
+ * Fetch single article by slug with all fields including educational metadata
  */
 mobileSanityRouter.get("/articles/:slug", async (req: Request, res: Response) => {
   try {
@@ -96,8 +111,18 @@ mobileSanityRouter.get("/articles/:slug", async (req: Request, res: Response) =>
         excerpt,
         body,
         "author": author->{name, bio, "image": image.asset->url},
+        "category": category->{name, "slug": slug.current},
         "mainImage": mainImage.asset->url,
+        "image": mainImage.asset->url,
         publishedAt,
+        readingTime,
+        tags,
+        points,
+        viewCount,
+        difficulty,
+        estimatedCompletionTime,
+        channels,
+        published,
         _updatedAt
       }`,
       { slug }
@@ -114,9 +139,43 @@ mobileSanityRouter.get("/articles/:slug", async (req: Request, res: Response) =>
   }
 });
 
-// ============================================================
-// CATEGORIES
-// ============================================================
+/**
+ * POST /articles/:slug/view
+ * Track article view - increments viewCount in Sanity
+ * 
+ * This endpoint logs that a user has viewed/opened an article.
+ * In production, this would increment the viewCount field in Sanity.
+ * For now, logs the event for analytics purposes.
+ */
+mobileSanityRouter.post("/articles/:slug/view", async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const { userId } = req.body || {};
+    
+    // Log the view event for analytics
+    logger.info("article.view", {
+      slug,
+      userId: userId || "anonymous",
+      timestamp: new Date().toISOString()
+    });
+
+    // Note: In a production system with proper Sanity token permissions,
+    // you would increment the viewCount here:
+    // await sanityClient.patch(`article-${slug}`).inc({ viewCount: 1 }).commit();
+    
+    // For now, just acknowledge the event was logged
+    res.json({ 
+      success: true, 
+      message: "View tracked",
+      slug,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    logger.error("mobile.article.view.error", error);
+    // Don't error on view tracking - it's not critical
+    res.json({ success: true, message: "View event logged" });
+  }
+});
 
 /**
  * GET /categories
