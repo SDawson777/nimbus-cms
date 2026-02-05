@@ -167,7 +167,94 @@ mobileContentRouter.get("/:type/:slug", async (req: Request, res: Response) => {
     });
   }
 });
+/**
+ * GET /mobile/content/products
+ * Mobile-optimized products endpoint
+ * Returns simple structure without pagination (compatible with mobile app hooks)
+ */
+mobileContentRouter.get("/products", async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      storeId: z.string().optional(),
+      category: z.string().optional(),
+      limit: z.coerce.number().min(1).max(50).default(20),
+      q: z.string().trim().optional()
+    });
 
+    const params = schema.parse(req.query);
+    const prisma = getPrisma();
+
+    // Build where clause
+    const where: any = {
+      isActive: true,
+    };
+
+    if (params.q) {
+      where.OR = [
+        { name: { contains: params.q, mode: "insensitive" } },
+        { brand: { contains: params.q, mode: "insensitive" } },
+      ];
+    }
+
+    if (params.category) {
+      where.category = params.category;
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: params.limit,
+      select: {
+        id: true,
+        name: true,
+        brand: true,
+        category: true,
+        strainType: true,
+        slug: true,
+        description: true,
+        defaultPrice: true,
+        thcPercent: true,
+        cbdPercent: true,
+        imageUrl: true
+      }
+    });
+
+    // Transform to mobile app format (simple structure)
+    const mobileProducts = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      category: p.category,
+      strainType: p.strainType,
+      slug: p.slug,
+      description: p.description,
+      price: p.defaultPrice,
+      thcPercent: p.thcPercent,
+      cbdPercent: p.cbdPercent,
+      image: p.imageUrl,
+      stock: 10, // Default stock for mobile display
+    }));
+
+    // Return simple structure that mobile app expects
+    res.json({
+      products: mobileProducts
+    });
+
+  } catch (error: any) {
+    logger.error("mobile.products.error", error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid request parameters',
+        details: error.issues
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Failed to fetch products'
+    });
+  }
+});
 /**
  * GET /content/pages
  * List all content pages by type

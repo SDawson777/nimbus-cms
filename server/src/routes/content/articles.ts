@@ -38,7 +38,7 @@ articlesRouter.get("/", async (req, res) => {
       ' && references(*[_type=="organization" && slug.current==$org]._id)';
   }
 
-  const base = `*[_type=="greenhouseArticle" && status=="published" ${filter} ${tenantFilter}]`;
+  const base = `*[_type=="article" && defined(publishedAt) ${filter} ${tenantFilter}]`;
   // Channel semantics: when a channel is provided, include docs that either do not define channels,
   // or have an empty channels array, or explicitly include the requested channel.
   const channelExpr = channel
@@ -55,8 +55,8 @@ articlesRouter.get("/", async (req, res) => {
   const items = await fetchCMS(
     `${base}${channelExpr}${scheduleExpr} | order(publishedAt desc)[${from}...${from + limit}]{
     "id":_id, title, "slug":slug.current, excerpt, body,
-    "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
-    tags, author, publishedAt, featured
+    "cover":{"src":mainImage.asset->url,"alt":mainImage.alt},
+    authorName, publishedAt
   }`,
     { tag, brand, store, org, channel },
     { preview },
@@ -74,10 +74,10 @@ articlesRouter.get("/:slug", async (req, res) => {
     : "";
   const scheduleExpr =
     " && ( !defined(schedule) || !schedule.isScheduled || (( !defined(schedule.publishAt) || schedule.publishAt <= now() ) && ( !defined(schedule.unpublishAt) || schedule.unpublishAt > now() )) )";
-  const query = `*[_type=="greenhouseArticle" && slug.current==$s${channelExpr}${scheduleExpr}][0]{
+  const query = `*[_type=="article" && slug.current==$s${channelExpr}${scheduleExpr}][0]{
     "id":_id, title, "slug":slug.current, excerpt, body,
-    "cover":{"src":coverImage.asset->url,"alt":coverImage.alt},
-    tags, author, publishedAt, featured,
+    "cover":{"src":mainImage.asset->url,"alt":mainImage.alt},
+    authorName, publishedAt,
     variants[]->{variantKey, title, excerpt, body}
   }`;
   const item = await fetchCMS(

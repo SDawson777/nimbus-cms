@@ -34,6 +34,7 @@ import analyticsRouter from "./routes/analytics";
 import analyticsDataRouter from "./routes/analytics";
 import aiRouter from "./routes/ai";
 import { mobileContentRouter } from "./routes/mobileContent";
+import { mobileSanityRouter } from "./routes/mobileSanityContent";
 import { webhooksRouter } from "./routes/webhooks";
 import proxyRouter from "./routes/proxy";
 import heatmapRouter from "./routes/heatmap";
@@ -341,6 +342,10 @@ app.use("/api/ai", aiRouter);
 
 // Mobile content endpoints  
 app.use("/mobile/content", mobileContentRouter);
+
+// Mobile Sanity content endpoints (direct Sanity CMS queries - no PostgreSQL)
+// Provides articles, FAQ, banners, deals, legal docs, accessibility, awards, etc.
+app.use("/mobile/sanity", mobileSanityRouter);
 
 // Webhook endpoints for Sanity CMS sync
 app.use("/webhooks", webhooksRouter);
