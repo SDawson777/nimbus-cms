@@ -565,7 +565,7 @@ model ProductVariant {
 }
 
 model QuizAttempt {
-  id            String            @id
+  id            String            @id @default(cuid())
   userId        String
   quizId        String
   attemptCount  Int               @default(0)
@@ -576,7 +576,7 @@ model QuizAttempt {
   passedAt      DateTime?
   lastAttemptAt DateTime?
   createdAt     DateTime          @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime          @default(now()) @updatedAt
   User          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, quizId])
@@ -586,7 +586,7 @@ model QuizAttempt {
 }
 
 model QuizCompletion {
-  id             String   @id
+  id             String   @id @default(cuid())
   userId         String
   quizId         String
   quizTitle      String
@@ -601,7 +601,7 @@ model QuizCompletion {
 }
 
 model QuizReward {
-  id            String   @id
+  id            String   @id @default(cuid())
   userId        String
   quizId        String
   pointsAwarded Int
@@ -913,7 +913,7 @@ model UserPreference {
 }
 
 model UserReward {
-  id          String   @id
+  id          String   @id @default(cuid())
   userId      String
   rewardType  String
   points      Int
@@ -970,6 +970,9 @@ enum OrderStatus {
   READY
   COMPLETED
   CANCELLED
+  PENDING
+  PAID
+  FULFILLED
 }
 
 enum ProductCategory {
