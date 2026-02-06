@@ -56,6 +56,13 @@ export default defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: "name",
+      type: "string",
+      title: "Name (alias)",
+      group: "identity",
+      description: "Alternative field name for API compatibility",
+    }),
+    defineField({
       name: "slug",
       type: "slug",
       title: "Slug",
@@ -86,6 +93,14 @@ export default defineType({
       title: "Icon Image",
       group: "display",
       options: { hotspot: true },
+    }),
+    defineField({
+      name: "image",
+      type: "image",
+      title: "Image (alias)",
+      group: "display",
+      options: { hotspot: true },
+      description: "Alternative field name for API compatibility",
     }),
     defineField({
       name: "iconEmoji",

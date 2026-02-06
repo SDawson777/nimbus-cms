@@ -1,6 +1,6 @@
-import express, { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
-import getPrisma from "../lib/prisma";
+import { fetchCMS } from "../lib/cms";
 import { logger } from "../lib/logger";
 
 export const mobileContentRouter = Router();
@@ -11,102 +11,39 @@ export const mobileContentRouter = Router();
  */
 mobileContentRouter.get("/faq", async (req: Request, res: Response) => {
   try {
-    const prisma = getPrisma();
-    const tenantId = (req.headers['x-tenant-id'] as string) || "demo-operator";
-    
-    // Fetch FAQs from PostgreSQL (synced from Sanity)
-    const faqPages = await prisma.contentPage.findMany({
-      where: {
-        type: 'faq',
-        tenantId: tenantId,
-        isPublished: true
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        body: true,
-        updatedAt: true,
-        createdAt: true
-      },
-      orderBy: {
-        createdAt: 'asc'
-      }
-    });
+    const faqs = await fetchCMS<any[]>(
+      `*[_type=="faqItem"] | order(order asc){
+        _id,
+        question,
+        answer,
+        "category": category->{name, "slug": slug.current},
+        order,
+        _updatedAt
+      }`,
+      {},
+    );
 
-    // If no FAQs in database, return demo data
-    if (faqPages.length === 0) {
-      logger.info("No FAQs found in database, returning demo data");
-      return res.json({
-        faqs: [
-          {
-            id: 'demo-faq-1',
-            question: 'What payment methods do you accept?',
-            answer: 'We accept cash, debit cards, and approved payment apps. Credit cards are not accepted due to federal regulations.',
-            category: 'Payment',
-            lastUpdated: new Date()
-          },
-          {
-            id: 'demo-faq-2', 
-            question: 'What are your delivery hours?',
-            answer: 'Delivery is available Monday-Sunday from 10am to 8pm. Orders must be placed at least 2 hours in advance.',
-            category: 'Delivery',
-            lastUpdated: new Date()
-          },
-          {
-            id: 'demo-faq-3',
-            question: 'Do I need a medical card?',
-            answer: 'You must be 21+ with valid ID for recreational purchases. Medical patients with valid cards receive tax exemptions.',
-            category: 'Legal',
-            lastUpdated: new Date()
-          },
-          {
-            id: 'demo-faq-4',
-            question: 'How do I earn loyalty points?',
-            answer: 'Earn 1 point per dollar spent. Gold status unlocks exclusive products and 5% discounts on all purchases.',
-            category: 'Loyalty',
-            lastUpdated: new Date()
-          },
-          {
-            id: 'demo-faq-5',
-            question: 'Can I return or exchange products?',
-            answer: 'All sales are final due to state regulations. Please inspect products before leaving the store.',
-            category: 'Returns',
-            lastUpdated: new Date()
-          }
-        ],
-        categories: ['Payment', 'Delivery', 'Legal', 'Loyalty', 'Returns'],
-        lastSync: new Date(),
-        source: 'demo'
+    const grouped: Record<string, any[]> = {};
+    (faqs || []).forEach((faq: any) => {
+      const cat = faq.category?.name || "General";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push({
+        id: faq._id,
+        question: faq.question,
+        answer: faq.answer,
+        category: cat,
+        lastUpdated: faq._updatedAt,
       });
-    }
-
-    // Transform database records to API format
-    const faqs = faqPages.map(page => {
-      // Extract category from slug or content
-      let category = 'General';
-      if (page.slug.includes('payment')) category = 'Payment';
-      else if (page.slug.includes('delivery')) category = 'Delivery';
-      else if (page.slug.includes('legal')) category = 'Legal';
-      else if (page.slug.includes('loyalty')) category = 'Loyalty';
-      else if (page.slug.includes('return')) category = 'Returns';
-      
-      return {
-        id: page.id,
-        question: page.title,
-        answer: page.body || '',
-        category,
-        lastUpdated: page.updatedAt
-      };
     });
 
-    const categories = [...new Set(faqs.map(faq => faq.category))];
+    const categories = Object.keys(grouped);
+    const flatFaqs = categories.flatMap((cat) => grouped[cat]);
 
     res.json({
-      faqs,
+      faqs: flatFaqs,
       categories,
       lastSync: new Date(),
-      source: 'database'
+      source: "sanity",
     });
 
   } catch (error: any) {
@@ -125,39 +62,37 @@ mobileContentRouter.get("/faq", async (req: Request, res: Response) => {
 mobileContentRouter.get("/:type/:slug", async (req: Request, res: Response) => {
   try {
     const { type, slug } = req.params;
-    const tenantId = (req.headers['x-tenant-id'] as string) || "demo-operator";
-    const prisma = getPrisma();
-    
-    const page = await prisma.contentPage.findFirst({
-      where: {
-        type: type as any, // Cast to ContentType enum
-        slug,
-        tenantId,
-        isPublished: true
-      },
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        body: true,
-        updatedAt: true,
-        createdAt: true
-      }
-    });
+    const doc = await fetchCMS<any>(
+      `*[_type==$type && slug.current==$slug][0]{
+        _id,
+        _type,
+        title,
+        name,
+        body,
+        content,
+        description,
+        _updatedAt,
+        _createdAt
+      }`,
+      { type, slug },
+    );
 
-    if (!page) {
+    if (!doc) {
       return res.status(404).json({
-        error: 'Content not found'
+        error: "Content not found",
       });
     }
 
+    const body = doc.body ?? doc.content ?? doc.description ?? null;
+    const title = doc.title ?? doc.name ?? slug;
+
     res.json({
-      id: page.id,
-      type: page.type,
-      title: page.title,
-      body: page.body,
-      lastUpdated: page.updatedAt,
-      created: page.createdAt
+      id: doc._id,
+      type: doc._type,
+      title,
+      body,
+      lastUpdated: doc._updatedAt,
+      created: doc._createdAt,
     });
 
   } catch (error: any) {
@@ -182,62 +117,67 @@ mobileContentRouter.get("/products", async (req: Request, res: Response) => {
     });
 
     const params = schema.parse(req.query);
-    const prisma = getPrisma();
-
-    // Build where clause
-    const where: any = {
-      isActive: true,
-    };
+    const filterParts: string[] = [];
+    const queryParams: Record<string, unknown> = {};
 
     if (params.q) {
-      where.OR = [
-        { name: { contains: params.q, mode: "insensitive" } },
-        { brand: { contains: params.q, mode: "insensitive" } },
-      ];
+      filterParts.push("(name match $q || brand->name match $q)");
+      queryParams.q = `*${params.q}*`;
     }
 
     if (params.category) {
-      where.category = params.category;
+      filterParts.push("productType->title match $category");
+      queryParams.category = params.category;
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: params.limit,
-      select: {
-        id: true,
-        name: true,
-        brand: true,
-        category: true,
-        strainType: true,
-        slug: true,
-        description: true,
-        defaultPrice: true,
-        thcPercent: true,
-        cbdPercent: true,
-        imageUrl: true
-      }
-    });
+    const filterSuffix = filterParts.length
+      ? ` && ${filterParts.join(" && ")}`
+      : "";
 
-    // Transform to mobile app format (simple structure)
-    const mobileProducts = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      brand: p.brand,
-      category: p.category,
-      strainType: p.strainType,
-      slug: p.slug,
-      description: p.description,
-      price: p.defaultPrice,
-      thcPercent: p.thcPercent,
-      cbdPercent: p.cbdPercent,
-      image: p.imageUrl,
-      stock: 10, // Default stock for mobile display
-    }));
+    const products = await fetchCMS<any[]>(
+      `*[_type=="product"${filterSuffix}] | order(_updatedAt desc)[0...${params.limit}]{
+        _id,
+        name,
+        "slug": slug.current,
+        "image": image.asset->url,
+        price,
+        thcPercent,
+        cbdPercent,
+        strainType,
+        availability,
+        inStock,
+        "brand": brand->{name, "slug": slug.current},
+        "productType": productType->{title}
+      }`,
+      queryParams,
+    );
+
+    const mobileProducts = (products || []).map((p) => {
+      const availability = String(p.availability || "").toLowerCase();
+      const isInStock =
+        p.inStock === true ||
+        availability === "in-stock" ||
+        availability === "available";
+
+      return {
+        id: p._id,
+        name: p.name,
+        brand: p.brand?.name || p.brand?.slug || null,
+        category: p.productType?.title || null,
+        strainType: p.strainType || null,
+        slug: p.slug,
+        description: null,
+        price: p.price ?? null,
+        thcPercent: p.thcPercent ?? null,
+        cbdPercent: p.cbdPercent ?? null,
+        image: p.image || null,
+        stock: isInStock ? 1 : 0,
+      };
+    });
 
     // Return simple structure that mobile app expects
     res.json({
-      products: mobileProducts
+      products: mobileProducts,
     });
 
   } catch (error: any) {
@@ -267,37 +207,35 @@ mobileContentRouter.get("/pages", async (req: Request, res: Response) => {
     });
 
     const params = schema.parse(req.query);
-    const tenantId = (req.headers['x-tenant-id'] as string) || "demo-operator";
-    const prisma = getPrisma();
-    
-    const where: any = {
-      tenantId,
-      isPublished: true
-    };
+    const types = params.type
+      ? [params.type]
+      : ["accessibilityPage", "legalDoc", "transparencyPage", "awardsExplainer"];
 
-    if (params.type) {
-      where.type = params.type;
-    }
+    const pages = await fetchCMS<any[]>(
+      `*[_type in $types] | order(_updatedAt desc)[0...${params.limit}]{
+        _id,
+        _type,
+        title,
+        name,
+        "slug": slug.current,
+        _updatedAt,
+        _createdAt
+      }`,
+      { types },
+    );
 
-    const pages = await prisma.contentPage.findMany({
-      where,
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        slug: true,
-        updatedAt: true,
-        createdAt: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: params.limit
-    });
+    const formattedPages = (pages || []).map((page) => ({
+      id: page._id,
+      type: page._type,
+      title: page.title || page.name || null,
+      slug: page.slug || null,
+      updatedAt: page._updatedAt,
+      createdAt: page._createdAt,
+    }));
 
     res.json({
-      pages,
-      total: pages.length
+      pages: formattedPages,
+      total: formattedPages.length,
     });
 
   } catch (error: any) {

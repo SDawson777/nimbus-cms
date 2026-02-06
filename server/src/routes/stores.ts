@@ -1,57 +1,9 @@
-import express, { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
-import getPrisma from "../lib/prisma";
+import { fetchCMS } from "../lib/cms";
 import { logger } from "../lib/logger";
 
 export const storesRouter = Router();
-
-// Fallback stores for demo/testing
-const FALLBACK_STORES = [
-  {
-    id: "fallback-store-1",
-    name: "Downtown Dispensary",
-    slug: "downtown",
-    address1: "123 Main St",
-    city: "Detroit",
-    state: "MI",
-    postalCode: "48201",
-    latitude: 42.3314,
-    longitude: -83.0458,
-    phone: "(313) 555-0100",
-    hours: {
-      monday: "9:00 AM - 9:00 PM",
-      tuesday: "9:00 AM - 9:00 PM",
-      wednesday: "9:00 AM - 9:00 PM",
-      thursday: "9:00 AM - 9:00 PM",
-      friday: "9:00 AM - 10:00 PM",
-      saturday: "10:00 AM - 10:00 PM",
-      sunday: "10:00 AM - 8:00 PM",
-    },
-    isActive: true,
-  },
-  {
-    id: "fallback-store-2",
-    name: "Eastside Cannabis",
-    slug: "eastside",
-    address1: "456 Jefferson Ave",
-    city: "Detroit",
-    state: "MI",
-    postalCode: "48207",
-    latitude: 42.3485,
-    longitude: -83.0118,
-    phone: "(313) 555-0200",
-    hours: {
-      monday: "10:00 AM - 8:00 PM",
-      tuesday: "10:00 AM - 8:00 PM",
-      wednesday: "10:00 AM - 8:00 PM",
-      thursday: "10:00 AM - 8:00 PM",
-      friday: "10:00 AM - 9:00 PM",
-      saturday: "11:00 AM - 9:00 PM",
-      sunday: "11:00 AM - 7:00 PM",
-    },
-    isActive: true,
-  },
-];
 
 /**
  * GET /stores
@@ -68,85 +20,73 @@ storesRouter.get("/", async (req: Request, res: Response) => {
     });
 
     const params = schema.parse(req.query);
-    const prisma = getPrisma();
+    const filterParts: string[] = ["(!defined(isActive) || isActive == true)"];
+    const queryParams: Record<string, unknown> = {};
 
-    const where: any = {
-      isActive: true,
-    };
-
-    // If lat/lng provided, filter by approximate radius
     if (params.lat !== undefined && params.lng !== undefined) {
-      const dLat = params.radius / 111; // ~111 km per degree latitude
+      const dLat = params.radius / 111;
       const dLng = params.radius / (111 * Math.cos((params.lat * Math.PI) / 180));
-
-      where.latitude = {
-        gte: params.lat - dLat,
-        lte: params.lat + dLat,
-      };
-      where.longitude = {
-        gte: params.lng - dLng,
-        lte: params.lng + dLng,
-      };
+      queryParams.minLat = params.lat - dLat;
+      queryParams.maxLat = params.lat + dLat;
+      queryParams.minLng = params.lng - dLng;
+      queryParams.maxLng = params.lng + dLng;
+      filterParts.push(
+        "defined(latitude) && defined(longitude) && latitude >= $minLat && latitude <= $maxLat && longitude >= $minLng && longitude <= $maxLng",
+      );
     }
 
-    const stores = await prisma.store.findMany({
-      where,
-      take: params.limit,
-      orderBy: [{ city: "asc" }, { name: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        address1: true,
-        address2: true,
-        city: true,
-        state: true,
-        postalCode: true,
-        latitude: true,
-        longitude: true,
-        phone: true,
-        email: true,
-        hours: true,
-        isActive: true,
-        isDeliveryEnabled: true,
-        isPickupEnabled: true,
-        deliveryFee: true,
-        minOrderAmount: true,
-      },
-    });
+    const filterSuffix = filterParts.length
+      ? ` && ${filterParts.join(" && ")}`
+      : "";
 
-    // If no stores found, return fallback data
-    if (stores.length === 0) {
-      logger.info("No stores in database, returning fallback data");
-      return res.json({ stores: FALLBACK_STORES });
-    }
+    const listQuery = `*[_type=="store"${filterSuffix}] | order(city asc, name asc)[0...${params.limit}]{
+      _id,
+      name,
+      "slug": slug.current,
+      address,
+      address2,
+      city,
+      stateCode,
+      zip,
+      phone,
+      email,
+      hours,
+      isActive,
+      latitude,
+      longitude,
+      isDeliveryEnabled,
+      isPickupEnabled,
+      deliveryFee,
+      minOrderAmount
+    }`;
 
-    const formattedStores = stores.map((s) => ({
-      id: s.id,
+    const stores = await fetchCMS<any[]>(listQuery, queryParams);
+
+    const formattedStores = (stores || []).map((s) => ({
+      id: s._id,
       name: s.name,
       slug: s.slug,
-      address1: s.address1,
-      address2: s.address2,
-      city: s.city,
-      state: s.state,
-      postalCode: s.postalCode,
-      latitude: s.latitude ? Number(s.latitude) : null,
-      longitude: s.longitude ? Number(s.longitude) : null,
-      phone: s.phone,
-      email: s.email,
-      hours: s.hours,
-      isActive: s.isActive,
-      isDeliveryEnabled: s.isDeliveryEnabled,
-      isPickupEnabled: s.isPickupEnabled,
-      deliveryFee: s.deliveryFee,
-      minOrderAmount: s.minOrderAmount,
+      address1: s.address || null,
+      address2: s.address2 || null,
+      city: s.city || null,
+      state: s.stateCode || null,
+      postalCode: s.zip || null,
+      latitude: s.latitude ?? null,
+      longitude: s.longitude ?? null,
+      phone: s.phone || null,
+      email: s.email || null,
+      hours: s.hours || null,
+      isActive: s.isActive ?? true,
+      isDeliveryEnabled: s.isDeliveryEnabled ?? null,
+      isPickupEnabled: s.isPickupEnabled ?? null,
+      deliveryFee: s.deliveryFee ?? null,
+      minOrderAmount: s.minOrderAmount ?? null,
     }));
 
     res.json({ stores: formattedStores });
   } catch (error: any) {
     logger.error("stores.list.error", error);
-    // Return fallback on error
-    res.json({ stores: FALLBACK_STORES });
+    res.status(500).json({ error: "Failed to fetch stores" });
   }
 });
 
@@ -157,50 +97,73 @@ storesRouter.get("/", async (req: Request, res: Response) => {
 storesRouter.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const prisma = getPrisma();
-
-    const store = await prisma.store.findUnique({
-      where: { id: String(id) },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        logoUrl: true,
-        bannerUrl: true,
-        address1: true,
-        address2: true,
-        city: true,
-        state: true,
-        postalCode: true,
-        country: true,
-        latitude: true,
-        longitude: true,
-        phone: true,
-        email: true,
-        timezone: true,
-        hours: true,
-        licenseNumber: true,
-        licenseExpiry: true,
-        minOrderAmount: true,
-        deliveryRadius: true,
-        deliveryFee: true,
-        avgRating: true,
-        reviewCount: true,
-        isActive: true,
-        isDeliveryEnabled: true,
-        isPickupEnabled: true,
-      },
-    });
+    const store = await fetchCMS<any>(
+      `*[_type=="store" && (_id == $id || slug.current == $id)][0]{
+        _id,
+        name,
+        "slug": slug.current,
+        description,
+        "logoUrl": logo.asset->url,
+        "bannerUrl": banner.asset->url,
+        address,
+        address2,
+        city,
+        stateCode,
+        zip,
+        country,
+        phone,
+        email,
+        timezone,
+        hours,
+        licenseNumber,
+        licenseExpiry,
+        minOrderAmount,
+        deliveryRadius,
+        deliveryFee,
+        avgRating,
+        reviewCount,
+        isActive,
+        isDeliveryEnabled,
+        isPickupEnabled,
+        latitude,
+        longitude
+      }`,
+      { id },
+    );
 
     if (!store) {
       return res.status(404).json({ error: "Store not found" });
     }
 
     res.json({
-      ...store,
-      latitude: store.latitude ? Number(store.latitude) : null,
-      longitude: store.longitude ? Number(store.longitude) : null,
+      id: store._id,
+      name: store.name,
+      slug: store.slug,
+      description: store.description || null,
+      logoUrl: store.logoUrl || null,
+      bannerUrl: store.bannerUrl || null,
+      address1: store.address || null,
+      address2: store.address2 || null,
+      city: store.city || null,
+      state: store.stateCode || null,
+      postalCode: store.zip || null,
+      country: store.country || null,
+      latitude: store.latitude ?? null,
+      longitude: store.longitude ?? null,
+      phone: store.phone || null,
+      email: store.email || null,
+      timezone: store.timezone || null,
+      hours: store.hours || null,
+      licenseNumber: store.licenseNumber || null,
+      licenseExpiry: store.licenseExpiry || null,
+      minOrderAmount: store.minOrderAmount ?? null,
+      deliveryRadius: store.deliveryRadius ?? null,
+      deliveryFee: store.deliveryFee ?? null,
+      avgRating: store.avgRating ?? null,
+      reviewCount: store.reviewCount ?? null,
+      isActive: store.isActive ?? true,
+      isDeliveryEnabled: store.isDeliveryEnabled ?? null,
+      isPickupEnabled: store.isPickupEnabled ?? null,
     });
   } catch (error: any) {
     logger.error("stores.detail.error", error);

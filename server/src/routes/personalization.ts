@@ -2,7 +2,6 @@ import express, { Router, Request, Response } from "express";
 import { fetchCMS } from "../lib/cms";
 import { evaluatePersonalization } from "../lib/personalization";
 import { z } from "zod";
-import getPrisma from "../lib/prisma";
 import { logger } from "../lib/logger";
 
 export const personalizationRouter = Router();
@@ -34,44 +33,34 @@ personalizationRouter.get("/home", async (req, res) => {
     // Fetch recommendations if requested
     let recommendations: any[] = [];
     if (params.recommendations) {
-      const prisma = getPrisma();
+      const products = await fetchCMS<any[]>(
+        `*[_type=="product" && (!defined(isRecalled) || isRecalled != true)] | order(_updatedAt desc)[0...${params.limit}]{
+          _id,
+          name,
+          "slug": slug.current,
+          "image": image.asset->url,
+          price,
+          thcPercent,
+          cbdPercent,
+          strainType,
+          "brand": brand->{name, "slug": slug.current},
+          "productType": productType->{title}
+        }`,
+        {},
+      );
 
-      // Get popular products or user-specific recommendations
-      const products = await prisma.product.findMany({
-        where: {
-          isActive: true,
-        },
-        take: params.limit,
-        orderBy: {
-          purchasesLast30d: "desc",
-        },
-        select: {
-          id: true,
-          name: true,
-          brand: true,
-          category: true,
-          strainType: true,
-          slug: true,
-          description: true,
-          defaultPrice: true,
-          thcPercent: true,
-          cbdPercent: true,
-          imageUrl: true,
-        },
-      });
-
-      recommendations = products.map((p) => ({
-        id: p.id,
+      recommendations = (products || []).map((p) => ({
+        id: p._id,
         name: p.name,
-        brand: p.brand,
-        category: p.category,
-        strainType: p.strainType,
+        brand: p.brand?.name || p.brand?.slug || null,
+        category: p.productType?.title || null,
+        strainType: p.strainType || null,
         slug: p.slug,
-        description: p.description,
-        price: p.defaultPrice,
-        thcPercent: p.thcPercent,
-        cbdPercent: p.cbdPercent,
-        image: p.imageUrl,
+        description: null,
+        price: p.price ?? null,
+        thcPercent: p.thcPercent ?? null,
+        cbdPercent: p.cbdPercent ?? null,
+        image: p.image || null,
       }));
     }
 

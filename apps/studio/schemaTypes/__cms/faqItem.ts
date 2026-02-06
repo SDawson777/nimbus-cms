@@ -12,6 +12,20 @@ export default defineType({
       title: "Answer",
       of: [{ type: "block" }],
     }),
+    defineField({
+      name: "category",
+      type: "reference",
+      title: "Category",
+      to: [{ type: "category" }],
+      description: "Group FAQs by category",
+    }),
+    defineField({
+      name: "order",
+      type: "number",
+      title: "Display order",
+      initialValue: 0,
+      description: "Lower numbers appear first",
+    }),
     // Optional tenant scoping
     defineField({
       name: "brand",

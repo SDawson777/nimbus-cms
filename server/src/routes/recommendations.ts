@@ -1,6 +1,6 @@
-import express, { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
-import getPrisma from "../lib/prisma";
+import { fetchCMS } from "../lib/cms";
 import { logger } from "../lib/logger";
 
 export const recommendationsRouter = Router();
@@ -72,81 +72,63 @@ recommendationsRouter.get("/weather", async (req: Request, res: Response) => {
     const weatherMap =
       WEATHER_PRODUCT_MAP[condition] || WEATHER_PRODUCT_MAP["clear"];
 
-    const prisma = getPrisma();
+    const baseFilter =
+      "_type==\"product\" && (!defined(isRecalled) || isRecalled != true)";
+    const weatherFilter =
+      "((defined(productType) && productType->title in $categories) || (defined(effects) && count(effects[@ in $tags]) > 0))";
 
-    // Build query to find matching products
-    const where: any = {
-      isActive: true,
-    };
+    const listQuery = `*[${baseFilter} && ${weatherFilter}] | order(_updatedAt desc)[0...${params.limit}]{
+      _id,
+      name,
+      "slug": slug.current,
+      "image": image.asset->url,
+      price,
+      thcPercent,
+      cbdPercent,
+      strainType,
+      "brand": brand->{name, "slug": slug.current},
+      "productType": productType->{title},
+      effects
+    }`;
 
-    // Filter by categories that match the weather
-    if (weatherMap.categories.length > 0) {
-      where.category = {
-        in: weatherMap.categories,
-      };
-    }
-
-    // Try to get products that match the weather profile
-    let products = await prisma.product.findMany({
-      where,
-      take: params.limit,
-      orderBy: {
-        purchasesLast30d: "desc", // Popular products first
-      },
-      select: {
-        id: true,
-        name: true,
-        brand: true,
-        category: true,
-        strainType: true,
-        slug: true,
-        description: true,
-        price: true,
-        thcPercent: true,
-        cbdPercent: true,
-        imageUrl: true,
-      },
+    let products = await fetchCMS<any[]>(listQuery, {
+      categories: weatherMap.categories,
+      tags: weatherMap.tags,
     });
 
-    // Fallback to any active products if weather-matched search returns nothing
-    if (products.length === 0) {
+    if (!products || products.length === 0) {
       logger.info(
-        `No products found for weather condition: ${condition}, returning popular products`,
+        `No products found for weather condition: ${condition}, returning latest products`,
       );
-      products = await prisma.product.findMany({
-        where: { isActive: true },
-        take: params.limit,
-        orderBy: {
-          purchasesLast30d: "desc",
-        },
-        select: {
-          id: true,
-          name: true,
-          brand: true,
-          category: true,
-          strainType: true,
-          slug: true,
-          description: true,
-          price: true,
-          thcPercent: true,
-          cbdPercent: true,
-          imageUrl: true,
-        },
-      });
+      products = await fetchCMS<any[]>(
+        `*[_type=="product" && (!defined(isRecalled) || isRecalled != true)] | order(_updatedAt desc)[0...${params.limit}]{
+          _id,
+          name,
+          "slug": slug.current,
+          "image": image.asset->url,
+          price,
+          thcPercent,
+          cbdPercent,
+          strainType,
+          "brand": brand->{name, "slug": slug.current},
+          "productType": productType->{title}
+        }`,
+        {},
+      );
     }
 
-    const formattedProducts = products.map((p) => ({
-      id: p.id,
+    const formattedProducts = (products || []).map((p) => ({
+      id: p._id,
       name: p.name,
-      brand: p.brand,
-      category: p.category,
-      strainType: p.strainType,
+      brand: p.brand?.name || p.brand?.slug || null,
+      category: p.productType?.title || null,
+      strainType: p.strainType || null,
       slug: p.slug,
-      description: p.description,
-      price: p.price,
-      thcPercent: p.thcPercent,
-      cbdPercent: p.cbdPercent,
-      image: p.imageUrl,
+      description: null,
+      price: p.price ?? null,
+      thcPercent: p.thcPercent ?? null,
+      cbdPercent: p.cbdPercent ?? null,
+      image: p.image || null,
     }));
 
     res.json({

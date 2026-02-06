@@ -1,40 +1,9 @@
-import express, { Router, Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
-import getPrisma from "../lib/prisma";
 import { fetchCMS } from "../lib/cms";
 import { logger } from "../lib/logger";
 
 export const productsRouter = Router();
-
-// Fallback products for when database is not populated
-const FALLBACK_PRODUCTS = [
-  {
-    id: "fallback-1",
-    name: "Blue Dream",
-    brand: "House Brand",
-    category: "flower",
-    strainType: "hybrid",
-    slug: "blue-dream",
-    description: "A balanced hybrid strain with berry aroma",
-    price: 45.0,
-    thcPercent: 18.5,
-    cbdPercent: 0.5,
-    stock: 10,
-  },
-  {
-    id: "fallback-2",
-    name: "OG Kush",
-    brand: "Premium",
-    category: "flower",
-    strainType: "indica",
-    slug: "og-kush",
-    description: "Classic indica strain",
-    price: 50.0,
-    thcPercent: 22.0,
-    cbdPercent: 0.3,
-    stock: 8,
-  },
-];
 
 /**
  * GET /products
@@ -64,113 +33,116 @@ productsRouter.get("/", async (req: Request, res: Response) => {
     const params = schema.parse(req.query);
     const skip = (params.page - 1) * params.limit;
 
-    const prisma = getPrisma();
-
-    // Build where clause
-    const where: any = {
-      isActive: true,
-    };
+    const filterParts: string[] = [];
+    const queryParams: Record<string, unknown> = {};
 
     if (params.q) {
-      where.OR = [
-        { name: { contains: params.q, mode: "insensitive" } },
-        { brand: { contains: params.q, mode: "insensitive" } },
-      ];
+      filterParts.push("(name match $q || brand->name match $q)");
+      queryParams.q = `*${params.q}*`;
     }
 
     if (params.brand) {
       const brands = Array.isArray(params.brand) ? params.brand : [params.brand];
-      where.brand = { in: brands };
+      filterParts.push(
+        "(brand->slug.current in $brands || brand->name in $brands)",
+      );
+      queryParams.brands = brands;
     }
 
     if (params.category) {
-      where.category = params.category;
+      filterParts.push("productType->title match $category");
+      queryParams.category = params.category;
     }
 
     if (params.strain) {
-      where.strainType = params.strain;
+      filterParts.push("defined(strainType) && strainType == $strain");
+      queryParams.strain = params.strain;
     }
 
-    if (params.priceMin !== undefined || params.priceMax !== undefined) {
-      where.defaultPrice = {};
-      if (params.priceMin !== undefined) where.defaultPrice.gte = params.priceMin;
-      if (params.priceMax !== undefined) where.defaultPrice.lte = params.priceMax;
+    if (params.priceMin !== undefined) {
+      filterParts.push("defined(price) && price >= $priceMin");
+      queryParams.priceMin = params.priceMin;
     }
 
-    if (params.thcMin !== undefined || params.thcMax !== undefined) {
-      where.thcPercent = {};
-      if (params.thcMin !== undefined) where.thcPercent.gte = params.thcMin;
-      if (params.thcMax !== undefined) where.thcPercent.lte = params.thcMax;
+    if (params.priceMax !== undefined) {
+      filterParts.push("defined(price) && price <= $priceMax");
+      queryParams.priceMax = params.priceMax;
     }
 
-    // Build order by
-    let orderBy: any = { createdAt: "desc" };
-    if (params.sort === "price_asc") orderBy = { defaultPrice: "asc" };
-    else if (params.sort === "price_desc") orderBy = { defaultPrice: "desc" };
-    else if (params.sort === "name_asc") orderBy = { name: "asc" };
-    else if (params.sort === "name_desc") orderBy = { name: "desc" };
-    else if (params.sort === "popular") orderBy = { purchasesLast30d: "desc" };
+    if (params.thcMin !== undefined) {
+      filterParts.push("defined(thcPercent) && thcPercent >= $thcMin");
+      queryParams.thcMin = params.thcMin;
+    }
+
+    if (params.thcMax !== undefined) {
+      filterParts.push("defined(thcPercent) && thcPercent <= $thcMax");
+      queryParams.thcMax = params.thcMax;
+    }
+
+    if (params.inStock !== undefined) {
+      filterParts.push("defined(inStock) && inStock == $inStock");
+      queryParams.inStock = params.inStock;
+    }
+
+    const filterSuffix = filterParts.length
+      ? ` && ${filterParts.join(" && ")}`
+      : "";
+
+    let orderExpr = "_updatedAt desc";
+    if (params.sort === "price_asc") orderExpr = "price asc";
+    else if (params.sort === "price_desc") orderExpr = "price desc";
+    else if (params.sort === "name_asc") orderExpr = "name asc";
+    else if (params.sort === "name_desc") orderExpr = "name desc";
+    else if (params.sort === "popular")
+      orderExpr = "coalesce(popularity, 0) desc, _updatedAt desc";
+
+    const listQuery = `*[_type=="product"${filterSuffix}] | order(${orderExpr})[${skip}...${skip + params.limit}]{
+      _id,
+      name,
+      "slug": slug.current,
+      description,
+      "image": image.asset->url,
+      price,
+      thcPercent,
+      cbdPercent,
+      strainType,
+      inStock,
+      "brand": brand->{name, "slug": slug.current},
+      "productType": productType->{title}
+    }`;
+
+    const countQuery = `count(*[_type=="product"${filterSuffix}])`;
 
     const [total, products] = await Promise.all([
-      prisma.product.count({ where }),
-      prisma.product.findMany({
-        where,
-        orderBy,
-        skip,
-        take: params.limit,
-        include: {
-          ProductVariant: {
-            where: { active: true },
-            take: 1,
-          },
-        },
-      }),
+      fetchCMS<number>(countQuery, queryParams),
+      fetchCMS<any[]>(listQuery, queryParams),
     ]);
 
-    // If no products found, return fallback data for demo
-    if (total === 0) {
-      logger.info("No products in database, returning fallback data");
-      return res.json({
-        products: FALLBACK_PRODUCTS,
-        page: params.page,
-        limit: params.limit,
-        total: FALLBACK_PRODUCTS.length,
-        totalPages: 1,
-      });
-    }
-
-    const formattedProducts = products.map((p) => ({
-      id: p.id,
+    const formattedProducts = (products || []).map((p) => ({
+      id: p._id,
       name: p.name,
-      brand: p.brand,
-      category: p.category,
-      strainType: p.strainType,
+      brand: p.brand?.name || p.brand?.slug || null,
+      category: p.productType?.title || null,
+      strainType: p.strainType || null,
       slug: p.slug,
-      description: p.description,
-      price: p.defaultPrice,
-      thcPercent: p.thcPercent,
-      cbdPercent: p.cbdPercent,
-      image: p.imageUrl,
-      stock: 10, // Default stock for now
+      description: p.description || null,
+      price: p.price ?? null,
+      thcPercent: p.thcPercent ?? null,
+      cbdPercent: p.cbdPercent ?? null,
+      image: p.image || null,
+      stock: p.inStock === true ? 1 : 0,
     }));
 
     res.json({
       products: formattedProducts,
       page: params.page,
       limit: params.limit,
-      total,
-      totalPages: Math.ceil(total / params.limit),
+      total: total || 0,
+      totalPages: Math.ceil((total || 0) / params.limit),
     });
   } catch (error: any) {
     logger.error("products.list.error", error);
-    // Return fallback on error
-    res.json({
-      products: FALLBACK_PRODUCTS,
-      page: 1,
-      limit: 24,
-      total: FALLBACK_PRODUCTS.length,
-      totalPages: 1,
-    });
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 });
 
@@ -183,74 +155,60 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const { storeId } = req.query;
 
-    const prisma = getPrisma();
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        ProductVariant: {
-          where: { active: true },
-        },
-      },
-    });
+    const storeIdParam = Array.isArray(storeId) ? storeId[0] : storeId;
+    const product = await fetchCMS<any>(
+      `*[_type=="product" && (_id == $id || slug.current == $id)][0]{
+        _id,
+        name,
+        "slug": slug.current,
+        description,
+        "image": image.asset->url,
+        price,
+        thcPercent,
+        cbdPercent,
+        strainType,
+        inStock,
+        "brand": brand->{name, "slug": slug.current},
+        "productType": productType->{title},
+        variants[]{
+          _key,
+          name,
+          price,
+          thcPercent,
+          cbdPercent,
+          sku,
+          inStock
+        }
+      }`,
+      { id, storeId: storeIdParam },
+    );
 
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // Get store-specific inventory if storeId provided
-    let storeProducts: any[] = [];
-    const storeIdParam = Array.isArray(storeId) ? storeId[0] : storeId;
-    if (storeIdParam) {
-      storeProducts = await prisma.storeProduct.findMany({
-        where: {
-          storeId: String(storeIdParam),
-          productId: id,
-          active: true,
-        },
-        include: {
-          ProductVariant: true,
-        },
-      });
-    }
-
-    // Type assertion for product with included relations
-    const productWithVariants = product as typeof product & {
-      ProductVariant: Array<{
-        id: string;
-        name: string;
-        price: number;
-        active: boolean;
-        thcPercent?: number | null;
-        cbdPercent?: number | null;
-        sku?: string | null;
-      }>;
-    };
-
-    const variants = (productWithVariants.ProductVariant || []).map((v) => {
-      const sp = storeProducts.find((x) => x.variantId === v.id);
-      return {
-        id: v.id,
-        name: v.name,
-        price: sp?.price ?? v.price ?? product.defaultPrice,
-        stock: sp?.stock ?? 0,
-        thcPercent: v.thcPercent ?? product.thcPercent,
-        cbdPercent: v.cbdPercent ?? product.cbdPercent,
-        sku: v.sku,
-      };
-    });
+    const variants = (product.variants || []).map((v: any) => ({
+      id: v._key || v.id,
+      name: v.name,
+      price: v.price ?? product.price ?? null,
+      stock: v.inStock === true ? 1 : 0,
+      thcPercent: v.thcPercent ?? product.thcPercent ?? null,
+      cbdPercent: v.cbdPercent ?? product.cbdPercent ?? null,
+      sku: v.sku ?? null,
+    }));
 
     res.json({
-      id: product.id,
+      id: product._id,
       name: product.name,
-      brand: product.brand,
-      category: product.category,
-      strainType: product.strainType,
+      brand: product.brand?.name || product.brand?.slug || null,
+      category: product.productType?.title || null,
+      strainType: product.strainType || null,
       slug: product.slug,
-      description: product.description,
-      price: product.defaultPrice,
-      thcPercent: product.thcPercent,
-      cbdPercent: product.cbdPercent,
-      image: product.imageUrl,
+      description: product.description || null,
+      price: product.price ?? null,
+      thcPercent: product.thcPercent ?? null,
+      cbdPercent: product.cbdPercent ?? null,
+      image: product.image || null,
       variants: variants.length > 0 ? variants : undefined,
     });
   } catch (error: any) {

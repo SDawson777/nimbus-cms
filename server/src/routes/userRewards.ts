@@ -1,55 +1,134 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import getPrisma from "../lib/prisma";
+import { fetchCMS } from "../lib/cms";
 import { logger } from "../lib/logger";
 
 export const userRewardsRouter = Router();
 
-// Badge definitions
-const BADGE_DEFINITIONS = {
-  first_quiz: {
-    id: "first_quiz",
-    name: "Quiz Master",
-    description: "Complete your first quiz",
-    icon: "🎯",
-    requiredCount: 1,
-  },
-  five_quizzes: {
-    id: "five_quizzes",
-    name: "Quiz Scholar",
-    description: "Complete 5 quizzes",
-    icon: "📚",
-    requiredCount: 5,
-  },
-  ten_quizzes: {
-    id: "ten_quizzes",
-    name: "Quiz Expert",
-    description: "Complete 10 quizzes",
-    icon: "🏆",
-    requiredCount: 10,
-  },
-  hundred_points: {
-    id: "hundred_points",
-    name: "Point Collector",
-    description: "Earn 100 points",
-    icon: "⭐",
-    requiredPoints: 100,
-  },
-  five_hundred_points: {
-    id: "five_hundred_points",
-    name: "Point Master",
-    description: "Earn 500 points",
-    icon: "💎",
-    requiredPoints: 500,
-  },
-  perfect_score: {
-    id: "perfect_score",
-    name: "Perfect Mind",
-    description: "Score 100% on a quiz",
-    icon: "✨",
-    requiresPerfect: true,
-  },
+type BadgeRule = {
+  badgeId: string;
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: "quizCount" | "totalPoints" | "perfectScoreCount";
+  threshold: number;
 };
+
+type RewardsConfig = {
+  baseQuizPoints: number;
+  levelThresholds: number[];
+  levelStepPoints: number;
+  maxLevel: number;
+  badgeRules: BadgeRule[];
+};
+
+const DEFAULT_REWARDS_CONFIG: RewardsConfig = {
+  baseQuizPoints: 50,
+  levelThresholds: [0, 50, 150, 300, 500, 750],
+  levelStepPoints: 250,
+  maxLevel: 20,
+  badgeRules: [
+    {
+      badgeId: "first_quiz",
+      name: "Quiz Master",
+      description: "Complete your first quiz",
+      icon: "🎯",
+      criteriaType: "quizCount",
+      threshold: 1,
+    },
+    {
+      badgeId: "five_quizzes",
+      name: "Quiz Scholar",
+      description: "Complete 5 quizzes",
+      icon: "📚",
+      criteriaType: "quizCount",
+      threshold: 5,
+    },
+    {
+      badgeId: "ten_quizzes",
+      name: "Quiz Expert",
+      description: "Complete 10 quizzes",
+      icon: "🏆",
+      criteriaType: "quizCount",
+      threshold: 10,
+    },
+    {
+      badgeId: "hundred_points",
+      name: "Point Collector",
+      description: "Earn 100 points",
+      icon: "⭐",
+      criteriaType: "totalPoints",
+      threshold: 100,
+    },
+    {
+      badgeId: "five_hundred_points",
+      name: "Point Master",
+      description: "Earn 500 points",
+      icon: "💎",
+      criteriaType: "totalPoints",
+      threshold: 500,
+    },
+    {
+      badgeId: "perfect_score",
+      name: "Perfect Mind",
+      description: "Score 100% on a quiz",
+      icon: "✨",
+      criteriaType: "perfectScoreCount",
+      threshold: 1,
+    },
+  ],
+};
+
+async function getRewardsConfig(): Promise<RewardsConfig> {
+  try {
+    const doc = await fetchCMS<any>(
+      `*[_type=="rewardsConfig"][0]{
+        baseQuizPoints,
+        levelThresholds,
+        levelStepPoints,
+        maxLevel,
+        badgeRules[]{
+          badgeId,
+          name,
+          description,
+          icon,
+          criteriaType,
+          threshold
+        }
+      }`,
+      {},
+    );
+
+    if (!doc) return DEFAULT_REWARDS_CONFIG;
+
+    const badgeRules = Array.isArray(doc.badgeRules) && doc.badgeRules.length > 0
+      ? doc.badgeRules
+          .filter((rule: any) => rule?.badgeId && rule?.criteriaType)
+          .map((rule: any) => ({
+            badgeId: String(rule.badgeId),
+            name: String(rule.name || rule.badgeId),
+            description: String(rule.description || ""),
+            icon: String(rule.icon || "🏅"),
+            criteriaType: rule.criteriaType as BadgeRule["criteriaType"],
+            threshold: Number(rule.threshold || 0),
+          }))
+      : DEFAULT_REWARDS_CONFIG.badgeRules;
+
+    return {
+      baseQuizPoints: Number(doc.baseQuizPoints || DEFAULT_REWARDS_CONFIG.baseQuizPoints),
+      levelThresholds: Array.isArray(doc.levelThresholds) && doc.levelThresholds.length > 0
+        ? doc.levelThresholds.map((v: any) => Number(v)).filter((v: number) => !Number.isNaN(v))
+        : DEFAULT_REWARDS_CONFIG.levelThresholds,
+      levelStepPoints: Number(doc.levelStepPoints || DEFAULT_REWARDS_CONFIG.levelStepPoints),
+      maxLevel: Number(doc.maxLevel || DEFAULT_REWARDS_CONFIG.maxLevel),
+      badgeRules,
+    };
+  } catch (error: any) {
+    logger.error("rewards.config.error", error);
+    return DEFAULT_REWARDS_CONFIG;
+  }
+}
 
 /**
  * POST /api/v1/user/rewards/quiz-completion
@@ -63,14 +142,16 @@ userRewardsRouter.post("/quiz-completion", async (req: Request, res: Response) =
       quizTitle: z.string(),
       score: z.number().min(0).max(100),
       totalQuestions: z.number().min(1),
-      basePoints: z.number().min(1).default(50),
+      basePoints: z.number().min(1).optional(),
     });
 
     const data = schema.parse(req.body);
     const prisma = getPrisma();
+    const config = await getRewardsConfig();
 
     // Calculate points based on score
-    const pointsEarned = Math.floor((data.score / 100) * data.basePoints);
+    const basePoints = data.basePoints ?? config.baseQuizPoints;
+    const pointsEarned = Math.floor((data.score / 100) * basePoints);
     const isPerfectScore = data.score === 100;
 
     // Record quiz completion
@@ -97,10 +178,15 @@ userRewardsRouter.post("/quiz-completion", async (req: Request, res: Response) =
     });
 
     // Check and award badges
-    const badges = await checkAndAwardBadges(data.userId, prisma, isPerfectScore ? data.quizId : undefined);
+    const badges = await checkAndAwardBadges(
+      data.userId,
+      prisma,
+      config,
+      isPerfectScore ? data.quizId : undefined,
+    );
 
     // Get updated user stats
-    const stats = await getUserStats(data.userId, prisma);
+    const stats = await getUserStats(data.userId, prisma, config);
 
     logger.info("quiz.completion.recorded", {
       userId: data.userId,
@@ -135,8 +221,9 @@ userRewardsRouter.get("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const prisma = getPrisma();
+    const config = await getRewardsConfig();
 
-    const stats = await getUserStats(userId, prisma);
+    const stats = await getUserStats(userId, prisma, config);
 
     res.json(stats);
   } catch (error: any) {
@@ -199,14 +286,19 @@ userRewardsRouter.get("/:userId/badges", async (req: Request, res: Response) => 
   try {
     const { userId } = req.params;
     const prisma = getPrisma();
+    const config = await getRewardsConfig();
 
     const userBadges = await prisma.userBadge.findMany({
       where: { userId },
       orderBy: { unlockedAt: "desc" },
     });
 
+    const badgeMap = new Map(
+      config.badgeRules.map((rule) => [rule.badgeId, rule]),
+    );
+
     const badgesWithDetails = userBadges.map((b) => {
-      const def = BADGE_DEFINITIONS[b.badgeId as keyof typeof BADGE_DEFINITIONS];
+      const def = badgeMap.get(b.badgeId);
       return {
         id: b.id,
         badgeId: b.badgeId,
@@ -231,7 +323,7 @@ userRewardsRouter.get("/:userId/badges", async (req: Request, res: Response) => 
 /**
  * Helper: Get user's complete stats
  */
-async function getUserStats(userId: string, prisma: any) {
+async function getUserStats(userId: string, prisma: any, config: RewardsConfig) {
   const [rewards, badges, completions] = await Promise.all([
     prisma.userReward.findMany({ where: { userId } }),
     prisma.userBadge.findMany({ where: { userId } }),
@@ -239,7 +331,7 @@ async function getUserStats(userId: string, prisma: any) {
   ]);
 
   const totalPoints = rewards.reduce((sum: number, r: any) => sum + r.points, 0);
-  const level = calculateLevel(totalPoints);
+  const level = calculateLevel(totalPoints, config);
   const quizzesCompleted = completions.length;
   const averageScore = completions.length > 0 
     ? Math.round(completions.reduce((sum: number, c: any) => sum + c.score, 0) / completions.length)
@@ -249,7 +341,7 @@ async function getUserStats(userId: string, prisma: any) {
     userId,
     totalPoints,
     level,
-    nextLevelPoints: getNextLevelPoints(level),
+    nextLevelPoints: getNextLevelPoints(level, config),
     quizzesCompleted,
     averageScore,
     badges: badges.length,
@@ -268,90 +360,47 @@ async function getUserStats(userId: string, prisma: any) {
 /**
  * Helper: Check and award badges
  */
-async function checkAndAwardBadges(userId: string, prisma: any, perfectQuizId?: string) {
+async function checkAndAwardBadges(
+  userId: string,
+  prisma: any,
+  config: RewardsConfig,
+  perfectQuizId?: string,
+) {
   const awardedBadges = [];
 
   try {
-    const stats = await getUserStats(userId, prisma);
+    const stats = await getUserStats(userId, prisma, config);
     const existingBadges = await prisma.userBadge.findMany({ where: { userId } });
     const existingBadgeIds = new Set(existingBadges.map((b: any) => b.badgeId));
 
-    // Check first quiz
-    if (stats.quizzesCompleted === 1 && !existingBadgeIds.has("first_quiz")) {
-      await prisma.userBadge.create({
-        data: {
-          userId,
-          badgeId: "first_quiz",
-          badgeName: BADGE_DEFINITIONS.first_quiz.name,
-        },
-      });
-      awardedBadges.push("first_quiz");
-      logger.info("badge.awarded", { userId, badgeId: "first_quiz" });
-    }
+    for (const rule of config.badgeRules) {
+      if (existingBadgeIds.has(rule.badgeId)) continue;
 
-    // Check 5 quizzes
-    if (stats.quizzesCompleted >= 5 && !existingBadgeIds.has("five_quizzes")) {
-      await prisma.userBadge.create({
-        data: {
-          userId,
-          badgeId: "five_quizzes",
-          badgeName: BADGE_DEFINITIONS.five_quizzes.name,
-        },
-      });
-      awardedBadges.push("five_quizzes");
-      logger.info("badge.awarded", { userId, badgeId: "five_quizzes" });
-    }
+      const meetsCriteria = (() => {
+        if (rule.criteriaType === "quizCount") {
+          return stats.quizzesCompleted >= rule.threshold;
+        }
+        if (rule.criteriaType === "totalPoints") {
+          return stats.totalPoints >= rule.threshold;
+        }
+        if (rule.criteriaType === "perfectScoreCount") {
+          if (!perfectQuizId && stats.stats.perfectScores === 0) return false;
+          return stats.stats.perfectScores >= rule.threshold;
+        }
+        return false;
+      })();
 
-    // Check 10 quizzes
-    if (stats.quizzesCompleted >= 10 && !existingBadgeIds.has("ten_quizzes")) {
-      await prisma.userBadge.create({
-        data: {
-          userId,
-          badgeId: "ten_quizzes",
-          badgeName: BADGE_DEFINITIONS.ten_quizzes.name,
-        },
-      });
-      awardedBadges.push("ten_quizzes");
-      logger.info("badge.awarded", { userId, badgeId: "ten_quizzes" });
-    }
+      if (!meetsCriteria) continue;
 
-    // Check 100 points
-    if (stats.totalPoints >= 100 && !existingBadgeIds.has("hundred_points")) {
       await prisma.userBadge.create({
         data: {
           userId,
-          badgeId: "hundred_points",
-          badgeName: BADGE_DEFINITIONS.hundred_points.name,
+          badgeId: rule.badgeId,
+          badgeName: rule.name,
         },
       });
-      awardedBadges.push("hundred_points");
-      logger.info("badge.awarded", { userId, badgeId: "hundred_points" });
-    }
-
-    // Check 500 points
-    if (stats.totalPoints >= 500 && !existingBadgeIds.has("five_hundred_points")) {
-      await prisma.userBadge.create({
-        data: {
-          userId,
-          badgeId: "five_hundred_points",
-          badgeName: BADGE_DEFINITIONS.five_hundred_points.name,
-        },
-      });
-      awardedBadges.push("five_hundred_points");
-      logger.info("badge.awarded", { userId, badgeId: "five_hundred_points" });
-    }
-
-    // Check perfect score
-    if (perfectQuizId && !existingBadgeIds.has("perfect_score")) {
-      await prisma.userBadge.create({
-        data: {
-          userId,
-          badgeId: "perfect_score",
-          badgeName: BADGE_DEFINITIONS.perfect_score.name,
-        },
-      });
-      awardedBadges.push("perfect_score");
-      logger.info("badge.awarded", { userId, badgeId: "perfect_score" });
+      awardedBadges.push(rule.badgeId);
+      logger.info("badge.awarded", { userId, badgeId: rule.badgeId });
     }
   } catch (error: any) {
     logger.error("badge.award.error", error);
@@ -363,22 +412,37 @@ async function checkAndAwardBadges(userId: string, prisma: any, perfectQuizId?: 
 /**
  * Helper: Calculate user level based on points
  */
-function calculateLevel(points: number): number {
-  if (points < 50) return 1;
-  if (points < 150) return 2;
-  if (points < 300) return 3;
-  if (points < 500) return 4;
-  if (points < 750) return 5;
-  return Math.min(Math.floor(points / 250) + 1, 20); // Max level 20
+function calculateLevel(points: number, config: RewardsConfig): number {
+  const thresholds = config.levelThresholds.length
+    ? config.levelThresholds
+    : DEFAULT_REWARDS_CONFIG.levelThresholds;
+
+  let level = 1;
+  for (let i = 1; i < thresholds.length; i += 1) {
+    if (points >= thresholds[i]) level = i + 1;
+    else break;
+  }
+
+  if (points >= thresholds[thresholds.length - 1]) {
+    const extra = points - thresholds[thresholds.length - 1];
+    level = thresholds.length + Math.floor(extra / config.levelStepPoints);
+  }
+
+  return Math.min(level, config.maxLevel);
 }
 
 /**
  * Helper: Get points needed for next level
  */
-function getNextLevelPoints(currentLevel: number): number {
-  const levelThresholds = [0, 50, 150, 300, 500, 750];
-  if (currentLevel < levelThresholds.length) {
-    return levelThresholds[currentLevel];
+function getNextLevelPoints(currentLevel: number, config: RewardsConfig): number {
+  const thresholds = config.levelThresholds.length
+    ? config.levelThresholds
+    : DEFAULT_REWARDS_CONFIG.levelThresholds;
+  if (currentLevel < thresholds.length) {
+    return thresholds[currentLevel];
   }
-  return currentLevel * 250;
+
+  const base = thresholds[thresholds.length - 1];
+  const extraLevels = currentLevel - thresholds.length + 1;
+  return base + extraLevels * config.levelStepPoints;
 }

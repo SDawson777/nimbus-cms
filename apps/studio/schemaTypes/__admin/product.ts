@@ -6,6 +6,7 @@ export default defineType({
   title: "Product",
   fields: [
     defineField({ name: "name", type: "string", title: "Name" }),
+    defineField({ name: "description", type: "text", title: "Description" }),
     defineField({
       name: "slug",
       type: "slug",
@@ -13,6 +14,15 @@ export default defineType({
       options: { source: "name", maxLength: 96 },
     }),
     defineField({ name: "price", type: "number", title: "Price" }),
+    defineField({
+      name: "compareAtPrice",
+      type: "number",
+      title: "Compare at price",
+    }),
+    defineField({ name: "thcPercent", type: "number", title: "THC %" }),
+    defineField({ name: "cbdPercent", type: "number", title: "CBD %" }),
+    defineField({ name: "strainType", type: "string", title: "Strain type" }),
+    defineField({ name: "weight", type: "string", title: "Weight" }),
     defineField({
       name: "effects",
       type: "array",
@@ -44,10 +54,46 @@ export default defineType({
       title: "Availability",
     }),
     defineField({
+      name: "inStock",
+      type: "boolean",
+      title: "In stock",
+      initialValue: true,
+    }),
+    defineField({
       name: "image",
       type: "image",
       title: "Image",
       options: { hotspot: true },
+    }),
+    defineField({
+      name: "images",
+      type: "array",
+      title: "Gallery images",
+      of: [{ type: "image", options: { hotspot: true } }],
+    }),
+    defineField({
+      name: "variants",
+      type: "array",
+      title: "Variants",
+      of: [
+        {
+          type: "object",
+          fields: [
+            { name: "name", type: "string", title: "Name" },
+            { name: "price", type: "number", title: "Price" },
+            { name: "thcPercent", type: "number", title: "THC %" },
+            { name: "cbdPercent", type: "number", title: "CBD %" },
+            { name: "sku", type: "string", title: "SKU" },
+            { name: "inStock", type: "boolean", title: "In stock" },
+          ],
+        },
+      ],
+    }),
+    defineField({
+      name: "popularity",
+      type: "number",
+      title: "Popularity score",
+      description: "Higher means more popular",
     }),
     // Channels this product is available on
     defineField({

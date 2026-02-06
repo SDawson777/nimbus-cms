@@ -27,6 +27,7 @@ import personalizationRule from "./__admin/personalizationRule";
 import product from "./__admin/product";
 import productType from "./__admin/productType";
 import recallAudit from "./__admin/recallAudit";
+import rewardsConfig from "./__admin/rewardsConfig";
 import store from "./__admin/store";
 import variantInventory from "./__admin/variantInventory";
 
@@ -63,6 +64,7 @@ const schemaTypes = [
   product,
   productType,
   recallAudit,
+  rewardsConfig,
   store,
   variantInventory,
 

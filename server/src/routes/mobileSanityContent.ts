@@ -482,17 +482,19 @@ mobileSanityRouter.get("/sanity-products", async (req: Request, res: Response) =
  */
 mobileSanityRouter.get("/sanity-stores", async (req: Request, res: Response) => {
   try {
-    const stores = await fetchCMS(
+    const stores = await fetchCMS<any[]>(
       `*[_type=="store"] | order(name asc){
         _id,
         name,
         "slug": slug.current,
         description,
-        "image": image.asset->url,
+        "image": banner.asset->url,
+        "logo": logo.asset->url,
         address,
+        address2,
         city,
-        state,
-        zipCode,
+        stateCode,
+        zip,
         phone,
         email,
         hours,
@@ -500,12 +502,23 @@ mobileSanityRouter.get("/sanity-stores", async (req: Request, res: Response) => 
         longitude,
         isActive,
         amenities,
+        deliveryFee,
+        minOrderAmount,
+        deliveryRadius,
+        isDeliveryEnabled,
+        isPickupEnabled,
         _updatedAt
       }`,
       {}
     );
 
-    res.json({ stores: stores || [] });
+    const formattedStores = (stores || []).map((store) => ({
+      ...store,
+      state: store.stateCode || null,
+      zipCode: store.zip || null,
+    }));
+
+    res.json({ stores: formattedStores });
   } catch (error: any) {
     logger.error("mobile.sanity-stores.error", error);
     res.json({ stores: [] });

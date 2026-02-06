@@ -62,6 +62,14 @@ export default defineType({
       group: "content",
       options: { hotspot: true },
     }),
+    defineField({
+      name: "image",
+      type: "image",
+      title: "Image (alias)",
+      group: "content",
+      options: { hotspot: true },
+      description: "Alternative field name for API compatibility",
+    }),
 
     // === QUESTIONS ARRAY ===
     defineField({
@@ -167,6 +175,22 @@ export default defineType({
       group: "schedule",
       initialValue: false,
       description: "Must be true for quiz to be available",
+    }),
+    defineField({
+      name: "isActive",
+      type: "boolean",
+      title: "Active (alias)",
+      group: "schedule",
+      initialValue: false,
+      description: "Alternative field name for API compatibility",
+    }),
+    defineField({
+      name: "order",
+      type: "number",
+      title: "Display order",
+      group: "schedule",
+      initialValue: 0,
+      description: "Lower numbers appear first",
     }),
 
     // === SETTINGS GROUP ===

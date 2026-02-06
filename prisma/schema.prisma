@@ -78,10 +78,10 @@ model AdminUser {
   storeSlug        String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime
-  deletedAt        DateTime?
   createdBy        String?
-  updatedBy        String?
+  deletedAt        DateTime?
   meta             Json?
+  updatedBy        String?
 }
 
 model ApiKey {
@@ -211,12 +211,10 @@ model ComplianceRule {
 model ContentPage {
   id          String      @id
   tenantId    String
-  type        ContentType
   locale      String      @default("en-US")
   slug        String
   title       String
   body        String?
-  published   Boolean     @default(true)
   isPublished Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime
@@ -225,6 +223,8 @@ model ContentPage {
   updatedBy   String?
   meta        Json?
   version     Int         @default(1)
+  published   Boolean     @default(true)
+  type        ContentType
   Tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([type, locale, slug])
@@ -301,10 +301,10 @@ model FeatureFlag {
   valueJson Json
   createdAt DateTime  @default(now())
   updatedAt DateTime
-  deletedAt DateTime?
   createdBy String?
-  updatedBy String?
+  deletedAt DateTime?
   meta      Json?
+  updatedBy String?
   Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, key])
@@ -325,8 +325,8 @@ model JournalEntry {
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([productId])
-  @@index([userId])
   @@index([userId, createdAt])
+  @@index([userId])
 }
 
 model LoyaltyBadge {
@@ -350,15 +350,15 @@ model LoyaltyStatus {
   userId         String    @unique
   storeId        String
   status         String
-  tier           String?
   points         Int       @default(0)
-  lifetimePoints Int       @default(0)
-  tierExpiresAt  DateTime?
   updatedAt      DateTime
   deletedAt      DateTime?
   createdBy      String?
   updatedBy      String?
   meta           Json?
+  lifetimePoints Int       @default(0)
+  tier           String?
+  tierExpiresAt  DateTime?
   Store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -372,58 +372,12 @@ model LoyaltyTransaction {
   amount      Int
   description String
   orderId     String?
-  quizId      String?
   createdAt   DateTime @default(now())
+  quizId      String?
 
   @@index([orderId])
   @@index([quizId])
   @@index([userId, createdAt])
-}
-
-// ==========================================
-// QUIZ LOYALTY INTEGRATION
-// ==========================================
-
-enum QuizAttemptStatus {
-  in_progress
-  failed
-  passed
-  expired
-}
-
-model QuizAttempt {
-  id            String            @id @default(cuid())
-  userId        String
-  quizId        String // Sanity document _id
-  attemptCount  Int               @default(0)
-  status        QuizAttemptStatus @default(in_progress)
-  score         Float?
-  passThreshold Float?
-  locked        Boolean           @default(false)
-  passedAt      DateTime?
-  lastAttemptAt DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  User          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, quizId])
-  @@index([userId])
-  @@index([quizId])
-  @@index([status])
-}
-
-model QuizReward {
-  id            String   @id @default(cuid())
-  userId        String
-  quizId        String // Sanity document _id
-  pointsAwarded Int
-  transactionId String? // Reference to LoyaltyTransaction
-  awardedAt     DateTime @default(now())
-  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, quizId])
-  @@index([userId])
-  @@index([quizId])
 }
 
 model Notification {
@@ -459,23 +413,7 @@ model Order {
   id              String             @id
   userId          String
   storeId         String
-  status          OrderStatus        @default(PENDING)
-  paymentMethod   OrderPaymentMethod @default(pay_at_pickup)
-  notes           String?
-  contactName     String?
-  contactPhone    String?
-  contactEmail    String?
-  subtotal        Float?
-  tax             Float?
-  discount        Float?
-  deliveryFee     Float?
-  tipAmount       Float?
-  deliveryAddress String?
-  deliveryNotes   String?
-  scheduledFor    DateTime?
-  completedAt     DateTime?
-  cancelledAt     DateTime?
-  cancelReason    String?
+  status          OrderStatus        @default(CREATED)
   total           Float
   createdAt       DateTime           @default(now())
   updatedAt       DateTime
@@ -484,6 +422,22 @@ model Order {
   updatedBy       String?
   meta            Json?
   version         Int                @default(1)
+  paymentMethod   OrderPaymentMethod @default(pay_at_pickup)
+  deliveryAddress String?
+  deliveryNotes   String?
+  deliveryFee     Float?
+  tipAmount       Float?
+  scheduledFor    DateTime?
+  cancelReason    String?
+  cancelledAt     DateTime?
+  completedAt     DateTime?
+  contactEmail    String?
+  contactName     String?
+  contactPhone    String?
+  discount        Float?
+  notes           String?
+  subtotal        Float?
+  tax             Float?
   Store           Store              @relation(fields: [storeId], references: [id])
   User            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   OrderItem       OrderItem[]
@@ -500,14 +454,14 @@ model OrderItem {
   productId      String
   variantId      String?
   quantity       Int             @default(1)
-  unitPrice      Float?
-  lineTotal      Float?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime
   deletedAt      DateTime?
   createdBy      String?
   updatedBy      String?
   meta           Json?
+  lineTotal      Float?
+  unitPrice      Float?
   Order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   Product        Product         @relation(fields: [productId], references: [id])
   ProductVariant ProductVariant? @relation(fields: [variantId], references: [id])
@@ -519,11 +473,6 @@ model OrderItem {
 model PaymentMethod {
   id         String    @id
   userId     String
-  cardBrand  String?
-  cardLast4  String?
-  holderName String?
-  expiry     String?
-  isDefault  Boolean   @default(false)
   type       String?
   details    Json?
   createdAt  DateTime  @default(now())
@@ -532,6 +481,11 @@ model PaymentMethod {
   createdBy  String?
   updatedBy  String?
   meta       Json?
+  cardBrand  String?
+  cardLast4  String?
+  expiry     String?
+  holderName String?
+  isDefault  Boolean   @default(false)
   User       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -544,23 +498,11 @@ model Product {
   slug             String           @unique
   description      String?
   brand            String?
-  brandId          String?
-  category         ProductCategory  @default(Other)
-  subcategory      String?
   type             ProductType
   status           ProductStatus    @default(ACTIVE)
-  strainType       StrainType       @default(None)
-  terpenes         String[]         @default([])
   price            Float
-  defaultPrice     Float?
   imageUrl         String?
   isActive         Boolean          @default(true)
-  thcPercent       Float?
-  cbdPercent       Float?
-  cbdMgPerUnit     Float?
-  thcMgPerUnit     Float?
-  weight           Float?
-  labTestUrl       String?
   purchasesLast30d Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime
@@ -569,6 +511,18 @@ model Product {
   updatedBy        String?
   meta             Json?
   version          Int              @default(1)
+  brandId          String?
+  terpenes         String[]         @default([])
+  cbdMgPerUnit     Float?
+  cbdPercent       Float?
+  defaultPrice     Float?
+  labTestUrl       String?
+  subcategory      String?
+  thcMgPerUnit     Float?
+  thcPercent       Float?
+  weight           Float?
+  category         ProductCategory  @default(Other)
+  strainType       StrainType       @default(None)
   CartItem         CartItem[]
   JournalEntry     JournalEntry[]
   OrderItem        OrderItem[]
@@ -593,21 +547,71 @@ model ProductVariant {
   name         String
   price        Float
   stock        Int            @default(0)
-  active       Boolean        @default(true)
-  thcPercent   Float?
-  cbdPercent   Float?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime
   deletedAt    DateTime?
   createdBy    String?
   updatedBy    String?
   meta         Json?
+  active       Boolean        @default(true)
+  cbdPercent   Float?
+  thcPercent   Float?
   CartItem     CartItem[]
   OrderItem    OrderItem[]
   Product      Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   StoreProduct StoreProduct[]
 
   @@index([productId])
+}
+
+model QuizAttempt {
+  id            String            @id
+  userId        String
+  quizId        String
+  attemptCount  Int               @default(0)
+  status        QuizAttemptStatus @default(in_progress)
+  score         Float?
+  passThreshold Float?
+  locked        Boolean           @default(false)
+  passedAt      DateTime?
+  lastAttemptAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime
+  User          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+  @@index([quizId])
+  @@index([status])
+  @@index([userId])
+}
+
+model QuizCompletion {
+  id             String   @id
+  userId         String
+  quizId         String
+  quizTitle      String
+  score          Int
+  totalQuestions Int
+  pointsEarned   Int
+  completedAt    DateTime @default(now())
+
+  @@index([completedAt])
+  @@index([quizId])
+  @@index([userId])
+}
+
+model QuizReward {
+  id            String   @id
+  userId        String
+  quizId        String
+  pointsAwarded Int
+  transactionId String?
+  awardedAt     DateTime @default(now())
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+  @@index([quizId])
+  @@index([userId])
 }
 
 model Referral {
@@ -681,12 +685,8 @@ model RewardRedemption {
 model Store {
   id                String          @id
   tenantId          String
-  brandId           String?
   slug              String
   name              String
-  description       String?
-  logoUrl           String?
-  bannerUrl         String?
   address1          String?
   address2          String?
   city              String?
@@ -698,26 +698,30 @@ model Store {
   phone             String?
   email             String?
   timezone          String?
-  hours             Json?
-  licenseNumber     String?
-  licenseExpiry     DateTime?
-  minOrderAmount    Float?
-  deliveryRadius    Float?
-  deliveryFee       Float?
-  avgRating         Float?
-  reviewCount       Int?
   status            String          @default("active")
-  isActive          Boolean         @default(true)
   isDeliveryEnabled Boolean         @default(false)
   isPickupEnabled   Boolean         @default(true)
   posType           String?
   posStoreId        String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime
-  deletedAt         DateTime?
   createdBy         String?
-  updatedBy         String?
+  deletedAt         DateTime?
   meta              Json?
+  updatedBy         String?
+  brandId           String?
+  deliveryRadius    Float?
+  deliveryFee       Float?
+  minOrderAmount    Float?
+  avgRating         Float?
+  bannerUrl         String?
+  description       String?
+  hours             Json?
+  isActive          Boolean         @default(true)
+  licenseExpiry     DateTime?
+  licenseNumber     String?
+  logoUrl           String?
+  reviewCount       Int?
   Cart              Cart[]
   LoyaltyBadge      LoyaltyBadge[]
   LoyaltyStatus     LoyaltyStatus[]
@@ -763,10 +767,10 @@ model Tenant {
   region        String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime
-  deletedAt     DateTime?
   createdBy     String?
-  updatedBy     String?
+  deletedAt     DateTime?
   meta          Json?
+  updatedBy     String?
   ApiKey        ApiKey[]
   AuditLog      AuditLog[]
   ContentPage   ContentPage[]
@@ -800,17 +804,17 @@ model User {
   passwordHash           String?
   role                   UserRole                 @default(CUSTOMER)
   isActive               Boolean                  @default(true)
-  dateOfBirth            DateTime?
-  ageVerified            Boolean                  @default(false)
-  state                  String?
-  fcmToken               String?
-  avatarUrl              String?
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime
   deletedAt              DateTime?
   createdBy              String?
   updatedBy              String?
   meta                   Json?
+  fcmToken               String?
+  avatarUrl              String?
+  dateOfBirth            DateTime?
+  ageVerified            Boolean                  @default(false)
+  state                  String?
   AccessibilitySetting   AccessibilitySetting?
   Address                Address[]
   AuditLog               AuditLog[]
@@ -826,6 +830,8 @@ model User {
   NotificationPreference NotificationPreference[]
   Order                  Order[]
   PaymentMethod          PaymentMethod[]
+  QuizAttempt            QuizAttempt[]
+  QuizReward             QuizReward[]
   Review                 Review[]
   Store                  Store?                   @relation(fields: [storeId], references: [id], onDelete: Cascade)
   Tenant                 Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -833,10 +839,19 @@ model User {
   UserDataPreference     UserDataPreference?
   UserEvent              UserEvent[]
   UserPreference         UserPreference?
-  QuizAttempt            QuizAttempt[]
-  QuizReward             QuizReward[]
 
   @@index([email])
+}
+
+model UserBadge {
+  id         String   @id
+  userId     String
+  badgeId    String
+  badgeName  String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
 }
 
 model UserCoupon {
@@ -884,17 +899,30 @@ model UserPreference {
   userId          String    @unique
   key             String?
   value           String?
-  reducedMotion   Boolean   @default(false)
-  dyslexiaFont    Boolean   @default(false)
-  highContrast    Boolean   @default(false)
-  personalization Boolean   @default(true)
   deletedAt       DateTime?
   createdBy       String?
   updatedBy       String?
   meta            Json?
+  dyslexiaFont    Boolean   @default(false)
+  highContrast    Boolean   @default(false)
+  personalization Boolean   @default(true)
+  reducedMotion   Boolean   @default(false)
   User            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
+}
+
+model UserReward {
+  id          String   @id
+  userId      String
+  rewardType  String
+  points      Int
+  description String
+  earnedAt    DateTime @default(now())
+
+  @@index([earnedAt])
+  @@index([rewardType])
+  @@index([userId])
 }
 
 enum AccessibilityTextSize {
@@ -908,15 +936,27 @@ enum AccessibilityTextSize {
 enum AdminRole {
   OWNER
   ORG_ADMIN
-  BRAND_ADMIN
-  STORE_MANAGER
   EDITOR
   VIEWER
+  BRAND_ADMIN
+  STORE_MANAGER
+}
+
+enum ComplianceRuleType {
+  PURCHASE_LIMIT
+  AGE_REQUIREMENT
+  HOURS_OF_OPERATION
+  ID_VERIFICATION
 }
 
 enum ContentType {
   legal
   faq
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
 }
 
 enum OrderPaymentMethod {
@@ -925,11 +965,11 @@ enum OrderPaymentMethod {
 }
 
 enum OrderStatus {
-  PENDING
-  PAID
-  FULFILLED
+  CREATED
+  CONFIRMED
+  READY
+  COMPLETED
   CANCELLED
-  REFUNDED
 }
 
 enum ProductCategory {
@@ -943,45 +983,6 @@ enum ProductCategory {
   Topical
   Gear
   Other
-}
-
-model QuizCompletion {
-  id              String   @id @default(cuid())
-  userId          String
-  quizId          String
-  quizTitle       String
-  score           Int
-  totalQuestions  Int
-  pointsEarned    Int
-  completedAt     DateTime @default(now())
-
-  @@index([userId])
-  @@index([quizId])
-  @@index([completedAt])
-}
-
-model UserReward {
-  id          String   @id @default(cuid())
-  userId      String
-  rewardType  String   // "quiz_completion", "article_read", "achievement"
-  points      Int
-  description String
-  earnedAt    DateTime @default(now())
-
-  @@index([userId])
-  @@index([rewardType])
-  @@index([earnedAt])
-}
-
-model UserBadge {
-  id        String   @id @default(cuid())
-  userId    String
-  badgeId   String
-  badgeName String
-  unlockedAt DateTime @default(now())
-
-  @@unique([userId, badgeId])
-  @@index([userId])
 }
 
 enum ProductStatus {
@@ -999,6 +1000,13 @@ enum ProductType {
   ACCESSORY
 }
 
+enum QuizAttemptStatus {
+  in_progress
+  failed
+  passed
+  expired
+}
+
 enum StrainType {
   Sativa
   Indica
@@ -1012,16 +1020,4 @@ enum UserRole {
   STAFF
   MANAGER
   ADMIN
-}
-
-enum DiscountType {
-  PERCENTAGE
-  FIXED
-}
-
-enum ComplianceRuleType {
-  PURCHASE_LIMIT
-  AGE_REQUIREMENT
-  HOURS_OF_OPERATION
-  ID_VERIFICATION
 }

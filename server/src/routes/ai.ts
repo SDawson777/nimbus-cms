@@ -5,7 +5,7 @@ import { Role } from "../types/roles";
 import { logger } from "../lib/logger";
 import OpenAI from "openai";
 import { ensureCsrfCookie, requireCsrfToken } from "../middleware/requireCsrfToken";
-import { createWriteClient } from "../lib/cms";
+import { createWriteClient, fetchCMS } from "../lib/cms";
 
 function slugify(input: string) {
   return input
@@ -397,61 +397,28 @@ router.post("/recommend-products", async (req, res) => {
   try {
     const body = recommendProductsSchema.parse(req.body);
     
-    // Get products for scoring (using fallback products if no database)
-    const FALLBACK_PRODUCTS = [
-      {
-        id: "demo-product-1",
-        name: "Blue Dream",
-        brand: "Cloud Nine",
-        category: "Flower", 
-        price: 45,
-        description: "Sativa-dominant hybrid with sweet berry flavors",
-        imageUrl: null,
-        isActive: true
-      },
-      {
-        id: "demo-product-2", 
-        name: "OG Kush",
-        brand: "Heritage Farms",
-        category: "Flower",
-        price: 50,
-        description: "Classic indica with earthy pine undertones",
-        imageUrl: null,
-        isActive: true
-      },
-      {
-        id: "demo-product-3",
-        name: "Calm CBD Gummies", 
-        brand: "Wellness Co",
-        category: "Edibles",
-        price: 35,
-        description: "25mg CBD per gummy for relaxation",
-        imageUrl: null,
-        isActive: true
-      },
-      {
-        id: "demo-product-4",
-        name: "Hybrid Vape Cart",
-        brand: "Vapor Labs", 
-        category: "Vape",
-        price: 55,
-        description: "1g cartridge with balanced hybrid blend",
-        imageUrl: null,
-        isActive: true
-      },
-      {
-        id: "demo-product-5",
-        name: "Relief Topical Cream",
-        brand: "Wellness Co",
-        category: "Topical",
-        price: 40, 
-        description: "THC/CBD infused cream for muscle relief",
-        imageUrl: null,
-        isActive: true
-      }
-    ];
+    const productsFromCMS = await fetchCMS<any[]>(
+      `*[_type=="product" && (!defined(isRecalled) || isRecalled != true)] | order(_updatedAt desc)[0...200]{
+        _id,
+        name,
+        price,
+        "imageUrl": image.asset->url,
+        "brand": brand->name,
+        "category": productType->title
+      }`,
+      {},
+    );
 
-    let products = FALLBACK_PRODUCTS;
+    const products = (productsFromCMS || []).map((p) => ({
+      id: p._id,
+      name: p.name,
+      brand: p.brand || null,
+      category: p.category || "Unknown",
+      price: typeof p.price === "number" ? p.price : 0,
+      description: null,
+      imageUrl: p.imageUrl || null,
+      isActive: true,
+    }));
     
     // Score and rank products
     const scoredProducts = products.map(product => ({
