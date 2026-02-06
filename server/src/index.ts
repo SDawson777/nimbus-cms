@@ -43,6 +43,7 @@ import quizRouter from "./routes/quizRoutes";
 import { productsRouter } from "./routes/products";
 import { storesRouter } from "./routes/stores";
 import { recommendationsRouter } from "./routes/recommendations";
+import { userRewardsRouter } from "./routes/userRewards";
 import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -346,6 +347,9 @@ app.use("/mobile/content", mobileContentRouter);
 // Mobile Sanity content endpoints (direct Sanity CMS queries - no PostgreSQL)
 // Provides articles, FAQ, banners, deals, legal docs, accessibility, awards, etc.
 app.use("/mobile/sanity", mobileSanityRouter);
+
+// User rewards and points system
+app.use("/api/v1/user/rewards", userRewardsRouter);
 
 // Webhook endpoints for Sanity CMS sync
 app.use("/webhooks", webhooksRouter);

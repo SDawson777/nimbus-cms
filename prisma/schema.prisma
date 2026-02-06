@@ -945,6 +945,45 @@ enum ProductCategory {
   Other
 }
 
+model QuizCompletion {
+  id              String   @id @default(cuid())
+  userId          String
+  quizId          String
+  quizTitle       String
+  score           Int
+  totalQuestions  Int
+  pointsEarned    Int
+  completedAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([quizId])
+  @@index([completedAt])
+}
+
+model UserReward {
+  id          String   @id @default(cuid())
+  userId      String
+  rewardType  String   // "quiz_completion", "article_read", "achievement"
+  points      Int
+  description String
+  earnedAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([rewardType])
+  @@index([earnedAt])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  badgeName String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
 enum ProductStatus {
   ACTIVE
   INACTIVE
