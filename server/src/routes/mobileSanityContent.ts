@@ -259,6 +259,12 @@ mobileSanityRouter.get("/faq", async (req: Request, res: Response) => {
  */
 mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
   try {
+    type HomeHeroSettings = {
+      rotationMs?: number | null;
+      autoplay?: boolean | null;
+      transitionStyle?: "fade" | "slide" | "none" | null;
+    };
+
     const [banners, settings] = await Promise.all([
       fetchCMS(
         `*[_type=="banner" && active==true] | order(priority desc){
@@ -281,7 +287,7 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
         }`,
         {}
       ),
-      fetchCMS(
+      fetchCMS<HomeHeroSettings | null>(
         `*[_type=="homeHeroSettings"][0]{
           rotationMs,
           autoplay,
