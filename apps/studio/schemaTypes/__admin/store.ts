@@ -77,6 +77,35 @@ export default defineType({
     defineField({ name: "avgRating", type: "number", title: "Average rating" }),
     defineField({ name: "reviewCount", type: "number", title: "Review count" }),
     defineField({
+      name: "gallery",
+      type: "array",
+      title: "Gallery images",
+      of: [{ type: "image", options: { hotspot: true } }],
+    }),
+    defineField({
+      name: "holidayHours",
+      type: "array",
+      title: "Holiday hours",
+      of: [
+        {
+          type: "object",
+          fields: [
+            { name: "date", type: "date", title: "Date" },
+            { name: "hours", type: "string", title: "Hours" },
+            { name: "note", type: "string", title: "Note" },
+          ],
+        },
+      ],
+    }),
+    defineField({ name: "orderingUrl", type: "url", title: "Online ordering URL" }),
+    defineField({ name: "menuUrl", type: "url", title: "Menu URL" }),
+    defineField({
+      name: "complianceFlags",
+      type: "array",
+      title: "Compliance flags",
+      of: [{ type: "string" }],
+    }),
+    defineField({
       name: "isActive",
       type: "boolean",
       title: "Is active",

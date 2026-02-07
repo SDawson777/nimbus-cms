@@ -42,6 +42,7 @@ import undoRouter from "./routes/undo";
 import quizRouter from "./routes/quizRoutes";
 import { productsRouter } from "./routes/products";
 import { storesRouter } from "./routes/stores";
+import { storesV1Router } from "./routes/v1/stores";
 import { recommendationsRouter } from "./routes/recommendations";
 import { userRewardsRouter } from "./routes/userRewards";
 import { metricsHandler, metricsMiddleware } from "./metrics";
@@ -266,6 +267,7 @@ app.get("/", (_req, res) => {
 // These must be registered early to avoid being caught by static file handlers
 app.use("/products", productsRouter);
 app.use("/stores", storesRouter);
+app.use("/v1/stores", storesV1Router);
 app.use("/recommendations", recommendationsRouter);
 
 // Admin SPA is hosted separately on Vercel, not served from this API server
