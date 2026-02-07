@@ -69,10 +69,25 @@ export default defineType({
       group: "content",
     }),
     defineField({
+      name: "ctaLabel",
+      type: "string",
+      title: "CTA Label (alias)",
+      group: "content",
+      description: "Optional alias for CTA Text",
+    }),
+    defineField({
       name: "ctaLink",
       type: "url",
       title: "CTA Link",
       group: "content",
+      validation: (Rule) => Rule.uri({ allowRelative: true }),
+    }),
+    defineField({
+      name: "link",
+      type: "url",
+      title: "Link (alias)",
+      group: "content",
+      description: "Optional alias for CTA Link",
       validation: (Rule) => Rule.uri({ allowRelative: true }),
     }),
     defineField({
@@ -120,6 +135,14 @@ export default defineType({
       description: "Higher priority = shown first (0-100)",
       initialValue: 50,
       validation: (Rule) => Rule.min(0).max(100),
+    }),
+    defineField({
+      name: "rotationMsOverride",
+      type: "number",
+      title: "Rotation override (ms)",
+      group: "placement",
+      description: "Optional per-banner rotation override",
+      validation: (Rule) => Rule.min(1000).max(60000),
     }),
     defineField({
       name: "schedule",

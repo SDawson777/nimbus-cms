@@ -22,6 +22,7 @@ import brand from "./__admin/brand";
 import complianceMonitor from "./__admin/complianceMonitor";
 import complianceSnapshot from "./__admin/complianceSnapshot";
 import drop from "./__admin/drop";
+import homeHeroSettings from "./__admin/homeHeroSettings";
 import organization from "./__admin/organization";
 import personalizationRule from "./__admin/personalizationRule";
 import product from "./__admin/product";
@@ -59,6 +60,7 @@ const schemaTypes = [
   complianceMonitor,
   complianceSnapshot,
   drop,
+  homeHeroSettings,
   organization,
   personalizationRule,
   product,

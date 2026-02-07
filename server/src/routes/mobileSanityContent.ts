@@ -259,28 +259,56 @@ mobileSanityRouter.get("/faq", async (req: Request, res: Response) => {
  */
 mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
   try {
-    const banners = await fetchCMS(
-      `*[_type=="banner" && isActive==true] | order(priority desc){
-        _id,
-        title,
-        subtitle,
-        "image": image.asset->url,
-        link,
-        linkText,
-        backgroundColor,
-        textColor,
-        priority,
-        startDate,
-        endDate,
-        _updatedAt
-      }`,
-      {}
-    );
+    const [banners, settings] = await Promise.all([
+      fetchCMS(
+        `*[_type=="banner" && active==true] | order(priority desc){
+          _id,
+          title,
+          headline,
+          subheadline,
+          "image": {
+            "url": image.asset->url,
+            "alt": image.alt
+          },
+          "cta": coalesce(ctaLabel, ctaText),
+          "link": coalesce(link, ctaLink),
+          rotationMsOverride,
+          placement,
+          priority,
+          "startDate": schedule.startAt,
+          "endDate": schedule.endAt,
+          _updatedAt
+        }`,
+        {}
+      ),
+      fetchCMS(
+        `*[_type=="homeHeroSettings"][0]{
+          rotationMs,
+          autoplay,
+          transitionStyle
+        }`,
+        {}
+      ),
+    ]);
 
-    res.json({ banners: banners || [] });
+    res.json({
+      banners: banners || [],
+      settings: {
+        rotationMs: settings?.rotationMs ?? 15000,
+        autoplay: settings?.autoplay ?? true,
+        transitionStyle: settings?.transitionStyle ?? "fade",
+      },
+    });
   } catch (error: any) {
     logger.error("mobile.banners.error", error);
-    res.json({ banners: [] });
+    res.json({
+      banners: [],
+      settings: {
+        rotationMs: 15000,
+        autoplay: true,
+        transitionStyle: "fade",
+      },
+    });
   }
 });
 
