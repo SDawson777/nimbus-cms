@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { t } from '../lib/i18n';
 import { apiJson } from "../lib/api";
+import { useAdmin } from "../lib/adminContext";
 
 export default function ThemePage() {
+  const { capabilities } = useAdmin();
+  const scopedBrand = capabilities?.scopes?.brandSlug || "";
+  const scopedStore = capabilities?.scopes?.storeSlug || "";
   const [theme, setTheme] = useState({
     primaryColor: "#3b82f6",
     accentColor: "#22c55e",
@@ -12,24 +16,43 @@ export default function ThemePage() {
   });
 
   useEffect(() => {
+    if (!scopedBrand) return;
     const controller = new AbortController();
-    apiJson("/admin/theme", { signal: controller.signal })
+    const params = new URLSearchParams({ brand: scopedBrand });
+    if (scopedStore) params.set("store", scopedStore);
+    apiJson(`/api/admin/theme?${params.toString()}`, { signal: controller.signal })
       .then(({ ok, data, aborted }) => {
         if (aborted || controller.signal.aborted) return;
-        if (ok && data) setTheme((t) => ({ ...t, ...data }));
+        if (ok && data) {
+          setTheme((t) => ({
+            ...t,
+            ...data,
+            fontColor: data.textColor || t.fontColor,
+          }));
+        }
       })
       .catch(() => {});
     return () => controller.abort();
-  }, []);
+  }, [scopedBrand, scopedStore]);
 
   const update = (key, value) => {
     setTheme((prev) => ({ ...prev, [key]: value }));
   };
 
   const save = () => {
-    apiJson("/admin/theme", {
+    if (!scopedBrand) return;
+    apiJson("/api/admin/theme", {
       method: "POST",
-      body: JSON.stringify(theme),
+      body: JSON.stringify({
+        brand: scopedBrand,
+        ...(scopedStore ? { store: scopedStore } : {}),
+        primaryColor: theme.primaryColor,
+        secondaryColor: theme.secondaryColor,
+        accentColor: theme.accentColor,
+        backgroundColor: theme.backgroundColor,
+        surfaceColor: theme.surfaceColor,
+        textColor: theme.fontColor,
+      }),
     }).catch(() => {});
   };
 
