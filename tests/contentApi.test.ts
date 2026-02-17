@@ -335,3 +335,39 @@ describe("GET /api/v1/content/copy", () => {
     expect(res.body).toHaveProperty("error", "INVALID_COPY_CONTEXT");
   });
 });
+
+describe("Mobile Sanity promos pipeline", () => {
+  it("returns promos from /mobile/sanity/promos", async () => {
+    const promos = [
+      {
+        _id: "promo-1",
+        title: "Weekend Promo",
+        promoCode: "SAVE10",
+        discountPercent: 0.1,
+      },
+    ];
+    fetchCMSMock.mockResolvedValueOnce(promos);
+
+    const res = await request(app).get("/mobile/sanity/promos");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ promos });
+  });
+
+  it("includes promos in /mobile/sanity/all", async () => {
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "article-1" }]); // articles
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "category-1" }]); // categories
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "faq-1" }]); // faqs
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "banner-1" }]); // banners
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "promo-1" }]); // promos
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "deal-1" }]); // deals
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "brand-1" }]); // brands
+    fetchCMSMock.mockResolvedValueOnce({ primaryColor: "#000" }); // theme
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "effect-1" }]); // effects
+
+    const res = await request(app).get("/mobile/sanity/all");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("promos");
+    expect(res.body.promos).toEqual([{ _id: "promo-1" }]);
+    expect(fetchCMSMock).toHaveBeenCalledTimes(9);
+  });
+});

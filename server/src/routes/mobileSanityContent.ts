@@ -267,7 +267,7 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
 
     const [banners, settings] = await Promise.all([
       fetchCMS(
-        `*[_type=="banner" && active==true] | order(priority desc){
+        `*[_type=="banner" && coalesce(active, isActive, true)==true && (!defined(schedule.startAt) || schedule.startAt <= now()) && (!defined(schedule.endAt) || schedule.endAt >= now())] | order(priority desc){
           _id,
           title,
           headline,
@@ -361,16 +361,16 @@ mobileSanityRouter.get("/deals", async (req: Request, res: Response) => {
 mobileSanityRouter.get("/promos", async (req: Request, res: Response) => {
   try {
     const promos = await fetchCMS(
-      `*[_type=="promo" && isActive==true] | order(priority desc){
+      `*[_type=="promo" && coalesce(active, isActive, true)==true && (!defined(schedule.publishAt) || schedule.publishAt <= now()) && (!defined(schedule.unpublishAt) || schedule.unpublishAt >= now())] | order(priority desc){
         _id,
         title,
         description,
         "image": image.asset->url,
-        promoCode,
-        discountPercent,
+        "promoCode": coalesce(promoCode, code),
+        "discountPercent": coalesce(discountPercent, discount),
         discountAmount,
-        validFrom,
-        validUntil,
+        "validFrom": coalesce(validFrom, schedule.publishAt),
+        "validUntil": coalesce(validUntil, schedule.unpublishAt),
         terms,
         _updatedAt
       }`,
@@ -1217,6 +1217,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       categories,
       faqs,
       banners,
+      promos,
       deals,
       brands,
       theme,
@@ -1225,7 +1226,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS('*[_type=="category"] | order(name asc){_id, name, "slug": slug.current, "image": image.asset->url}', {}),
       fetchCMS('*[_type=="faqItem"] | order(order asc){_id, question, answer, "category": category->name}', {}),
-      fetchCMS('*[_type=="banner" && isActive==true] | order(priority desc){_id, title, subtitle, "image": image.asset->url, link}', {}),
+      fetchCMS('*[_type=="banner" && coalesce(active, isActive, true)==true && (!defined(schedule.startAt) || schedule.startAt <= now()) && (!defined(schedule.endAt) || schedule.endAt >= now())] | order(priority desc){_id, title, "subtitle": coalesce(subheadline, subtitle), "image": image.asset->url, "link": coalesce(link, ctaLink)}', {}),
+      fetchCMS('*[_type=="promo" && coalesce(active, isActive, true)==true && (!defined(schedule.publishAt) || schedule.publishAt <= now()) && (!defined(schedule.unpublishAt) || schedule.unpublishAt >= now())] | order(priority desc){_id, title, description, "image": image.asset->url, "promoCode": coalesce(promoCode, code), "discountPercent": coalesce(discountPercent, discount), discountAmount, "validFrom": coalesce(validFrom, schedule.publishAt), "validUntil": coalesce(validUntil, schedule.unpublishAt), terms, _updatedAt}', {}),
       fetchCMS('*[_type=="deal" && active==true && now() >= startAt && now() <= endAt] | order(priority desc)[0...5]{_id, title, description, discountValue}', {}),
       fetchCMS('*[_type=="brand"] | order(name asc){_id, name, "slug": slug.current, "logo": logo.asset->url}', {}),
       fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url}', {}),
@@ -1237,6 +1239,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       categories: categories || [],
       faqs: faqs || [],
       banners: banners || [],
+      promos: promos || [],
       deals: deals || [],
       brands: brands || [],
       theme: theme || null,
