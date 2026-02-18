@@ -11,6 +11,9 @@ import contentMetricDaily from "./__cms/contentMetricDaily";
 import deal from "./__cms/deal";
 import faqItem from "./__cms/faqItem";
 import legalDoc from "./__cms/legalPage";
+import loyaltyReward from "./__cms/loyaltyReward";
+import loyaltyRule from "./__cms/loyaltyRule";
+import loyaltyTier from "./__cms/loyaltyTier";
 import promo from "./__cms/promo";
 import quiz from "./__cms/quiz";
 import themeConfig from "./__cms/themeConfig";
@@ -48,6 +51,9 @@ const schemaTypes = [
   deal,
   faqItem,
   legalDoc,
+  loyaltyReward,
+  loyaltyRule,
+  loyaltyTier,
   promo,
   quiz,
   themeConfig,

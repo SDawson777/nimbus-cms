@@ -45,6 +45,7 @@ import { storesRouter } from "./routes/stores";
 import { storesV1Router } from "./routes/v1/stores";
 import { recommendationsRouter } from "./routes/recommendations";
 import { userRewardsRouter } from "./routes/userRewards";
+import loyaltyRouter from "./routes/loyalty";
 import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -140,11 +141,11 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve a small static landing page for human visitors / buyers
 app.get("/healthz", (_req, res) => {
-  res.status(200).json({ 
-    status: "ok", 
+  res.status(200).json({
+    status: "ok",
     timestamp: new Date().toISOString(),
     version: "mobile-api-v1.0.0",
-    commit: "a28207c"
+    commit: "a28207c",
   });
 });
 
@@ -155,7 +156,7 @@ app.get("/debug/routes", (_req, res) => {
   const adminSpaDistDir = path.join(repoRoot, "apps", "admin", "dist");
   const adminSpaIndex = path.join(adminSpaDistDir, "index.html");
   const staticAdminIndex = path.join(staticDir, "index.html");
-  
+
   res.status(200).json({
     paths: {
       __dirname,
@@ -170,7 +171,9 @@ app.get("/debug/routes", (_req, res) => {
       adminSpaIndex: fs.existsSync(adminSpaIndex),
       staticAdminIndex: fs.existsSync(staticAdminIndex),
     },
-    staticDirContents: fs.existsSync(staticDir) ? fs.readdirSync(staticDir).slice(0, 20) : [],
+    staticDirContents: fs.existsSync(staticDir)
+      ? fs.readdirSync(staticDir).slice(0, 20)
+      : [],
   });
 });
 
@@ -179,10 +182,7 @@ app.get("/debug/routes", (_req, res) => {
 // - Returns 200 only when the service can talk to core dependencies.
 app.get("/ready", async (_req, res) => {
   const startedAt = Date.now();
-  const checks: Record<
-    string,
-    { ok: boolean; ms: number; error?: string }
-  > = {
+  const checks: Record<string, { ok: boolean; ms: number; error?: string }> = {
     db: { ok: false, ms: 0 },
     sanity: { ok: false, ms: 0 },
     redis: { ok: false, ms: 0 },
@@ -230,7 +230,7 @@ app.get("/ready", async (_req, res) => {
     } else {
       try {
         const IORedis = (await import("ioredis")).default;
-        const client = new IORedis(redisUrl, { 
+        const client = new IORedis(redisUrl, {
           connectTimeout: 5000,
           maxRetriesPerRequest: 1,
           lazyConnect: true,
@@ -343,7 +343,7 @@ app.use("/api/v1/nimbus/ai", aiRouter);
 // Mobile AI endpoint (no auth required)
 app.use("/api/ai", aiRouter);
 
-// Mobile content endpoints  
+// Mobile content endpoints
 app.use("/mobile/content", mobileContentRouter);
 
 // Mobile Sanity content endpoints (direct Sanity CMS queries - no PostgreSQL)
@@ -352,6 +352,9 @@ app.use("/mobile/sanity", mobileSanityRouter);
 
 // User rewards and points system
 app.use("/api/v1/user/rewards", userRewardsRouter);
+
+// Loyalty CMS-driven API
+app.use("/api/loyalty", loyaltyRouter);
 
 // Webhook endpoints for Sanity CMS sync
 app.use("/webhooks", webhooksRouter);
@@ -394,7 +397,6 @@ app.use(
   adminRouter,
 );
 
-
 // DEV-ONLY: Intentionally throw an error for test purposes
 if (process.env.NODE_ENV !== "production") {
   app.get("/dev/trigger-error", (_req, _res, next) => {
@@ -434,7 +436,7 @@ if (process.env.ENABLE_COMPLIANCE_SCHEDULER === "true") {
  */
 async function gracefulShutdown(signal: string) {
   logger.info(`Received ${signal}, shutting down gracefully...`);
-  
+
   try {
     // Close database connections
     const prisma = getPrisma();
@@ -443,7 +445,7 @@ async function gracefulShutdown(signal: string) {
   } catch (err) {
     logger.error("Error closing database connections", err);
   }
-  
+
   // Exit successfully
   process.exit(0);
 }
@@ -459,7 +461,7 @@ process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
     stack: reason instanceof Error ? reason.stack : undefined,
     promise: String(promise),
   });
-  
+
   // In production, log but don't crash on first rejection
   // Let orchestrator handle restart if multiple rejections occur
   if (process.env.NODE_ENV === "production") {
@@ -473,7 +475,7 @@ process.on("uncaughtException", (error: Error) => {
     message: error.message,
     stack: error.stack,
   });
-  
+
   // Uncaught exceptions are serious - attempt graceful shutdown
   gracefulShutdown("uncaughtException").catch(() => {
     process.exit(1);
@@ -502,7 +504,7 @@ export async function startServer() {
       err as any,
     );
   }
-  
+
   return server;
 }
 
