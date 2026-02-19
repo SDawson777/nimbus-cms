@@ -36,15 +36,16 @@ CREATE TABLE IF NOT EXISTS "UserBadge" (
 );
 
 -- CreateIndex
-CRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCuserICRCRCRCRCRCRCRCRCRpletioCRCRCRCRCRCRCRCRCRCRCRCRCndeCRCRCRCRCRCRCRCRCRCRCREXISTSCRCRCRCRCRCRCRCRCRCRCRCRidx" ON "QuizCompletion"("quizId");
-
-
-RCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCISRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCdx" ORCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCISRCRCRCRCRCRCRCRCRCRCRCRCRCRF NRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCRCISRCRCRCRCRd"("userId");
-
--- CreateInde-- CreateInde-- CreateInde-- CreateInded_r-- rdType_idx" ON "UserR-- CreateIwardType");
+CREATE INDEX IF NOT EXISTS "QuizCompletion_quizId_idx" ON "QuizCompletion"("quizId");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "UserReward_earnedAt_idx" CREATE INDEX IF NOT EXISt");
+CREATE INDEX IF NOT EXISTS "QuizCompletion_userId_idx" ON "QuizCompletion"("userId");
+
+-- CreateIndex
+CREATE INDEX IF NOT EXISTS "UserReward_rewardType_idx" ON "UserReward"("rewardType");
+
+-- CreateIndex
+CREATE INDEX IF NOT EXISTS "UserReward_earnedAt_idx" ON "UserReward"("earnedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "UserBadge_userId_badgeId_key" ON "UserBadge"("userId", "badgeId");
