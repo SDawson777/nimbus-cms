@@ -46,6 +46,7 @@ import { storesV1Router } from "./routes/v1/stores";
 import { recommendationsRouter } from "./routes/recommendations";
 import { userRewardsRouter } from "./routes/userRewards";
 import loyaltyRouter from "./routes/loyalty";
+import journalRouter from "./routes/journal";
 import { metricsHandler, metricsMiddleware } from "./metrics";
 import { startComplianceScheduler } from "./jobs/complianceSnapshotJob";
 import { seedControlPlane } from "./seed";
@@ -355,6 +356,9 @@ app.use("/api/v1/user/rewards", userRewardsRouter);
 
 // Loyalty CMS-driven API
 app.use("/api/loyalty", loyaltyRouter);
+
+// Journal API (authenticated user endpoints)
+app.use("/api/journal", journalRouter);
 
 // Webhook endpoints for Sanity CMS sync
 app.use("/webhooks", webhooksRouter);

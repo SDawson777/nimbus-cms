@@ -311,18 +311,23 @@ model FeatureFlag {
 }
 
 model JournalEntry {
-  id        String   @id
-  userId    String
-  productId String
-  rating    Int?
-  notes     String?
-  mood      String?
-  effects   Json?
-  tags      String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id
+  userId           String
+  productId        String?
+  title            String?
+  body             String?
+  rating           Int?
+  notes            String?
+  mood             String?
+  effects          Json?
+  tags             String[]  @default([])
+  images           Json?
+  drawings         Json?
+  attachedProducts Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  Product          Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([userId, createdAt])
