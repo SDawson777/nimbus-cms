@@ -11,4 +11,8 @@ export default defineCliConfig({
       process.env.SANITY_STUDIO_DATASET ||
       "production",
   },
+  studioHost: "nimbus-cms",
+  deployment: {
+    appId: "aespjmcnx28x6c7zijz4t0ms",
+  },
 });
