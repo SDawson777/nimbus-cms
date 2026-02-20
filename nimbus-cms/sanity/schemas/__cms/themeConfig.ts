@@ -66,54 +66,72 @@ export default defineType({
       type: "string",
       title: "Primary Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "secondaryColor",
       type: "string",
       title: "Secondary Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "accentColor",
       type: "string",
       title: "Accent Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "surfaceColor",
       type: "string",
       title: "Surface Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "backgroundColor",
       type: "string",
       title: "Background Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "textColor",
       type: "string",
       title: "Text Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "logo",
@@ -148,9 +166,12 @@ export default defineType({
       type: "string",
       title: "Muted Text Color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "darkModeEnabled",
@@ -182,9 +203,12 @@ export default defineType({
       type: "string",
       title: "Screen border color",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "screenBorderPattern",
@@ -213,9 +237,12 @@ export default defineType({
       title: "Hero background color",
       description: "Background color for hero banner (if no image)",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "heroTextColor",
@@ -223,9 +250,12 @@ export default defineType({
       title: "Hero text color",
       description: "Text color for hero title and subtitle",
       validation: (Rule) =>
-        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
-          "Must be a hex color like #RRGGBB",
-        ),
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
     }),
     defineField({
       name: "heroBackgroundImage",
@@ -240,6 +270,27 @@ export default defineType({
       title: "Hero background image URL (optional)",
       description: "Alternative to uploading image - provide direct URL",
     }),
+    defineField({
+      name: "homeCategoryLimit",
+      type: "number",
+      title: "Home category limit",
+      description:
+        "Maximum number of categories shown on the mobile homescreen. Leave empty to show all.",
+      validation: (Rule) => Rule.integer().min(1).max(50),
+    }),
   ],
-  preview: { select: { title: "brand" } },
+  preview: {
+    select: {
+      brandName: "brand.name",
+      storeName: "store.name",
+    },
+    prepare({ brandName, storeName }) {
+      return {
+        title: storeName
+          ? `${brandName || "Brand"} — ${storeName}`
+          : brandName || "Theme Configuration",
+        subtitle: storeName ? "Store override" : "Brand-level",
+      };
+    },
+  },
 });

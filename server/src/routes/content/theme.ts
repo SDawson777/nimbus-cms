@@ -19,7 +19,7 @@ themeRouter.get("/", async (req, res) => {
     let globalTheme: any = null;
 
     if (brand && store) {
-      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, store:store->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
+      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, store:store->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl, homeCategoryLimit}`;
       storeTheme = await fetchCMS(
         sq,
         { brand, store },
@@ -27,7 +27,7 @@ themeRouter.get("/", async (req, res) => {
       );
     }
     if (brand) {
-      const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
+      const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl, homeCategoryLimit}`;
       brandTheme = await fetchCMS(
         bq,
         { brand },
@@ -35,7 +35,7 @@ themeRouter.get("/", async (req, res) => {
       );
     }
     // global default (no brand and no store)
-    const gq = `*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
+    const gq = `*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl, homeCategoryLimit}`;
     try {
       globalTheme = await fetchCMS(gq, {}, { preview: (req as any).preview });
     } catch {
@@ -74,6 +74,11 @@ themeRouter.get("/", async (req, res) => {
       heroBackgroundColor: merged.heroBackgroundColor || null,
       heroTextColor: merged.heroTextColor || null,
       heroBackgroundImageUrl: merged.heroBackgroundImageUrl || null,
+      homeCategoryLimit:
+        typeof merged.homeCategoryLimit === "number" &&
+        merged.homeCategoryLimit > 0
+          ? merged.homeCategoryLimit
+          : null,
     };
 
     res.set(

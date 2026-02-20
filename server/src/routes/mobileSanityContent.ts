@@ -757,6 +757,7 @@ mobileSanityRouter.get("/theme", async (req: Request, res: Response) => {
       heroBackgroundColor,
       heroTextColor,
       "heroBackgroundImageUrl": heroBackgroundImage.asset->url,
+      homeCategoryLimit,
       _updatedAt
     }`;
 
@@ -1264,7 +1265,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       fetchCMS('*[_type=="promo" && coalesce(active, isActive, true)==true && (!defined(schedule.publishAt) || schedule.publishAt <= now()) && (!defined(schedule.unpublishAt) || schedule.unpublishAt >= now())] | order(priority desc){_id, title, description, "image": image.asset->url, "promoCode": coalesce(promoCode, code), "discountType": coalesce(discountType, select(defined(discountPercent) => "percent_off", defined(discountAmount) => "amount_off", defined(discount) => "percent_off", "percent_off")), "discountValue": coalesce(discountValue, discountPercent, discountAmount, discount), "discountPercent": coalesce(discountPercent, discount), discountAmount, "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, code))), "categories": categories[]->{_id, name, "slug": slug.current}, "categoryKeys": applicableCategories, "validFrom": coalesce(validFrom, schedule.publishAt), "validUntil": coalesce(validUntil, schedule.unpublishAt), terms, _updatedAt}', {}),
       fetchCMS('*[_type=="deal" && coalesce(active, isActive, true)==true && now() >= coalesce(startAt, startDate) && now() <= coalesce(endAt, endDate)] | order(priority desc)[0...5]{_id, title, description, "discountType": coalesce(discountType, dealType), discountValue, "promoCode": coalesce(promoCode, couponCode, code), "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, couponCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, couponCode, code))), "categoryKeys": applicableCategories}', {}),
       fetchCMS('*[_type=="brand"] | order(name asc){_id, name, "slug": slug.current, "logo": logo.asset->url}', {}),
-      fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl": heroBackgroundImage.asset->url}', {}),
+      fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl": heroBackgroundImage.asset->url, homeCategoryLimit}', {}),
       fetchCMS('*[_type=="effectTag"] | order(name asc){_id, name, "slug": slug.current, color}', {}),
       fetchCMS<HomeHeroSettings | null>(
         `*[_type=="homeHeroSettings"][0]{
@@ -1274,11 +1275,14 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       ),
     ]);
 
+    // Prefer themeConfig.homeCategoryLimit, fall back to homeHeroSettings
+    const rawLimit =
+      (theme as any)?.homeCategoryLimit ?? homeHeroSettings?.homeCategoryLimit;
     const resolvedHomeCategoryLimit =
-      typeof homeHeroSettings?.homeCategoryLimit === "number" &&
-      Number.isFinite(homeHeroSettings.homeCategoryLimit) &&
-      homeHeroSettings.homeCategoryLimit > 0
-        ? Math.floor(homeHeroSettings.homeCategoryLimit)
+      typeof rawLimit === "number" &&
+      Number.isFinite(rawLimit) &&
+      rawLimit > 0
+        ? Math.floor(rawLimit)
         : null;
 
     const homeCategories =
