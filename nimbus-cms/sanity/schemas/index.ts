@@ -9,6 +9,7 @@ import promo from "./__cms/promo";
 import transparencyPage from "./__cms/transparencyPage";
 import accessibilityPage from "./__cms/accessibilityPage";
 import awardsExplainer from "./__cms/awardsExplainer";
+import whiteLabelConfig from "./__cms/whiteLabelConfig";
 import product from "./__admin/product";
 import productType from "./__admin/productType";
 import banner from "./__admin/banner";
@@ -37,6 +38,7 @@ export const schemaTypes = [
   transparencyPage,
   accessibilityPage,
   awardsExplainer,
+  whiteLabelConfig,
   product,
   productType,
   banner,

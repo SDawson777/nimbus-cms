@@ -314,6 +314,7 @@ app.use("/api/v1/nimbus", quizRouter);
 
 // personalization public endpoints
 app.use("/personalization", personalizationRouter);
+app.use("/api/v1/personalization", recommendationsRouter);
 
 // Proxy endpoints for server-side API calls that should not expose tokens to clients
 app.use("/api/v1/nimbus/proxy", proxyRouter);

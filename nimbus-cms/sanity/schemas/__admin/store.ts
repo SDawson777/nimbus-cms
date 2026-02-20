@@ -23,6 +23,8 @@ export default defineType({
     defineField({ name: "stateCode", type: "string", title: "State code" }),
     defineField({ name: "zip", type: "string", title: "ZIP" }),
     defineField({ name: "phone", type: "string", title: "Phone" }),
+    defineField({ name: "latitude", type: "number", title: "Latitude" }),
+    defineField({ name: "longitude", type: "number", title: "Longitude" }),
     defineField({
       name: "isActive",
       type: "boolean",

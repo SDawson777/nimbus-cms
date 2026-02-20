@@ -46,6 +46,7 @@ import { filtersRouter } from "./filters";
 import { copyRouter } from "./copy";
 import { dealsRouter } from "./deals";
 import themeRouter from "./theme";
+import whiteLabelConfigRouter from "./whiteLabelConfig";
 
 contentRouter.use("/legal", legalRouter);
 contentRouter.use("/faqs", faqsRouter);
@@ -57,3 +58,4 @@ contentRouter.use("/filters", filtersRouter);
 contentRouter.use("/copy", copyRouter);
 contentRouter.use("/deals", dealsRouter);
 contentRouter.use("/theme", themeRouter);
+contentRouter.use("/white-label-config", whiteLabelConfigRouter);

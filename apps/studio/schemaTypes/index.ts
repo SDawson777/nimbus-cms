@@ -18,6 +18,7 @@ import promo from "./__cms/promo";
 import quiz from "./__cms/quiz";
 import themeConfig from "./__cms/themeConfig";
 import transparencyPage from "./__cms/transparencyPage";
+import whiteLabelConfig from "./__cms/whiteLabelConfig";
 
 import analyticsSettings from "./__admin/analyticsSettings";
 import adminBanner from "./__admin/banner";
@@ -58,6 +59,7 @@ const schemaTypes = [
   quiz,
   themeConfig,
   transparencyPage,
+  whiteLabelConfig,
 
   // Admin / control-plane types
   analyticsSettings,
