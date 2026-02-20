@@ -266,6 +266,7 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
       rotationMs?: number | null;
       autoplay?: boolean | null;
       transitionStyle?: "fade" | "slide" | "none" | null;
+      homeCategoryLimit?: number | null;
     };
 
     const [banners, settings] = await Promise.all([
@@ -294,7 +295,8 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
         `*[_type=="homeHeroSettings"][0]{
           rotationMs,
           autoplay,
-          transitionStyle
+          transitionStyle,
+          homeCategoryLimit
         }`,
         {}
       ),
@@ -306,6 +308,12 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
         rotationMs: settings?.rotationMs ?? 15000,
         autoplay: settings?.autoplay ?? true,
         transitionStyle: settings?.transitionStyle ?? "fade",
+        homeCategoryLimit:
+          typeof settings?.homeCategoryLimit === "number" &&
+          Number.isFinite(settings.homeCategoryLimit) &&
+          settings.homeCategoryLimit > 0
+            ? Math.floor(settings.homeCategoryLimit)
+            : null,
       },
     });
   } catch (error: any) {
@@ -316,6 +324,7 @@ mobileSanityRouter.get("/banners", async (req: Request, res: Response) => {
         rotationMs: 15000,
         autoplay: true,
         transitionStyle: "fade",
+        homeCategoryLimit: null,
       },
     });
   }
@@ -1224,6 +1233,10 @@ mobileSanityRouter.get("/analytics-settings", async (req: Request, res: Response
  */
 mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
   try {
+    type HomeHeroSettings = {
+      homeCategoryLimit?: number | null;
+    };
+
     const [
       articles,
       categories,
@@ -1233,7 +1246,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       deals,
       brands,
       theme,
-      effects
+      effects,
+      homeHeroSettings
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS(CATEGORY_PROJECTION, {}),
@@ -1243,12 +1257,30 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       fetchCMS('*[_type=="deal" && coalesce(active, isActive, true)==true && now() >= coalesce(startAt, startDate) && now() <= coalesce(endAt, endDate)] | order(priority desc)[0...5]{_id, title, description, "discountType": coalesce(discountType, dealType), discountValue, "promoCode": coalesce(promoCode, couponCode, code), "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, couponCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, couponCode, code))), "categoryKeys": applicableCategories}', {}),
       fetchCMS('*[_type=="brand"] | order(name asc){_id, name, "slug": slug.current, "logo": logo.asset->url}', {}),
       fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url}', {}),
-      fetchCMS('*[_type=="effectTag"] | order(name asc){_id, name, "slug": slug.current, color}', {})
+      fetchCMS('*[_type=="effectTag"] | order(name asc){_id, name, "slug": slug.current, color}', {}),
+      fetchCMS<HomeHeroSettings | null>(
+        `*[_type=="homeHeroSettings"][0]{
+          homeCategoryLimit
+        }`,
+        {},
+      ),
     ]);
+
+    const resolvedHomeCategoryLimit =
+      typeof homeHeroSettings?.homeCategoryLimit === "number" &&
+      Number.isFinite(homeHeroSettings.homeCategoryLimit) &&
+      homeHeroSettings.homeCategoryLimit > 0
+        ? Math.floor(homeHeroSettings.homeCategoryLimit)
+        : null;
+
+    const homeCategories =
+      resolvedHomeCategoryLimit && Array.isArray(categories)
+        ? categories.slice(0, resolvedHomeCategoryLimit)
+        : categories;
 
     res.json({
       articles: articles || [],
-      categories: categories || [],
+      categories: homeCategories || [],
       faqs: faqs || [],
       banners: banners || [],
       promos: promos || [],
@@ -1256,6 +1288,9 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       brands: brands || [],
       theme: theme || null,
       effects: effects || [],
+      settings: {
+        homeCategoryLimit: resolvedHomeCategoryLimit,
+      },
       lastSync: new Date().toISOString()
     });
   } catch (error: any) {

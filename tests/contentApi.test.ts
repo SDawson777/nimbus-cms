@@ -394,11 +394,37 @@ describe("Mobile Sanity promos pipeline", () => {
     fetchCMSMock.mockResolvedValueOnce([{ _id: "brand-1" }]); // brands
     fetchCMSMock.mockResolvedValueOnce({ primaryColor: "#000" }); // theme
     fetchCMSMock.mockResolvedValueOnce([{ _id: "effect-1" }]); // effects
+    fetchCMSMock.mockResolvedValueOnce(null); // homeHeroSettings
 
     const res = await request(app).get("/mobile/sanity/all");
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("promos");
     expect(res.body.promos).toEqual([{ _id: "promo-1" }]);
-    expect(fetchCMSMock).toHaveBeenCalledTimes(9);
+    expect(fetchCMSMock).toHaveBeenCalledTimes(10);
+  });
+
+  it("applies homeCategoryLimit from CMS to /mobile/sanity/all categories", async () => {
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "article-1" }]); // articles
+    fetchCMSMock.mockResolvedValueOnce([
+      { _id: "category-1", name: "Flower" },
+      { _id: "category-2", name: "Edibles" },
+      { _id: "category-3", name: "Vape" },
+    ]); // categories
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "faq-1" }]); // faqs
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "banner-1" }]); // banners
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "promo-1" }]); // promos
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "deal-1" }]); // deals
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "brand-1" }]); // brands
+    fetchCMSMock.mockResolvedValueOnce({ primaryColor: "#000" }); // theme
+    fetchCMSMock.mockResolvedValueOnce([{ _id: "effect-1" }]); // effects
+    fetchCMSMock.mockResolvedValueOnce({ homeCategoryLimit: 2 }); // homeHeroSettings
+
+    const res = await request(app).get("/mobile/sanity/all");
+    expect(res.status).toBe(200);
+    expect(res.body.categories).toEqual([
+      { _id: "category-1", name: "Flower" },
+      { _id: "category-2", name: "Edibles" },
+    ]);
+    expect(res.body.settings).toEqual({ homeCategoryLimit: 2 });
   });
 });

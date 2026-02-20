@@ -33,6 +33,14 @@ export default defineType({
       },
       initialValue: "fade",
     }),
+    defineField({
+      name: "homeCategoryLimit",
+      type: "number",
+      title: "Home category limit",
+      description:
+        "Maximum number of categories shown on the mobile homescreen. Leave empty to show all categories.",
+      validation: (Rule) => Rule.integer().min(1).max(50),
+    }),
   ],
   preview: {
     prepare() {
