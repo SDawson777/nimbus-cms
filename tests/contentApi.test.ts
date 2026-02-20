@@ -318,6 +318,37 @@ describe("GET /api/v1/content/deals", () => {
   });
 });
 
+describe("GET /mobile/sanity/categories", () => {
+  it("uses normalized category projection for legacy and modern schemas", async () => {
+    fetchCMSMock.mockResolvedValueOnce([
+      {
+        _id: "cat-1",
+        name: "Flower",
+        title: "Flower",
+        slug: "flower",
+      },
+    ]);
+
+    const res = await request(app).get("/mobile/sanity/categories");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      categories: [
+        {
+          _id: "cat-1",
+          name: "Flower",
+          title: "Flower",
+          slug: "flower",
+        },
+      ],
+    });
+
+    const query = fetchCMSMock.mock.calls[0][0] as string;
+    expect(query).toContain('_type in ["category", "shopCategory"]');
+    expect(query).toContain('"name": coalesce(name, title)');
+    expect(query).toContain('"slug": coalesce(slug.current, key)');
+  });
+});
+
 describe("GET /api/v1/content/copy", () => {
   it("returns app copy", async () => {
     const items = [{ key: "hello", text: "world" }];

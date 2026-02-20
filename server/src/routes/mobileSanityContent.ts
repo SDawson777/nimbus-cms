@@ -34,6 +34,19 @@ import { logger } from "../lib/logger";
 
 export const mobileSanityRouter = Router();
 
+const CATEGORY_PROJECTION = `*[_type in ["category", "shopCategory"] && coalesce(isActive, active, true)==true] | order(coalesce(name, title) asc){
+  _id,
+  "name": coalesce(name, title),
+  "title": coalesce(title, name),
+  "slug": coalesce(slug.current, key),
+  "key": coalesce(key, slug.current),
+  description,
+  "image": coalesce(image.asset->url, icon.asset->url, heroImage.asset->url),
+  "icon": iconEmoji,
+  "color": color,
+  _updatedAt
+}`;
+
 // ============================================================
 // ARTICLES
 // ============================================================
@@ -183,17 +196,7 @@ mobileSanityRouter.post("/articles/:slug/view", async (req: Request, res: Respon
  */
 mobileSanityRouter.get("/categories", async (req: Request, res: Response) => {
   try {
-    const categories = await fetchCMS(
-      `*[_type=="category"] | order(name asc){
-        _id,
-        name,
-        "slug": slug.current,
-        description,
-        "image": image.asset->url,
-        _updatedAt
-      }`,
-      {}
-    );
+    const categories = await fetchCMS(CATEGORY_PROJECTION, {});
 
     res.json({ categories: categories || [] });
   } catch (error: any) {
@@ -1233,7 +1236,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       effects
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
-      fetchCMS('*[_type=="category"] | order(name asc){_id, name, "slug": slug.current, "image": image.asset->url}', {}),
+      fetchCMS(CATEGORY_PROJECTION, {}),
       fetchCMS('*[_type=="faqItem"] | order(order asc){_id, question, answer, "category": category->name}', {}),
       fetchCMS('*[_type=="banner" && coalesce(active, isActive, true)==true && (!defined(schedule.startAt) || schedule.startAt <= now()) && (!defined(schedule.endAt) || schedule.endAt >= now())] | order(priority desc){_id, title, "subtitle": coalesce(subheadline, subtitle), "image": image.asset->url, "link": coalesce(link, ctaLink)}', {}),
       fetchCMS('*[_type=="promo" && coalesce(active, isActive, true)==true && (!defined(schedule.publishAt) || schedule.publishAt <= now()) && (!defined(schedule.unpublishAt) || schedule.unpublishAt >= now())] | order(priority desc){_id, title, description, "image": image.asset->url, "promoCode": coalesce(promoCode, code), "discountType": coalesce(discountType, select(defined(discountPercent) => "percent_off", defined(discountAmount) => "amount_off", defined(discount) => "percent_off", "percent_off")), "discountValue": coalesce(discountValue, discountPercent, discountAmount, discount), "discountPercent": coalesce(discountPercent, discount), discountAmount, "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, code))), "categories": categories[]->{_id, name, "slug": slug.current}, "categoryKeys": applicableCategories, "validFrom": coalesce(validFrom, schedule.publishAt), "validUntil": coalesce(validUntil, schedule.unpublishAt), terms, _updatedAt}', {}),
