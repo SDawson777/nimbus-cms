@@ -28,11 +28,27 @@ describe("GET /content/theme", () => {
       backgroundColor: "#333",
       textColor: "#444",
       logoUrl: "/g.png",
+      screenBorderEnabled: true,
+      screenBorderColor: "#fafafa",
+      screenBorderPattern: "stripes",
+      heroTitle: "Welcome to Nimbus",
+      heroSubtitle: "Curated cannabis experiences",
+      heroBackgroundColor: "#020617",
+      heroTextColor: "#e5e7eb",
+      heroBackgroundImageUrl: "https://cdn.sanity.io/images/hero-global.jpg",
     };
     fetchCMSMock.mockResolvedValueOnce(global);
     const res = await request(app).get("/content/theme");
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("primaryColor", "#111");
+    expect(res.body).toHaveProperty("screenBorderEnabled", true);
+    expect(res.body).toHaveProperty("screenBorderColor", "#fafafa");
+    expect(res.body).toHaveProperty("screenBorderPattern", "stripes");
+    expect(res.body).toHaveProperty("heroTitle", "Welcome to Nimbus");
+    expect(res.body).toHaveProperty("heroSubtitle", "Curated cannabis experiences");
+    expect(res.body).toHaveProperty("heroBackgroundColor", "#020617");
+    expect(res.body).toHaveProperty("heroTextColor", "#e5e7eb");
+    expect(res.body).toHaveProperty("heroBackgroundImageUrl", "https://cdn.sanity.io/images/hero-global.jpg");
   });
 
   it("returns theme when brand provided", async () => {

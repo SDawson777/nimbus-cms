@@ -19,7 +19,7 @@ themeRouter.get("/", async (req, res) => {
     let globalTheme: any = null;
 
     if (brand && store) {
-      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, store:store->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`;
+      const sq = `*[_type=="themeConfig" && brand->slug.current==$brand && store->slug.current==$store][0]{"brand":brand->slug.current, store:store->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
       storeTheme = await fetchCMS(
         sq,
         { brand, store },
@@ -27,7 +27,7 @@ themeRouter.get("/", async (req, res) => {
       );
     }
     if (brand) {
-      const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`;
+      const bq = `*[_type=="themeConfig" && brand->slug.current==$brand && !defined(store)][0]{"brand":brand->slug.current, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
       brandTheme = await fetchCMS(
         bq,
         { brand },
@@ -35,7 +35,7 @@ themeRouter.get("/", async (req, res) => {
       );
     }
     // global default (no brand and no store)
-    const gq = `*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle}`;
+    const gq = `*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, typography, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url, heroBackgroundImageUrl}`;
     try {
       globalTheme = await fetchCMS(gq, {}, { preview: (req as any).preview });
     } catch {
@@ -66,6 +66,14 @@ themeRouter.get("/", async (req, res) => {
       darkModeEnabled: Boolean(merged.darkModeEnabled || false),
       cornerRadius: merged.cornerRadius || null,
       elevationStyle: merged.elevationStyle || null,
+      screenBorderEnabled: Boolean(merged.screenBorderEnabled || false),
+      screenBorderColor: merged.screenBorderColor || null,
+      screenBorderPattern: merged.screenBorderPattern || "none",
+      heroTitle: merged.heroTitle || "Welcome to Nimbus",
+      heroSubtitle: merged.heroSubtitle || "Curated cannabis experiences",
+      heroBackgroundColor: merged.heroBackgroundColor || null,
+      heroTextColor: merged.heroTextColor || null,
+      heroBackgroundImageUrl: merged.heroBackgroundImageUrl || null,
     };
 
     res.set(

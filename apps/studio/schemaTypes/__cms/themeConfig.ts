@@ -175,6 +175,75 @@ export default defineType({
       options: { list: ["flat", "medium", "high"] },
       initialValue: "flat",
     }),
+    defineField({
+      name: "screenBorderEnabled",
+      type: "boolean",
+      title: "Screen border enabled",
+      initialValue: false,
+    }),
+    defineField({
+      name: "screenBorderColor",
+      type: "string",
+      title: "Screen border color",
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
+          "Must be a hex color like #RRGGBB",
+        ),
+    }),
+    defineField({
+      name: "screenBorderPattern",
+      type: "string",
+      title: "Screen border pattern",
+      options: { list: ["none", "stripes", "dots", "grid"] },
+      initialValue: "none",
+    }),
+    defineField({
+      name: "heroTitle",
+      type: "string",
+      title: "Hero title",
+      description: "Main heading for home hero banner",
+      initialValue: "Welcome to Nimbus",
+    }),
+    defineField({
+      name: "heroSubtitle",
+      type: "string",
+      title: "Hero subtitle",
+      description: "Subtitle text for home hero banner",
+      initialValue: "Curated cannabis experiences",
+    }),
+    defineField({
+      name: "heroBackgroundColor",
+      type: "string",
+      title: "Hero background color",
+      description: "Background color for hero banner (if no image)",
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
+          "Must be a hex color like #RRGGBB",
+        ),
+    }),
+    defineField({
+      name: "heroTextColor",
+      type: "string",
+      title: "Hero text color",
+      description: "Text color for hero title and subtitle",
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).error(
+          "Must be a hex color like #RRGGBB",
+        ),
+    }),
+    defineField({
+      name: "heroBackgroundImage",
+      type: "image",
+      title: "Hero background image",
+      description: "Optional background image for hero banner",
+      options: { hotspot: true },
+    }),
+    defineField({
+      name: "heroBackgroundImageUrl",
+      type: "string",
+      title: "Hero background image URL (optional)",
+      description: "Alternative to uploading image - provide direct URL",
+    }),
   ],
   preview: { select: { title: "brand" } },
 });

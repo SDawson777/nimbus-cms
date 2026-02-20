@@ -1065,7 +1065,7 @@ adminRouter.get("/theme", requireRole("VIEWER"), async (req, res) => {
     if (!ensureBrandScope(res, admin, brandSlug)) return;
     if (storeSlug && !ensureStoreScope(res, admin, storeSlug, brandSlug))
       return;
-    const q = `*[_type=="themeConfig" && brand->slug.current==$brand ${store ? "&& store->slug.current==$store" : "&& !defined(store)"}][0]{"brand":brand->slug.current, primaryColor, secondaryColor, backgroundColor, textColor, "logoUrl":logo.asset->url, logoUrl, typography}`;
+    const q = `*[_type=="themeConfig" && brand->slug.current==$brand ${store ? "&& store->slug.current==$store" : "&& !defined(store)"}][0]{"brand":brand->slug.current, primaryColor, secondaryColor, backgroundColor, textColor, "logoUrl":logo.asset->url, logoUrl, typography, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url}`;
     const item = await fetchCMS(q, {
       brand: brandSlug,
       store: storeSlug || undefined,
@@ -1117,6 +1117,31 @@ adminRouter.post("/theme", requireRole("EDITOR"), async (req, res) => {
           fontSize: z.string().optional(),
         })
         .optional(),
+      screenBorderEnabled: z.boolean().optional(),
+      screenBorderColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      screenBorderPattern: z
+        .enum(["none", "stripes", "dots", "grid"])
+        .optional(),
+      heroTitle: z.string().optional(),
+      heroSubtitle: z.string().optional(),
+      heroBackgroundColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      heroTextColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      heroBackgroundImageUrl: z.string().optional(),
     })
     .parse(body);
 
@@ -1165,6 +1190,14 @@ adminRouter.post("/theme", requireRole("EDITOR"), async (req, res) => {
       textColor: schema.textColor,
       logoUrl: schema.logoUrl,
       typography: schema.typography,
+      screenBorderEnabled: schema.screenBorderEnabled,
+      screenBorderColor: schema.screenBorderColor,
+      screenBorderPattern: schema.screenBorderPattern,
+      heroTitle: schema.heroTitle,
+      heroSubtitle: schema.heroSubtitle,
+      heroBackgroundColor: schema.heroBackgroundColor,
+      heroTextColor: schema.heroTextColor,
+      heroBackgroundImageUrl: schema.heroBackgroundImageUrl,
     };
     if (storeId) doc.store = { _type: "reference", _ref: storeId };
     // if caller provided a Sanity asset id for the uploaded logo, attach it as image reference
@@ -1224,7 +1257,7 @@ adminRouter.get("/theme/configs", requireRole("VIEWER"), async (req, res) => {
       params.store = admin.storeSlug;
     }
 
-    const listQ = `*[_type=="themeConfig" ${where}]{_id, "brand":brand->slug.current, "brandName":brand->name, "store":store->slug.current, "storeName":store->name, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, darkModeEnabled, cornerRadius, elevationStyle} | order(brand asc, store asc)[${page * perPage}...${page * perPage + perPage}]`;
+    const listQ = `*[_type=="themeConfig" ${where}]{_id, "brand":brand->slug.current, "brandName":brand->name, "store":store->slug.current, "storeName":store->name, primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, textColor, mutedTextColor, "logoUrl":logo.asset->url, logoUrl, darkModeEnabled, cornerRadius, elevationStyle, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl":heroBackgroundImage.asset->url} | order(brand asc, store asc)[${page * perPage}...${page * perPage + perPage}]`;
     const countQ = `count(*[_type=="themeConfig" ${where}])`;
     const [rows, total] = await Promise.all([
       fetchCMS(listQ, params),
@@ -1249,6 +1282,14 @@ adminRouter.get("/theme/configs", requireRole("VIEWER"), async (req, res) => {
           darkModeEnabled: !!r.darkModeEnabled,
           cornerRadius: r.cornerRadius,
           elevationStyle: r.elevationStyle,
+          screenBorderEnabled: !!r.screenBorderEnabled,
+          screenBorderColor: r.screenBorderColor,
+          screenBorderPattern: r.screenBorderPattern || "none",
+          heroTitle: r.heroTitle || "Welcome to Nimbus",
+          heroSubtitle: r.heroSubtitle || "Curated cannabis experiences",
+          heroBackgroundColor: r.heroBackgroundColor,
+          heroTextColor: r.heroTextColor,
+          heroBackgroundImageUrl: r.heroBackgroundImageUrl,
           studioUrl: studioBase
             ? `${studioBase.replace(/\/$/, "")}/desk/themeConfig;${r._id}`
             : null,
@@ -1320,6 +1361,32 @@ adminRouter.post("/theme/config", requireRole("EDITOR"), async (req, res) => {
         darkModeEnabled: z.boolean().optional(),
         cornerRadius: z.string().optional(),
         elevationStyle: z.string().optional(),
+        screenBorderEnabled: z.boolean().optional(),
+        screenBorderColor: z
+          .string()
+          .optional()
+          .refine((v) => !v || colorRegex.test(v), {
+            message: "Invalid hex color",
+          }),
+        screenBorderPattern: z
+          .enum(["none", "stripes", "dots", "grid"])
+          .optional(),
+        heroTitle: z.string().optional(),
+        heroSubtitle: z.string().optional(),
+        heroBackgroundColor: z
+          .string()
+          .optional()
+          .refine((v) => !v || colorRegex.test(v), {
+            message: "Invalid hex color",
+          }),
+        heroTextColor: z
+          .string()
+          .optional()
+          .refine((v) => !v || colorRegex.test(v), {
+            message: "Invalid hex color",
+          }),
+        heroBackgroundImageUrl: z.string().optional(),
+        heroBackgroundImageAssetId: z.string().optional(),
       })
       .parse(req.body || {});
 
@@ -1375,6 +1442,14 @@ adminRouter.post("/theme/config", requireRole("EDITOR"), async (req, res) => {
       "darkModeEnabled",
       "cornerRadius",
       "elevationStyle",
+      "screenBorderEnabled",
+      "screenBorderColor",
+      "screenBorderPattern",
+      "heroTitle",
+      "heroSubtitle",
+      "heroBackgroundColor",
+      "heroTextColor",
+      "heroBackgroundImageUrl",
     ];
     for (const f of fields) {
       if ((schema as any)[f] !== undefined) doc[f] = (schema as any)[f];
@@ -1386,6 +1461,13 @@ adminRouter.post("/theme/config", requireRole("EDITOR"), async (req, res) => {
       };
       if (schema.logoAlt) doc.logo.alt = schema.logoAlt;
       if (!schema.logoUrl) doc.logoUrl = undefined;
+    }
+    if (schema.heroBackgroundImageAssetId) {
+      doc.heroBackgroundImage = {
+        _type: "image",
+        asset: { _type: "reference", _ref: schema.heroBackgroundImageAssetId },
+      };
+      if (!schema.heroBackgroundImageUrl) doc.heroBackgroundImageUrl = undefined;
     }
     const created = await client.createOrReplace(doc);
     res.json({ ok: true, theme: created });
@@ -1477,6 +1559,31 @@ adminRouter.post("/theme/preview", requireRole("EDITOR"), async (req, res) => {
       darkModeEnabled: z.boolean().optional(),
       cornerRadius: z.string().optional(),
       elevationStyle: z.string().optional(),
+      screenBorderEnabled: z.boolean().optional(),
+      screenBorderColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      screenBorderPattern: z
+        .enum(["none", "stripes", "dots", "grid"])
+        .optional(),
+      heroTitle: z.string().optional(),
+      heroSubtitle: z.string().optional(),
+      heroBackgroundColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      heroTextColor: z
+        .string()
+        .optional()
+        .refine((v) => !v || colorRegex.test(v), {
+          message: "Invalid hex color",
+        }),
+      heroBackgroundImageUrl: z.string().optional(),
     });
     const body = schema.parse(req.body || {});
     const out = {
@@ -1493,6 +1600,14 @@ adminRouter.post("/theme/preview", requireRole("EDITOR"), async (req, res) => {
       darkModeEnabled: Boolean(body.darkModeEnabled || false),
       cornerRadius: body.cornerRadius || null,
       elevationStyle: body.elevationStyle || null,
+      screenBorderEnabled: Boolean(body.screenBorderEnabled || false),
+      screenBorderColor: body.screenBorderColor || null,
+      screenBorderPattern: body.screenBorderPattern || "none",
+      heroTitle: body.heroTitle || "Welcome to Nimbus",
+      heroSubtitle: body.heroSubtitle || "Curated cannabis experiences",
+      heroBackgroundColor: body.heroBackgroundColor || null,
+      heroTextColor: body.heroTextColor || null,
+      heroBackgroundImageUrl: body.heroBackgroundImageUrl || null,
     };
     res.json(out);
   } catch (e) {

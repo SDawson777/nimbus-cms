@@ -117,6 +117,14 @@ describe("POST /api/admin/theme", () => {
     const res = await authed.post("/api/admin/theme").send({
       brand: "jars",
       primaryColor: "#ffffff",
+      screenBorderEnabled: true,
+      screenBorderColor: "#112233",
+      screenBorderPattern: "grid",
+      heroTitle: "Welcome to JARS",
+      heroSubtitle: "Premium cannabis selection",
+      heroBackgroundColor: "#1a1a1a",
+      heroTextColor: "#f5f5f5",
+      heroBackgroundImageUrl: "https://cdn.sanity.io/images/hero.jpg",
     });
 
     expect(res.status).toBe(200);
@@ -124,6 +132,14 @@ describe("POST /api/admin/theme", () => {
     const docArg = createOrReplaceMock.mock.calls[0][0];
     expect(docArg._id).toBe("themeConfig-jars");
     expect(docArg.primaryColor).toBe("#ffffff");
+    expect(docArg.screenBorderEnabled).toBe(true);
+    expect(docArg.screenBorderColor).toBe("#112233");
+    expect(docArg.screenBorderPattern).toBe("grid");
+    expect(docArg.heroTitle).toBe("Welcome to JARS");
+    expect(docArg.heroSubtitle).toBe("Premium cannabis selection");
+    expect(docArg.heroBackgroundColor).toBe("#1a1a1a");
+    expect(docArg.heroTextColor).toBe("#f5f5f5");
+    expect(docArg.heroBackgroundImageUrl).toBe("https://cdn.sanity.io/images/hero.jpg");
   });
 
   it("saves logo asset reference with alt text when provided", async () => {
