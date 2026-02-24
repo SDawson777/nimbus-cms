@@ -19,6 +19,7 @@ import quiz from "./__cms/quiz";
 import heroFooter from "./__cms/heroFooter";
 import themeConfig from "./__cms/themeConfig";
 import transparencyPage from "./__cms/transparencyPage";
+import wayToShop from "./__cms/wayToShop";
 import whiteLabelConfig from "./__cms/whiteLabelConfig";
 
 import analyticsSettings from "./__admin/analyticsSettings";
@@ -61,6 +62,7 @@ const schemaTypes = [
   quiz,
   themeConfig,
   transparencyPage,
+  wayToShop,
   whiteLabelConfig,
 
   // Admin / control-plane types

@@ -1111,6 +1111,31 @@ mobileSanityRouter.get("/compliance", async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// WAYS TO SHOP
+// ============================================================
+
+const WAYS_TO_SHOP_QUERY = `*[_type == "wayToShop" && !(_id in path("drafts.**"))] | order(position asc) {
+  _id, label, icon,
+  image { ..., asset->{ url } },
+  link, position
+}`;
+
+/**
+ * GET /ways-to-shop
+ * Fetch all "Way to Shop" tiles from Sanity, ordered by position.
+ * Returns { items: [...] } or { items: [] } when none exist.
+ */
+mobileSanityRouter.get("/ways-to-shop", async (req: Request, res: Response) => {
+  try {
+    const items = await fetchCMS(WAYS_TO_SHOP_QUERY, {});
+    res.json({ items: items || [] });
+  } catch (error: any) {
+    logger.error("mobile.ways-to-shop.error", error);
+    res.json({ items: [] });
+  }
+});
+
+// ============================================================
 // HERO FOOTER
 // ============================================================
 
@@ -1282,7 +1307,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       theme,
       effects,
       homeHeroSettings,
-      heroFooter
+      heroFooter,
+      waysToShop
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS(CATEGORY_PROJECTION, {}),
@@ -1300,6 +1326,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
         {},
       ),
       fetchCMS(HERO_FOOTER_QUERY, {}),
+      fetchCMS(WAYS_TO_SHOP_QUERY, {}),
     ]);
 
     // Prefer themeConfig.homeCategoryLimit, fall back to homeHeroSettings
@@ -1328,6 +1355,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       theme: theme || null,
       effects: effects || [],
       heroFooter: heroFooter || null,
+      waysToShop: waysToShop || [],
       settings: {
         homeCategoryLimit: resolvedHomeCategoryLimit,
       },
