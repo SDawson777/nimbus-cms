@@ -274,6 +274,51 @@ export default defineType({
       title: "Hero background image URL (optional)",
       description: "Alternative to uploading image - provide direct URL",
     }),
+    // ── Hero Footer overrides (per-brand / per-store) ──
+    defineField({
+      name: "heroFooterTitle",
+      type: "string",
+      title: "Hero Footer Title Override",
+      description: "Override the hero footer title for this brand/store",
+    }),
+    defineField({
+      name: "heroFooterSubtitle",
+      type: "string",
+      title: "Hero Footer Subtitle Override",
+      description: "Override the hero footer subtitle for this brand/store",
+    }),
+    defineField({
+      name: "heroFooterBackgroundColor",
+      type: "string",
+      title: "Hero Footer Background Color",
+      description: "Hex background color override for the hero footer",
+      validation: (Rule) =>
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
+    }),
+    defineField({
+      name: "heroFooterTextColor",
+      type: "string",
+      title: "Hero Footer Text Color",
+      description: "Hex text color override for the hero footer",
+      validation: (Rule) =>
+        Rule.custom((val) => {
+          if (!val) return true;
+          return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val)
+            ? true
+            : "Must be a hex color like #RRGGBB";
+        }),
+    }),
+    defineField({
+      name: "heroFooterBackgroundImageUrl",
+      type: "url",
+      title: "Hero Footer Background Image URL",
+      description: "Override background image URL for the hero footer",
+    }),
     defineField({
       name: "homeCategoryLimit",
       type: "number",

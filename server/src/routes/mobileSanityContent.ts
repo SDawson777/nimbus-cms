@@ -1111,6 +1111,31 @@ mobileSanityRouter.get("/compliance", async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// HERO FOOTER
+// ============================================================
+
+const HERO_FOOTER_QUERY = `*[_type == "heroFooter" && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0] {
+  _id, title, subtitle, cta, link,
+  image { ..., asset->{ url } },
+  backgroundColor, textColor
+}`;
+
+/**
+ * GET /hero-footer
+ * Fetch the singleton hero footer document from Sanity.
+ * Returns { footer: {...} } or { footer: null } when no document exists.
+ */
+mobileSanityRouter.get("/hero-footer", async (req: Request, res: Response) => {
+  try {
+    const footer = await fetchCMS(HERO_FOOTER_QUERY, {});
+    res.json({ footer: footer || null });
+  } catch (error: any) {
+    logger.error("mobile.hero-footer.error", error);
+    res.json({ footer: null });
+  }
+});
+
+// ============================================================
 // PRODUCT DROPS
 // ============================================================
 
@@ -1256,7 +1281,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       brands,
       theme,
       effects,
-      homeHeroSettings
+      homeHeroSettings,
+      heroFooter
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS(CATEGORY_PROJECTION, {}),
@@ -1265,7 +1291,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       fetchCMS('*[_type=="promo" && coalesce(active, isActive, true)==true && (!defined(schedule.publishAt) || schedule.publishAt <= now()) && (!defined(schedule.unpublishAt) || schedule.unpublishAt >= now())] | order(priority desc){_id, title, description, "image": image.asset->url, "promoCode": coalesce(promoCode, code), "discountType": coalesce(discountType, select(defined(discountPercent) => "percent_off", defined(discountAmount) => "amount_off", defined(discount) => "percent_off", "percent_off")), "discountValue": coalesce(discountValue, discountPercent, discountAmount, discount), "discountPercent": coalesce(discountPercent, discount), discountAmount, "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, code))), "categories": categories[]->{_id, name, "slug": slug.current}, "categoryKeys": applicableCategories, "validFrom": coalesce(validFrom, schedule.publishAt), "validUntil": coalesce(validUntil, schedule.unpublishAt), terms, _updatedAt}', {}),
       fetchCMS('*[_type=="deal" && coalesce(active, isActive, true)==true && now() >= coalesce(startAt, startDate) && now() <= coalesce(endAt, endDate)] | order(priority desc)[0...5]{_id, title, description, "discountType": coalesce(discountType, dealType), discountValue, "promoCode": coalesce(promoCode, couponCode, code), "applicationType": coalesce(applicationType, select(defined(coalesce(promoCode, couponCode, code)) => "code", "auto")), "autoApply": coalesce(autoApply, !defined(coalesce(promoCode, couponCode, code))), "categoryKeys": applicableCategories}', {}),
       fetchCMS('*[_type=="brand"] | order(name asc){_id, name, "slug": slug.current, "logo": logo.asset->url}', {}),
-      fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl": heroBackgroundImage.asset->url, homeCategoryLimit}', {}),
+      fetchCMS('*[_type=="themeConfig" && !defined(brand) && !defined(store)][0]{primaryColor, secondaryColor, accentColor, backgroundColor, textColor, "logo": logo.asset->url, screenBorderEnabled, screenBorderColor, screenBorderPattern, heroTitle, heroSubtitle, heroBackgroundColor, heroTextColor, "heroBackgroundImageUrl": heroBackgroundImage.asset->url, homeCategoryLimit, heroFooterTitle, heroFooterSubtitle, heroFooterBackgroundColor, heroFooterTextColor, heroFooterBackgroundImageUrl}', {}),
       fetchCMS('*[_type=="effectTag"] | order(name asc){_id, name, "slug": slug.current, color}', {}),
       fetchCMS<HomeHeroSettings | null>(
         `*[_type=="homeHeroSettings"][0]{
@@ -1273,6 +1299,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
         }`,
         {},
       ),
+      fetchCMS(HERO_FOOTER_QUERY, {}),
     ]);
 
     // Prefer themeConfig.homeCategoryLimit, fall back to homeHeroSettings
@@ -1300,6 +1327,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       brands: brands || [],
       theme: theme || null,
       effects: effects || [],
+      heroFooter: heroFooter || null,
       settings: {
         homeCategoryLimit: resolvedHomeCategoryLimit,
       },

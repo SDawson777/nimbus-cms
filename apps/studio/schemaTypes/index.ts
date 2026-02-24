@@ -16,6 +16,7 @@ import loyaltyRule from "./__cms/loyaltyRule";
 import loyaltyTier from "./__cms/loyaltyTier";
 import promo from "./__cms/promo";
 import quiz from "./__cms/quiz";
+import heroFooter from "./__cms/heroFooter";
 import themeConfig from "./__cms/themeConfig";
 import transparencyPage from "./__cms/transparencyPage";
 import whiteLabelConfig from "./__cms/whiteLabelConfig";
@@ -51,6 +52,7 @@ const schemaTypes = [
   contentMetricDaily,
   deal,
   faqItem,
+  heroFooter,
   legalDoc,
   loyaltyReward,
   loyaltyRule,
