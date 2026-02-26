@@ -8,6 +8,7 @@ import awardsExplainer from "./__cms/awardsExplainer";
 import category from "./__cms/category";
 import contentMetric from "./__cms/contentMetric";
 import contentMetricDaily from "./__cms/contentMetricDaily";
+import crossSellRule from "./__cms/crossSellRule";
 import deal from "./__cms/deal";
 import faqItem from "./__cms/faqItem";
 import legalDoc from "./__cms/legalPage";
@@ -20,6 +21,7 @@ import heroFooter from "./__cms/heroFooter";
 import productRail from "./__cms/productRail";
 import themeConfig from "./__cms/themeConfig";
 import transparencyPage from "./__cms/transparencyPage";
+import upgradeMapping from "./__cms/upgradeMapping";
 import wayToShop from "./__cms/wayToShop";
 import whiteLabelConfig from "./__cms/whiteLabelConfig";
 
@@ -52,10 +54,12 @@ const schemaTypes = [
   category,
   contentMetric,
   contentMetricDaily,
+  crossSellRule,
   deal,
   faqItem,
   heroFooter,
   productRail,
+  upgradeMapping,
   legalDoc,
   loyaltyReward,
   loyaltyRule,

@@ -1171,15 +1171,29 @@ const PRODUCT_RAILS_QUERY = `*[_type == "productRail"
  */
 mobileSanityRouter.get("/product-rails", async (req: Request, res: Response) => {
   try {
-    const allRails = await fetchCMS(PRODUCT_RAILS_QUERY, {});
+    const allRails: any[] = (await fetchCMS(PRODUCT_RAILS_QUERY, {})) as any[] || [];
     const brandId = (req.query.brandId as string) || undefined;
 
     // Filter by brand: keep global rails (no brand) + rails matching the requested brand
-    const rails = brandId
+    const filtered = brandId
       ? (allRails || []).filter(
           (r: any) => !r.brandId || r.brandId === brandId
         )
       : allRails || [];
+
+    // Apply psychological price-anchoring within each rail:
+    // Sort items so mid-range appears first, then premium, then discount.
+    // Never show the cheapest item first.
+    const rails = filtered.map((rail: any) => {
+      if (!rail.items || rail.items.length <= 2) return rail;
+      const sorted = [...rail.items].sort(
+        (a: any, b: any) => (a.product?.price ?? 0) - (b.product?.price ?? 0)
+      );
+      const midIdx = Math.floor(sorted.length / 2);
+      const mid = sorted.splice(midIdx, 1)[0];
+      sorted.unshift(mid); // mid-range first
+      return { ...rail, items: sorted };
+    });
 
     res.json({ rails });
   } catch (error: any) {
@@ -1210,6 +1224,200 @@ mobileSanityRouter.get("/hero-footer", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error("mobile.hero-footer.error", error);
     res.json({ footer: null });
+  }
+});
+
+// ============================================================
+// CROSS-SELL RECOMMENDATIONS  ("Complete Your Session")
+// ============================================================
+
+const CROSS_SELL_QUERY = `*[_type == "crossSellRule"
+  && !(_id in path("drafts.**"))
+  && active != false
+] | order(priority desc) {
+  _id, name, heading, subheading, priority,
+  "triggerCategoryId": triggerCategory->_id,
+  "triggerCategorySlug": triggerCategory->slug.current,
+  "brandId": brand->_id,
+  companions[] {
+    _key, badge, badgeColor,
+    product->{ _id, name, "slug": slug.current, price, compareAtPrice, strainType, thcPercent, cbdPercent, weight,
+               "productType": productType->name, "imageUrl": image.asset->url }
+  }
+}`;
+
+/**
+ * GET /cart/cross-sell?productTypeIds=...[&brandId=...]
+ *
+ * Given comma-separated productType _ids present in the user's cart,
+ * return matching cross-sell companions sorted using psychological
+ * price-anchoring (mid → premium → value).
+ *
+ * Returns { heading, subheading, companions[] }  or  null
+ */
+mobileSanityRouter.get("/cart/cross-sell", async (req: Request, res: Response) => {
+  try {
+    const raw = (req.query.productTypeIds as string) || "";
+    const brandId = (req.query.brandId as string) || undefined;
+    const typeIds = raw.split(",").map((s) => s.trim()).filter(Boolean);
+
+    if (typeIds.length === 0) {
+      return res.json({ crossSell: null });
+    }
+
+    const rules: any[] = (await fetchCMS(CROSS_SELL_QUERY, {})) || [];
+
+    // Match rules: keep global + brand-scoped, pick the highest-priority match
+    const matched = rules.find((r: any) => {
+      const brandOk = !r.brandId || r.brandId === brandId;
+      const catOk = typeIds.includes(r.triggerCategoryId);
+      return brandOk && catOk;
+    });
+
+    if (!matched || !matched.companions?.length) {
+      return res.json({ crossSell: null });
+    }
+
+    // Price-anchor sort: mid-range first, then premium, then cheapest
+    const items = [...matched.companions].filter((c: any) => c.product);
+    if (items.length > 1) {
+      items.sort((a: any, b: any) => (a.product?.price ?? 0) - (b.product?.price ?? 0));
+      const midIdx = Math.floor(items.length / 2);
+      const mid = items.splice(midIdx, 1)[0];
+      items.unshift(mid); // mid-range first
+    }
+
+    res.json({
+      crossSell: {
+        heading: matched.heading,
+        subheading: matched.subheading,
+        companions: items,
+      },
+    });
+  } catch (error: any) {
+    logger.error("mobile.cart.cross-sell.error", error);
+    res.json({ crossSell: null });
+  }
+});
+
+// ============================================================
+// UPGRADE SUGGESTIONS  ("Popular Upgrade")
+// ============================================================
+
+const UPGRADE_QUERY = `*[_type == "upgradeMapping"
+  && !(_id in path("drafts.**"))
+  && active != false
+  && sourceProduct._ref == $productId
+] | order(priority desc)[0] {
+  _id, label, labelColor, reason, savingsNote,
+  "brandId": brand->_id,
+  sourceProduct->{ _id, name, "slug": slug.current, price, strainType, thcPercent, "imageUrl": image.asset->url },
+  upgradeProduct->{ _id, name, "slug": slug.current, price, compareAtPrice, strainType, thcPercent, cbdPercent, weight,
+                     "productType": productType->name, "imageUrl": image.asset->url }
+}`;
+
+/**
+ * GET /product/:productId/upgrade[?brandId=...]
+ *
+ * Given a product _id the user is viewing / added to cart, return
+ * the premium upgrade alternative (if one exists) with anchoring copy.
+ *
+ * Returns { upgrade: {...} }  or  { upgrade: null }
+ */
+mobileSanityRouter.get("/product/:productId/upgrade", async (req: Request, res: Response) => {
+  try {
+    const { productId } = req.params;
+    const brandId = (req.query.brandId as string) || undefined;
+
+    const mapping: any = await fetchCMS(UPGRADE_QUERY, { productId });
+
+    if (!mapping || !mapping.upgradeProduct) {
+      return res.json({ upgrade: null });
+    }
+
+    // Brand check
+    if (mapping.brandId && mapping.brandId !== brandId) {
+      return res.json({ upgrade: null });
+    }
+
+    res.json({
+      upgrade: {
+        label: mapping.label,
+        labelColor: mapping.labelColor,
+        reason: mapping.reason,
+        savingsNote: mapping.savingsNote,
+        source: mapping.sourceProduct,
+        upgrade: mapping.upgradeProduct,
+      },
+    });
+  } catch (error: any) {
+    logger.error("mobile.product.upgrade.error", error);
+    res.json({ upgrade: null });
+  }
+});
+
+// ============================================================
+// RELEVANCE-FILTERED RAILS  (preference-aware)
+// ============================================================
+
+/**
+ * GET /product-rails/personalized?preferredStrains=indica,hybrid[&brandId=...&excludeStrains=sativa]
+ *
+ * Returns the same rails as /product-rails but filters out items
+ * whose strainType is in excludeStrains (defaults to everything NOT
+ * in preferredStrains).  Satisfies the "don't show sativa to an
+ * indica buyer" relevance rule.
+ *
+ * Also applies psychological price-anchoring sort within each rail:
+ * mid-range → premium → discount (never cheapest first).
+ */
+mobileSanityRouter.get("/product-rails/personalized", async (req: Request, res: Response) => {
+  try {
+    const allRails: any[] = (await fetchCMS(PRODUCT_RAILS_QUERY, {})) || [];
+    const brandId = (req.query.brandId as string) || undefined;
+    const preferred = ((req.query.preferredStrains as string) || "")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const excluded = ((req.query.excludeStrains as string) || "")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+    // Build effective exclude list: if preferred specified but no explicit excludes,
+    // exclude everything NOT in preferred
+    const allStrains = ["indica", "sativa", "hybrid"];
+    const effectiveExclude =
+      excluded.length > 0
+        ? excluded
+        : preferred.length > 0
+          ? allStrains.filter((s) => !preferred.includes(s))
+          : [];
+
+    const filtered = (brandId
+      ? allRails.filter((r: any) => !r.brandId || r.brandId === brandId)
+      : allRails
+    ).map((rail: any) => {
+      if (!rail.items || rail.items.length === 0) return rail;
+
+      // Remove items with excluded strains
+      let items = rail.items.filter((item: any) => {
+        const strain = item.product?.strainType?.toLowerCase();
+        if (!strain || effectiveExclude.length === 0) return true;
+        return !effectiveExclude.includes(strain);
+      });
+
+      // Price-anchoring sort: mid-range → premium → cheapest
+      if (items.length > 2) {
+        items.sort((a: any, b: any) => (a.product?.price ?? 0) - (b.product?.price ?? 0));
+        const midIdx = Math.floor(items.length / 2);
+        const mid = items.splice(midIdx, 1)[0];
+        items.unshift(mid);
+      }
+
+      return { ...rail, items };
+    });
+
+    res.json({ rails: filtered });
+  } catch (error: any) {
+    logger.error("mobile.product-rails.personalized.error", error);
+    res.json({ rails: [] });
   }
 });
 
@@ -1362,7 +1570,9 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       homeHeroSettings,
       heroFooter,
       waysToShop,
-      productRails
+      productRails,
+      crossSellRules,
+      upgradeMappings
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS(CATEGORY_PROJECTION, {}),
@@ -1382,6 +1592,13 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       fetchCMS(HERO_FOOTER_QUERY, {}),
       fetchCMS(WAYS_TO_SHOP_QUERY, {}),
       fetchCMS(PRODUCT_RAILS_QUERY, {}),
+      fetchCMS(CROSS_SELL_QUERY, {}),
+      fetchCMS(`*[_type == "upgradeMapping" && !(_id in path("drafts.**")) && active != false] | order(priority desc) {
+        _id, label, labelColor, reason, savingsNote,
+        "brandId": brand->_id,
+        "sourceProductId": sourceProduct->_id,
+        upgradeProduct->{ _id, name, "slug": slug.current, price, strainType, thcPercent, "imageUrl": image.asset->url }
+      }`, {}),
     ]);
 
     // Prefer themeConfig.homeCategoryLimit, fall back to homeHeroSettings
@@ -1412,6 +1629,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       heroFooter: heroFooter || null,
       waysToShop: waysToShop || [],
       productRails: productRails || [],
+      crossSellRules: crossSellRules || [],
+      upgradeMappings: upgradeMappings || [],
       settings: {
         homeCategoryLimit: resolvedHomeCategoryLimit,
       },
