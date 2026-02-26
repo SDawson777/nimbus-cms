@@ -17,6 +17,7 @@ import loyaltyTier from "./__cms/loyaltyTier";
 import promo from "./__cms/promo";
 import quiz from "./__cms/quiz";
 import heroFooter from "./__cms/heroFooter";
+import productRail from "./__cms/productRail";
 import themeConfig from "./__cms/themeConfig";
 import transparencyPage from "./__cms/transparencyPage";
 import wayToShop from "./__cms/wayToShop";
@@ -54,6 +55,7 @@ const schemaTypes = [
   deal,
   faqItem,
   heroFooter,
+  productRail,
   legalDoc,
   loyaltyReward,
   loyaltyRule,

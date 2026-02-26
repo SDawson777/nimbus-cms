@@ -1136,6 +1136,45 @@ mobileSanityRouter.get("/ways-to-shop", async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// PRODUCT RAILS
+// ============================================================
+
+const PRODUCT_RAILS_QUERY = `*[_type == "productRail"
+  && !(_id in path("drafts.**"))
+  && visible != false
+  && (!defined(scheduleStart) || scheduleStart <= now())
+  && (!defined(scheduleEnd)   || scheduleEnd   >= now())
+] | order(position asc) {
+  _id, title, subtitle, strategy, source, position,
+  icon, ctaLink, visible,
+  scheduleStart, scheduleEnd,
+  audience, storeIds,
+  items[] {
+    _key, badge, badgeColor, reason,
+    product->{ _id, name, "slug": slug.current, price, "brand": brand->name, "category": category->name, "imageUrl": image.asset->url }
+  }
+}`;
+
+/**
+ * GET /product-rails
+ * Fetch all visible, scheduled product rails from Sanity.
+ *
+ * Optional query params (for future behavioural hydration):
+ *   ?userId=...  &storeId=...  &tier=...
+ *
+ * Returns { rails: [...] } or { rails: [] } when none exist.
+ */
+mobileSanityRouter.get("/product-rails", async (req: Request, res: Response) => {
+  try {
+    const rails = await fetchCMS(PRODUCT_RAILS_QUERY, {});
+    res.json({ rails: rails || [] });
+  } catch (error: any) {
+    logger.error("mobile.product-rails.error", error);
+    res.json({ rails: [] });
+  }
+});
+
+// ============================================================
 // HERO FOOTER
 // ============================================================
 
@@ -1308,7 +1347,8 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       effects,
       homeHeroSettings,
       heroFooter,
-      waysToShop
+      waysToShop,
+      productRails
     ] = await Promise.all([
       fetchCMS('*[_type=="article" && defined(publishedAt)] | order(publishedAt desc)[0...10]{_id, title, "slug": slug.current, excerpt, "mainImage": mainImage.asset->url, publishedAt}', {}),
       fetchCMS(CATEGORY_PROJECTION, {}),
@@ -1327,6 +1367,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       ),
       fetchCMS(HERO_FOOTER_QUERY, {}),
       fetchCMS(WAYS_TO_SHOP_QUERY, {}),
+      fetchCMS(PRODUCT_RAILS_QUERY, {}),
     ]);
 
     // Prefer themeConfig.homeCategoryLimit, fall back to homeHeroSettings
@@ -1356,6 +1397,7 @@ mobileSanityRouter.get("/all", async (req: Request, res: Response) => {
       effects: effects || [],
       heroFooter: heroFooter || null,
       waysToShop: waysToShop || [],
+      productRails: productRails || [],
       settings: {
         homeCategoryLimit: resolvedHomeCategoryLimit,
       },
