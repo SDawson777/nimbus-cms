@@ -96,6 +96,14 @@ export default defineType({
       initialValue: true,
     }),
     defineField({
+      name: "brand",
+      type: "reference",
+      title: "Brand (White-Label Owner)",
+      to: [{ type: "brand" }],
+      description:
+        "Scope this rail to a specific brand. Leave empty to show across all brands (global rail).",
+    }),
+    defineField({
       name: "scheduleStart",
       type: "datetime",
       title: "Schedule Start",
@@ -201,7 +209,7 @@ export default defineType({
       const vis = visible === false ? " [HIDDEN]" : "";
       return {
         title: `${title || "Untitled Rail"}${vis}`,
-        subtitle: `#${position ?? "?"} · ${strategy ?? "?"} · ${source ?? "?"}`,
+        subtitle: `#${position ?? "?"} \u00B7 ${strategy ?? "?"} \u00B7 ${source ?? "?"}`,
       };
     },
   },

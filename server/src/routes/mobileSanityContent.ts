@@ -1149,6 +1149,8 @@ const PRODUCT_RAILS_QUERY = `*[_type == "productRail"
   icon, ctaLink, visible,
   scheduleStart, scheduleEnd,
   audience, storeIds,
+  "brandId": brand->_id,
+  "brandSlug": brand->slug.current,
   items[] {
     _key, badge, badgeColor, reason,
     product->{ _id, name, "slug": slug.current, price, "brand": brand->name, "category": category->name, "imageUrl": image.asset->url }
@@ -1160,14 +1162,26 @@ const PRODUCT_RAILS_QUERY = `*[_type == "productRail"
  * Fetch all visible, scheduled product rails from Sanity.
  *
  * Optional query params (for future behavioural hydration):
- *   ?userId=...  &storeId=...  &tier=...
+ *   ?userId=...  &storeId=...  &tier=...  &brandId=...
+ *
+ * When brandId is provided, returns only global rails (no brand set)
+ * plus rails scoped to that brand. Without brandId, returns all rails.
  *
  * Returns { rails: [...] } or { rails: [] } when none exist.
  */
 mobileSanityRouter.get("/product-rails", async (req: Request, res: Response) => {
   try {
-    const rails = await fetchCMS(PRODUCT_RAILS_QUERY, {});
-    res.json({ rails: rails || [] });
+    const allRails = await fetchCMS(PRODUCT_RAILS_QUERY, {});
+    const brandId = (req.query.brandId as string) || undefined;
+
+    // Filter by brand: keep global rails (no brand) + rails matching the requested brand
+    const rails = brandId
+      ? (allRails || []).filter(
+          (r: any) => !r.brandId || r.brandId === brandId
+        )
+      : allRails || [];
+
+    res.json({ rails });
   } catch (error: any) {
     logger.error("mobile.product-rails.error", error);
     res.json({ rails: [] });
